@@ -1,0 +1,30 @@
+= HPC Publications:
+
+van Erp, T.G.M., et al., A multi-scanner study of subcortical brain volume 
+abnormalities in schizophrenia. Psychiatry Research: Neuroimaging (2014), 
+http://dx.doi.org/10.1016/j.pscychresns.2014.02.011i
+
+
+Toward a full-scale computational model of the rat dentate gyrus.
+by: Calvin J. Schneider, Marianne Bezaire, Ivan Soltesz
+Frontiers in neural circuits, Vol. 6 (2012), doi:10.3389/fncir.2012.00083  
+Key: citeulike:11745559
+
+S.Sarma and N.Dutt, "Cross-Layer Exploration of Heterogeneous
+Multicore Processor Configurations", Proceedings of the International
+Conference on VLSI Design (VLSID), Jan 2015.
+
+Darren Davis and Wayne Hayes “SpArcFiRe: Scalable Automated Detection of Spiral GalaxyArm 
+Segments” The Astrophysical Journal 790:87, 14pp (2014).
+
+Darren R. Davis and Wayne Hayes. “Automated Quantitative Description of Spiral Galaxy 
+Arm-Segment Structure.” Computer Vision and Pattern Recognition (CVPR) 2012. Providence, 
+Rhode Island, June 16–21, 2012.
+
+Wayne Hayes, Kai Sun, Nataˇsa Prˇzulj. “Graphlet-based measures are suitable for 
+biological network comparison” Bioinformatics doi:10.1093/bioinformatics/bts729 (2013).
+
+[[It was the question of 
+waiting several days on my little 30-core cluster or about an hour on HPC.  Plus the 
+advantage of HPC is that, as long as it's not busy, if I make a mistake, I find that 
+mistake in an hour, rather than a few days later.]]

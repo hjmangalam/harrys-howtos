@@ -1,0 +1,306 @@
+scut & cols - utilities to slice, re-order, join, and view columnar data
+========================================================================
+by Harry Mangalam <harry.mangalam@uci.edu> 
+v0.6, May 30rd, 2013
+:icons:
+//Harry Mangalam mailto:harry.mangalam@uci.edu[harry.mangalam@uci.edu]
+// Convert this file to HTML & move to it's final dest with the command:
+// export fileroot="/home/hjm/nacs/scut_cols_HOWTO"; asciidoc -a icons -a toc2 -b html5 -a numbered ${fileroot}.txt; scp ${fileroot}.[ht]*   moo:~/public_html
+
+// update svn from BDUC
+// scp ${fileroot}.[ht]*  hmangala@claw1:~/bduc/trunk/sge; ssh hmangala@bduc-login 'cd ~/bduc/trunk/sge; svn update; svn commit -m "new mods to ${fileroot}"'
+
+// see the script itself for boilerplate to push scut to the usual places from bongo
+
+// and push it to Wordpress the 1st time:
+// blogpost.py  create  -c Utilities ${fileroot}.txt
+// and update it
+// blogpost.py  update  -c Utilities ${fileroot}.txt
+
+// don't forget that the HTML equiv of '~' = '%7e'
+// asciidoc cheatsheet: http://powerman.name/doc/asciidoc
+// asciidoc user guide: http://www.methods.co.nz/asciidoc/userguide.html
+
+Introduction
+------------
+
+There is already a very fast (>10x faster than scut) but stupid Linux utility called 'cut' that has some of 'scut's' functionality bundled with every Linux distro (try 'man cut'), however, cut has no http://en.wikipedia.org/wiki/Regular_expression[regular expression] (aka regex) capability. It also can't process native Excel Spreadsheets, which scut can. 'scut' can mimic 'cut's' 2 most popular options (-f and -d), which are aliased appropriately - see below.  'scut' also contains some functionality of the utility 'join' as well.  If you can use 'cut' conveniently or if you need to repeatedly slice GBs of data, it's worthwhile to stay with 'cut'.  If the data requires a regex to slice correctly or you need to re-order the data, it may be worth using 'scut'.
+
+Web form
+~~~~~~~~
+I've put up a http://moo.nac.uci.edu/scut/index.html[crude web form for 'scut'] to allow non-commandline geeks to use scut.  It doesn't use or allow all of 'scut's' functionality, but it allows use of the file-join features.
+
+scut's cut functions
+--------------------
+.'scut' mimics most used 'cut' options 
+[NOTE]
+==================================================================================
+'scut' recently added '-f' and '-d' aliases which mimic the 2 most popular options for 'cut'.  So in a situation where you might use cut, you can generally just replace 'cut' with 'scut' to add multi-field and regex capability.  Note that it does not (yet) adjust 'cut's' 1-based field spec to 'scut's' 0-based field spec.  ie:
+---------------------------------------------------------------------
+ls -l | cut -f 1 -d ' ' # to get the 1st field of the output
+  # can be replaced by:
+ls -l | scut -f 0 -d ' '
+  # but to get the size field, compare:
+ls -l | cut -c24-34  # you have to count the chars to get the right offset
+  # vs
+ls -l | scut -f 4
+
+---------------------------------------------------------------------
+==================================================================================
+
+scut http://moo.nac.uci.edu/~hjm/scut[(code here)] was written originally to find similar lines in 2 different files and output a combined output, sort of like the http://www-128.ibm.com/developerworks/linux/library/l-textutils.html#9[join command] but as I worked on it, I realized that what I was doing was reiterating an SQL engine. Since there were already great SQL engines available, I stopped work on that aspect of it (tho it still works) but it's still a better cut than cut (named as a contraction of 'super-cut', or perhaps 'the util that does your "scut" work for you'.  Anyway, it's designed to cut and re-order 'columns' of data from a file. The original functions are still intact, so if you need to look for lines in one file that exist in another file, that should still work as well and if 'join' is unable to do what you need, you might want to try 'scut'.
+
+Consider for example, a long (11 million lines) gene expression data file named 'OMG' that looks like this:
+
+-----------------------------------------------------------------------
+chr10:100018403-100020903;CHR10FS100020403;1    chr10_0 100020403       100020452       0.01
+chr10:100018403-100020903;CHR10FS100019203;1    chr10_1 100019203       100019256       0.22
+chr10:100018403-100020903;CHR10FS100019503;1    chr10_2 100019503       100019559       0.08
+chr10:100018403-100020903;CHR10FS100019903;1    chr10_3 100019903       100019952       0.66
+chr10:100018403-100020903;CHR10FS100020203;1    chr10_4 100020203       100020259       0.26
+chr10:100018403-100020903;CHR10FS100019803;1    chr10_5 100019803       100019853       0.50
+chr10:100018403-100020903;CHR10FS100018703;1    chr10_6 100018703       100018752       0.03
+chr10:100018403-100020903;CHR10FS100018403;1    chr10_7 100018403       100018466       -0.12
+chr10:100018403-100020903;CHR10FS100018903;1    chr10_8 100018903       100018952       -1.05
+chr10:100018403-100020903;CHR10FS100020303;1    chr10_9 100020303       100020364       -0.76
+[continues for 11,353,343 lines]
+-----------------------------------------------------------------------
+
+and you wanted to break it on both ';' and whitespace (any contiguous number of spaces and and tabs), writing fields '1 3 4' but in the order '3 1 4' , and have the output data fields separated by " ^ ", you could do this with scut in a single pass:
+
+-----------------------------------------------------------------------
+scut --id1=';|\s+'  --od=' ^ ' --c1='3 1 4'  < OMG
+-----------------------------------------------------------------------
+
+Out would spring:
+-----------------------------------------------------------------------
+chr10_0 ^ CHR10FS100020403 ^ 100020403
+chr10_1 ^ CHR10FS100019203 ^ 100019203
+chr10_2 ^ CHR10FS100019503 ^ 100019503
+chr10_3 ^ CHR10FS100019903 ^ 100019903
+chr10_4 ^ CHR10FS100020203 ^ 100020203
+chr10_5 ^ CHR10FS100019803 ^ 100019803
+chr10_6 ^ CHR10FS100018703 ^ 100018703
+chr10_7 ^ CHR10FS100018403 ^ 100018403
+chr10_8 ^ CHR10FS100018903 ^ 100018903
+chr10_9 ^ CHR10FS100020303 ^ 100020303
+[etc]
+-----------------------------------------------------------------------
+
+The secret here is that scut allows the use of http://www.perl.com/doc/manual/html/pod/perlre.html[Perl Regular Expressions] that can encode just about any pattern. Regular Expressions are both fearsomely confusing and insanely powerful. http://en.wikipedia.org/wiki/Regular_expression[Wikipedia] has a good description.  And if you're at UC, you can http://proquest.safaribooksonline.com/0596528124[read Jeff Friedl's *Mastering Regular Expressions* for free via Safari]
+
+Because 'scut' can break data on arbitrary regexes, you can tame most text data in a single pass, certainly in multiple passes by piping the output of one operation into the input of another.
+
+http://moo.nac.uci.edu/~hjm/scut_help.txt[scut --help] will give you the help pages, and the internal code is fairly clear, tho not tremendously well-documented.  It's also not entirely free of bugs - some of the routines were written for specific tasks and were not generalized well, but I still find myself using it a lot.
+
+Here's another example of scut helping me find out the size distribution of all files in a directory: 
+-----------------------------------------------------------------------
+ls -l | scut --c1='4' |stats
+-----------------------------------------------------------------------
+(note that the GNU 'ls' command shipped with Linux produces a slightly different format than other 'ls' variants.  This one works with GNU 'ls').
+ 
+The above command takes the output of ls -l, pipes it into 'scut' which extracts field 4, then pipes that data into http://moo.nac.uci.edu/~hjm/stats[stats], another Perl utility that generates descriptive stats of whatever goes into it.
+
+it produces: (with [my comments added])
+-----------------------------------------------------------------------
+Sum       193109146  [total of 193MB)
+Number    18 [in 18 files]
+Mean      10728285.8888889  [mean size of 10.7MB]
+Median    27761 [but obviously due to some large files]
+Mode      FLAT
+NModes    No # was represented more than once
+Min       0
+Max       73690201 [here's a 73.6MB  reason for the skew]
+Range     73690201
+Variance  401893120826683  [and the rest]
+Std_Dev   20047272.1542529
+SEM       4725187.36152149
+Skew      2.14197169376939
+Std_Skew  3.71000380198295
+Kurtosis  2.96898153032708
+-----------------------------------------------------------------------
+
+scut's join feature
+-------------------
+The 'join' feature of 'scut' works a little differently than does 'join' itself. For a good example of how 'join' works, see this IBM DeveloperWorks tutorial called http://www-128.ibm.com/developerworks/linux/library/l-textutils.html#9[Simplify data extraction using Linux text utilities]
+
+In 'scut', like 'join', you have to specify 2 filenames, the key fields, and what fields you want output, but with scut, you can specify different input and output delimiters (which can be multicharacter instead of single character), the fields in any order, and a host of other options. The input delimiter can also be a regex.
+
+If we have a file of needles (called 'needles') that need to be found in a haystack file (called 'haystack'), and 'needles' looks like this:
+-----------------------------------------------------------------------
+apbA
+carA+pyrA
+cdsA+cds
+codA
+ddlA
+dinJ
+dnaX+dnaZ
+fepB
+fhuB
+fixC
+folK
+<etc>
+-----------------------------------------------------------------------
+and the 'haystack' file looks like this:
+-----------------------------------------------------------------------
+      1     0                 1                2            3            4            5
+      2     b              gene               EC         C1.0         C1.1         C2.0
+      3 b0001              thrL      0.000423101   0.00046544  0.000429262  0.000433869 ...
+      4 b0002  thrA+thrA1+thrA2  1.1.1.3+2.7.2.4  0.001018277  0.001268078  0.001312524 ...
+      5 b0003              thrB         2.7.1.39  0.000517967  0.000457605  0.000582354 ...
+      6 b0004              thrC         4.2.99.2  0.000670075  0.000558063  0.000789501 ...
+      <etc>
+-----------------------------------------------------------------------
+
+and you wanted to match the fields in the single column of the 'needles' file with the 'gene' field in the 'haystack' file, and you wanted the output to include:
+
+* haystack columns 1, 0, 2, 5 in that order
+* the output delimiter being '|' instead of <TAB>
+* written to a file called 'hits'
+
+the command to do so would be:
+-----------------------------------------------------------------------
+scut --f1='needles' --f2='haystack' --k1=0 --k2=1  --c2='1 0 2 5'  --od='|' >hits
+-----------------------------------------------------------------------
+
+and the 'hits' file would look like this:
+-----------------------------------------------------------------------
+apbA|b0425|1.55E-05|1.34E-05|
+carA+pyrA|b0032|6.3.5.5|0.000155796|
+cdsA+cds|b0175|2.7.7.41|2.91E-05|
+codA|b0337|3.5.4.1|3.20E-05|
+ddlA|b0381|6.3.2.4|0|
+dinJ|b0226|0|0|
+dnaX+dnaZ|b0470|2.7.7.7|4.48E-05|
+<etc>
+-----------------------------------------------------------------------
+
+I've modified scut to handle column specifiers more efficiently. It's spelled out in the help section. ie:
+-----------------------------------------------------------------------
+      --c1='# # ..'   - the numbers of the columns from file1 that you want
+                         printed out in the order in which you want them.  If
+                         you DON'T want any columns from the file, just
+                         omit the --c1 option completely.
+                         If you want the whole line, type --c1='ALL'.
+
+                         You can also use discontinous ranges like '2:4 8:10'
+                         to print [2 3 4 8 9 10] and decreasing ranges like
+                         '8:4' to print cols [8 7 6 5 4].  You can also negate
+                         columns to remove them from a larger range '9:12' -11'
+                         to print [9 10 12] or 12:1 -7:-4 to print
+                         [12 11 10 9 8 3]. You can also use the 'ALL' keyword
+                         to print all cols and negate the ones you don't
+                         want with negative ranges - 'ALL -8:-14' to print all
+                         columns EXCEPT 8-14.
+
+                         Notes:
+                         1) #s are split on whitespace, not commas.
+                         2) scut also supports Excel-style column specifiers such as:
+         or
+      --c1='A C F ..'    (A B F AD BG etc) for up to 78 columns (->BZ)  If you want
+                         more, add them to the %excel_ids hash in the code or create an
+                         algorithm that does it right.
+
+
+-----------------------------------------------------------------------
+
+
+The cols utility
+----------------
+In my work, the input to 'scut' is often a horrendously wide data file that overflows even the widest terminal screens with the tiniest fonts. And even if it didn't overflow the terminal, when the data is printed to the terminal, the columns are almost always mismatched due to tab skips (if a field exceeds a tab boundary, it will skip to the next tab). Trying to figure out if a floating point number is the 21st or 22nd field can be trying if you have to do it all day.
+
+'cols' http://moo.nac.uci.edu/~hjm/cols[(code here)] was developed to take the very "wide" files that have 10s of columns and present them in a terminal window so that you don't have to import them into a GUI spreadsheet app to check that the parsing operation has gone well.  The output of the 'scut' operation is typically piped to cols and then to 'less -S' to promote easier viewing of long lines.
+
+An example is probably the best way to describe this. The file '''DataSet''' is a long file of TAB-separated identifiers and data that has a header line of column IDs prefixed with a hash mark to mark it as a comment in the standard unixy way. 
+
+Would you rather try to decipher the column values from this output :
+
+-----------------------------------------------------------------------
+      $ head  -15 DataSet | less -S
+          1 #b      gene    EC      C1.0    C1.1    C2.0    C2.1    C3.0    C3.1    E1.0    E1.1    E2.0    E2.1
+          2 b0001   thrL    0.000423101     0.00046544      0.000429262     0.000433869     0.000250998     0.000
+          3 b0002   thrA+thrA1+thrA2        1.1.1.3+2.7.2.4 0.001018277     0.001268078     0.001312524     0.001
+          4 b0003   thrB    2.7.1.39        0.000517967     0.000457605     0.000582354     0.000640462     0.000
+          5 b0004   thrC    4.2.99.2        0.000670075     0.000558063     0.000789501     0.000801508     0.000
+          6 b0005   0       0       0       2.64E-07        0       0       0       0       0       0       0
+          7 b0006   yaaA    0       0       0       0       0       0       0       0       0       0       0
+          8 b0007   yaaJ    8.52E-06        8.87E-06        1.54E-05        2.74E-05        0       0       0
+          9 b0008   talB    2.2.1.2 0.001160911     0.00118164      0.001263549     0.001345351     0.001103703
+         10 b0009   mog+chlG        1.87E-05        1.91E-05        1.95E-05        1.70E-05        0       0
+         11 b0010   yaaH    0       0       0       0       0       0       0       0       0       0       0
+         12 b0011   0       0       0       0       0       0       0       0       0       2.86E-05        0
+
+-----------------------------------------------------------------------
+or from this output?
+-----------------------------------------------------------------------
+     $ head  -15 DataSet | cols | less -S
+          1     0                 1                2            3            4            5            6
+          2    #b              gene               EC         C1.0         C1.1         C2.0         C2.1
+          3 b0001              thrL      0.000423101   0.00046544  0.000429262  0.000433869  0.000250998  0.00026
+          4 b0002  thrA+thrA1+thrA2  1.1.1.3+2.7.2.4  0.001018277  0.001268078  0.001312524  0.001398845  0.00078
+          5 b0003              thrB         2.7.1.39  0.000517967  0.000457605  0.000582354  0.000640462   0.0003
+          6 b0004              thrC         4.2.99.2  0.000670075  0.000558063  0.000789501  0.000801508  0.00055
+          7 b0005                 0                0            0     2.64E-07            0            0
+          8 b0006              yaaA                0            0            0            0            0
+          9 b0007              yaaJ         8.52E-06     8.87E-06     1.54E-05     2.74E-05            0
+         10 b0008              talB          2.2.1.2  0.001160911   0.00118164  0.001263549  0.001345351  0.00110
+         11 b0009          mog+chlG         1.87E-05     1.91E-05     1.95E-05     1.70E-05            0
+         12 b0010              yaaH                0            0            0            0            0
+
+-----------------------------------------------------------------------
+(output of both is from the less pager to avoid wrap artefacts.)
+
+They both looks nice and columnar, but if you look closely, you'll see some variants that will drive you straight to Advil after 30 minutes of trying to figure it out, especially if you've side-scrolled enough to miss one of the tab-skips. For example: most of the gene names are short enough to fit in the tab space, but in line 4, '''thrA+thrA1+thrA2''' is wide enough to cause a tab-skip which will then throw off the rest of the line. Similarly, in line 9 of the top listing, does the value '''0.001345351''' belong to the '''C3.0''' or to the '''C3.1''' column? Actually, it belongs to the '''C2.1''' column as is shown in the second listing, which has columnized it correctly.
+
+Also note that the lower one has column headers inserted (line 1) which give you the 0-based column count (change to 1-based numbering with --ch=1
+
+The '--delim='regex'' option is useful for seeing the result of using various Perl regular expressions to split the input.  As with 'scut' above, the string is passed directly to cols (a Perl script) and is used in the 'split()' function verbatim.  Using this, you can split a line on multiple tokens at the same time.  Unlike 'cut' which is restricted to using a single character as a splitting token, you can use Perl's fearsome regex capability to define any regex (or set of regexes) as the splitting token(s). 
+
+-----------------------------------------------------------------------
+# the following will split on any of  _ = , - or whitespace
+cols --delim='[_=,-\s+]' < input  | less -S
+
+# the following will split on any of  _ = , - or 'gene_'
+cols --delim='[=,-]|gene_' < input  | less -S
+
+-----------------------------------------------------------------------
+
+
+This utility is meant for visualizing, not actual processing, except in edge cases, as the padding is all spaces. Also the utlity aborts after reading 22 lines, unless told not to.
+
+Here is the help output from '''cols --help'''
+-----------------------------------------------------------------------
+    cols is a small Perl-based utility to view columns of data to help
+    programmers check that the columns correspond to what they want.
+    It strips tabs from the input and pads columns with spaces so it's
+    NOT meant to be used as a pipeline processing tool, only as a checking
+    tool.
+
+    usage: pipe or redirect X-delimited tabular data (where X=TAB by default,
+    but can be set to any Perl regex) to 'cols' with the following options:
+
+    --mw=#  set max width to this many chars or the max per-col width if smaller.
+            Defaults to 20.
+
+    --ml=#  process this many lines of input. (Defaults to 22)
+
+    --ch=#  add a line of column headers (starting at # - defaults to 0)
+             to the output to tell where you are in very wide output
+             (very useful)
+
+    --delim=s the delimiter to use to split the fields (Defaults to TAB)
+              Use 'ws' for whitespace (but you can use '\s+' if you want).
+
+    --help  dumps this help
+
+    Pipe output to 'less -S' to view long lines without wrap and arrow keys to
+    scroll around.
+
+    example:
+              cols --mw=11 --ch=1 <huge.data |less -S
+
+-----------------------------------------------------------------------
+
+
+
+

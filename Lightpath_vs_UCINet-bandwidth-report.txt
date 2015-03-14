@@ -1,0 +1,727 @@
+= Bandwidth comparison: Lightpath vs UCINet.
+by Harry Mangalam <harry.mangalam@uci.edu>
+v1.01 - Jan 30, 2015
+:icons:
+
+// fileroot="/home/hjm/nacs/Lightpath_vs_UCINet-bandwidth-report"; asciidoc \
+//   -a icons -a toc2 -b html5 -a numbered ${fileroot}.txt; \
+// scp ${fileroot}.html ${fileroot}.txt ~/nacs/CloudStorage/cenic-periodicity.png \
+//   moo:~/public_html/CloudServicesForAcademics;
+
+// scp ${fileroot}.html ${fileroot}.txt root@ghtf-hpc.oit.uci.edu:/data/hpc/www
+
+== Summary
+Awarded a $500,000 NSF CIE grant, UCI has set up an unshielded (no firewall) 10Gb 
+http://en.wikipedia.org/wiki/Science_DMZ_Network_Architecture[Science 
+DMZ] called 'LightPath' parallel with the firewall-protected 'UCINet'.  The 10Gb Lightpath 
+network supports near-theoretical speeds on the local network, but we wanted to 
+determine if it also provided higher application-level speeds to and from remote sites.
+To do so, we have measured actual data transfer speeds from a few remote sites 
+to and from UCI to see if the LightPath network confers any advantage.  In 
+short, the 10Gb connection to UCLA does provide up to 20%-50% greater 
+speeds if the source device can supply data at that rate.  However, from Boston, 
+there was no significant difference in speeds.  Useful speeds on such a connection 
+are highly dependent on the speeds of the storage devices on both ends as well as the 
+network congestion.
+
+Jessica Yu notes:
+
+http://www.perfsonar.net/about/what-is-perfsonar/[perfSONAR] tests between a 
+perfSONAR node on UCI Lightpath and a perfSONAR node 
+at the UCLA border shows performance of 9.1Gbit/s out of 10Gbit/s connection, 
+equivalent to 1000+ MB/s.  The UCI perfSONAR node is connected to the same 
+switch as the HPC Lightpath Node.  This indicate that there is room to improve 
+the throughput between HPC and CASS.  The improvement could include but is not 
+limited to:
+
+* better tuning the host
+* using a more optimal file transfer protocol
+* move the CASS server closer to the border of UCLA network and others.
+
+
+== Introduction
+Led by 'Jessica Yu', UCI applied for and was awarded an NSF CIE grant for 
+approximately $500,000 to add a 10Gb Science DMZ (called 'LightPath') parallel 
+with UCI's existing network.  
+The award required that the resulting 10Gb network was not protected 
+or masked by an intervening firewall which would slow traffic through it, as 
+is the case with UCINet.  UCINet is protected by an institutional firewall that 
+performs http://en.wikipedia.org/wiki/Stateful_firewall[stateful packet 
+inspection] of every packet that enters UCINet.  In order to prevent completely 
+unrestricted access to the LightPath network, UCI's NetOps people placed an 
+http://en.wikipedia.org/wiki/Access_control_list#Networking_ACLs[Access Control 
+List] restriction on the LightPath network. However, due to the lowered security, the 
+UCI Security team insisted that no computer attaching to LightPath be 
+http://en.wikipedia.org/wiki/Multihoming[multi-homed] to UCInet to 
+prevent attacks thru the supposedly "unprotected" LightPath.
+At the current time, there are about 5 non-administrative endpoints on the LightPath 
+network, and they support near-theoretical bandwidth (10Gb/s) among them.  However, 
+since there are few sources of data that would stress such a 10Gb network, we 
+have investigated the advantages that such a network provides outside of the 
+peer 10Gb network.
+
+We have established data connections between UCI and two other research organizations:
+UCLA and the http://broadinstitute.org[Broad Institute] in Boston, MA.  
+Each of these has enforced different data protocols.  The Broad supports Aspera 
+(and a short while ago, Globus), while UCLA supports NFS and Globus.
+
+//and both UCSD and USC support shell accounts *DO THEY??*.
+//*CHECK OUT BOTH UCSD AND USC*
+
+
+== Hardware & Configuration
+The configurations we used to investigate this were:
+
+* a 64core (AMD 2.2GHz Bulldozer CPU), with 256GB RAM, equipped with an 
+http://ark.intel.com/products/60020/Intel-Ethernet-Controller-X540-AT2[Intel 
+X540-AT2 10-Gigabit ethernet card] as IP# 192.5.19.15. The 
+http://goo.gl/Nzcln[Maximum Transmission Unit] (MTU) was 9000. The same machine 
+also had a http://goo.gl/8fi3Um[Mellanox Technologies MT26428 ConnectX QDR 
+Infiniband card] for connecting to the cluster private LAN. 
+* The same type of computer with a single http://goo.gl/3nYg0h[Intel Corporation 
+82576 Gigabit] connection to UCINet as IP# 128.200.15.22. The MTU was 1500.
+* a T530 Lenovo laptop using a http://goo.gl/7rW189[Intel Corporation 82579LM 
+Gigabit] controller connected to UCINet as IP# 128.200.34.163. The MTU was 1500.
+
+
+== Paths & Latency
+The paths to and from the remote hosts were determined by 'traceroute' and were 
+found to be:
+
+=== To the Broad Institute Boston, MA
+
+==== LightPath (192.5.19.15) to Broad Inst (Boston)
+-----------------------------------------------------------------
+[root@compute-1-13 ~]# traceroute ozone.broadinstitute.org
+traceroute to ozone.broadinstitute.org (69.173.127.155), 30 hops max, 60 byte 
+packets
+ 1  cpl-lp-core.gw.lp.ucinet.uci.edu (192.5.19.1)  0.310 ms  0.291 ms  0.333 ms
+ 2  kazad-dum--cpl-lp-core.ucinet.uci.edu (128.200.2.250)  0.488 ms  0.552 ms  0.593 ms
+ 3  riv-hpr--hpr-uci-ge.cenic.net (137.164.27.33)  4.684 ms  4.765 ms  4.824 ms
+ 4  lax-hpr2--riv-hpr2-10g.cenic.net (137.164.25.33)  9.194 ms 
+    hpr-lax-hpr2--riv-hpr2-10ge-2.cenic.net (137.164.25.53)  9.219 ms  9.224 ms
+ 5  137.164.26.201 (137.164.26.201)  9.554 ms  9.553 ms  9.683 ms
+ 6  et-1-0-0.111.rtr.hous.net.internet2.edu (198.71.45.20)  54.160 ms  54.037 ms  54.031 ms
+ 7  et-10-0-0.105.rtr.atla.net.internet2.edu (198.71.45.12)  65.751 ms  65.870 ms  65.809 ms
+ 8  et-10-0-0.118.rtr.newy32aoa.net.internet2.edu (198.71.46.175)  90.096 ms  86.126 ms  86.125 ms
+ 9  nox300gw1-vl-110-nox-i2.nox.org (192.5.89.221)  89.902 ms  89.803 ms  90.059 ms
+10  192.5.89.22 (192.5.89.22)  90.055 ms  90.242 ms  90.216 ms
+11  nox1sumgw1-peer-nox-mit-b-207-210-143-158.nox.org (207.210.143.158)  89.376 
+ms  89.242 ms  89.212 ms
+12  * * * (no more responses)
+-----------------------------------------------------------------
+Ignoring timeouts and multiple responders, we have 11 hops on the LightPath 
+route.
+
+
+==== UCINet (128.200.15.22) to Broad Inst (Boston)
+-----------------------------------------------------------------
+$ traceroute ozone.broadinstitute.org
+traceroute to ozone.broadinstitute.org (69.173.127.158), 30 hops max, 60 byte 
+packets
+ 1  dca-vl101.ucinet.uci.edu (128.200.15.1)  0.385 ms  0.487 ms  0.638 ms
+ 2  cpl-core--dca.ucinet.uci.edu (128.195.239.49)  0.250 ms 
+    cs1-core--dca.ucinet.uci.edu (128.195.239.181)  0.680 ms  0.737 ms
+ 3  kazad-dum-vl123.ucinet.uci.edu (128.200.2.222)  0.574 ms  0.608 ms  0.681 ms
+ 4  riv-hpr--hpr-uci-ge.cenic.net (137.164.27.33)  4.798 ms  4.946 ms  4.822 ms
+ 5  hpr-lax-hpr2--riv-hpr2-10ge-2.cenic.net (137.164.25.53)  9.500 ms  9.503 ms 
+    lax-hpr2--riv-hpr2-10g.cenic.net (137.164.25.33)  9.579 ms
+ 6  137.164.26.201 (137.164.26.201)  9.666 ms  9.663 ms  9.636 ms
+ 7  et-1-0-0.111.rtr.hous.net.internet2.edu (198.71.45.20)  42.176 ms  42.126 ms  42.131 ms
+ 8  et-10-0-0.105.rtr.atla.net.internet2.edu (198.71.45.12)  66.103 ms  66.116 ms  66.100 ms
+ 9  et-10-0-0.118.rtr.newy32aoa.net.internet2.edu (198.71.46.175)  85.063 ms  84.759 ms  84.749 ms
+10  nox300gw1-vl-110-nox-i2.nox.org (192.5.89.221)  89.864 ms  89.950 ms  91.255 ms
+11  192.5.89.22 (192.5.89.22)  90.493 ms  90.506 ms  90.559 ms
+12  nox1sumgw1-peer-nox-mit-b-207-210-143-158.nox.org (207.210.143.158)  89.565 ms  89.904 ms  89.912 ms
+13  * * * (no more responses)
+-----------------------------------------------------------------
+Ignoring timeouts and multiple responders, we have 12 hops on the UCINet route.
+
+=== To CASS/UCLA
+
+==== UCINet (128.200.34.163) to UCLA
+-----------------------------------------------------------------
+Fri Jan 16 14:47:46 [0.90 1.78 2.06]  mangalam@stunted:~
+160 $ traceroute  mango.cass.idre.ucla.edu
+traceroute to mango.cass.idre.ucla.edu (164.67.175.173), 30 hops max, 60 byte 
+packets
+ 1  415-vl110.ucinet.uci.edu (128.200.34.1)  0.431 ms  0.469 ms  0.539 ms
+ 2  cs1-core--415.ucinet.uci.edu (128.195.249.233)  0.364 ms  0.401 ms  0.440 ms
+ 3  kazad-dum-vl123.ucinet.uci.edu (128.200.2.222)  0.773 ms  0.722 ms  0.929 ms
+ 4  riv-hpr--hpr-uci-ge.cenic.net (137.164.27.33)  4.954 ms  4.971 ms  4.957 ms
+ 5  lax-hpr2--riv-hpr2-10g.cenic.net (137.164.25.33)  9.447 ms 
+    hpr-lax-hpr2--riv-hpr2-10ge-2.cenic.net (137.164.25.53)  9.370 ms 
+    lax-hpr2--riv-hpr2-10g.cenic.net (137.164.25.33)  9.401 ms
+ 6  bd11f1.anderson--cr01f1.anderson.ucla.net (169.232.4.6)  10.084 ms  10.062 ms 
+    bd11f1.anderson--cr01f2.csb1.ucla.net (169.232.4.4)  10.134 ms
+ 7  cr01f1.anderson--dr01f2.csb1.ucla.net (169.232.4.55)  10.246 ms  10.127 ms  10.204 ms
+ 8  mango.cass.idre.ucla.edu (164.67.175.173)  10.264 ms !X  10.370 ms !X  10.367 ms !X
+-----------------------------------------------------------------
+Ignoring timeouts and multiple responders, we have 8 hops on the UCINet route.
+
+
+==== LightPath (192.5.19.15) to UCLA
+-----------------------------------------------------------------
+mangalam@compute-1-13:~
+59 $ traceroute mango.cass.idre.ucla.edu
+traceroute to mango.cass.idre.ucla.edu (164.67.175.173), 30 hops max, 60 byte 
+packets
+ 1  cpl-lp-core.gw.lp.ucinet.uci.edu (192.5.19.1)  0.325 ms  0.313 ms  0.311 ms
+ 2  kazad-dum--cpl-lp-core.ucinet.uci.edu (128.200.2.250)  0.350 ms  0.383 ms  0.431 ms
+ 3  riv-hpr--hpr-uci-ge.cenic.net (137.164.27.33)  4.673 ms  4.758 ms  4.833 ms
+ 4  hpr-lax-hpr2--riv-hpr2-10ge-2.cenic.net (137.164.25.53)  9.218 ms  9.240 ms 
+    lax-hpr2--riv-hpr2-10g.cenic.net (137.164.25.33)  9.253 ms
+ 5  bd11f1.anderson--cr01f1.anderson.ucla.net (169.232.4.6)  9.848 ms  9.832 ms 
+    bd11f1.anderson--cr01f2.csb1.ucla.net (169.232.4.4)  9.904 ms
+ 6  cr01f2.csb1--dr01f2.csb1.ucla.net (169.232.4.53)  9.904 ms  9.902 ms  9.861 ms
+ 7  mango.cass.idre.ucla.edu (164.67.175.173)  10.191 ms !X  10.194 ms !X  10.186 ms !X
+-----------------------------------------------------------------
+Ignoring timeouts and multiple responders, we have 7 hops on the LP route.
+
+So, overall, LightPath seems to have 1 less hop than UCINet 
+route.  The ping times per-hop are recorded during traceroute as well.
+
+.Network latency on the 3 hosts by repeated ping
+[options="header"]
+|============================================================
+|Network     | Hostname     |   IP#        |   Latency |    n    
+|LightPath   | compute-1-13 |  192.5.19.15 | 9.96 ms   |    25
+| UCINet     | stunted      |128.200.34.163| 10.2 ms   |    25
+| UCINet     | ghtf-hpc     |128.200.15.22 | 10.2 ms   |    27
+|============================================================
+
+
+
+=== Variability in Network Bandwidth
+
+These measurements, even collected over the course of a 135GB transfer are only 
+snapshots in 'life of a network' since the saturation of the link varies over 
+the course of the day, week, and season.  While it's not comprehensive, I re-ran 
+this test  a few times over the course of a few days to get an idea of the variability.
+
+Repeating over the course of several hours (5m intervals), we get the following 
+distributions:  78MB/s +/- 4.7(SEM) [n=41].  Sampled over the period 1 pm to about 3pm, 
+Friday, Jan 23, 2015.  
+
+[[bandwidth]]
+.Samples of Network BW from UCI to UCLA via dd
+|=========================================================================
+|Time of sample      |  Path   | Bandwidth  | SEM  |  n   | comments
+|1p-3p 1-23-2015     | UCINet  |  78 MB/s   | 4.7  |  41  | 
+|6p    1-23-2015     | UCINet  |  11 MB/s   | 8    |  11  | 1st 11 samples
+|7p-9p 1-23-2015     | UCINet  |  99 MB/s   | 2.5  |  38  | next 38 samples
+|6p-9p 1-23-2015     | UCINet  |  79 MB/s   | 5.6  |  49  | overall
+|6p-8:30p 1-23-2015  | LightPath | 101 MB/s | 1.4  |  48  | 
+|8a-1:30p 1-23-2015  | LightPath | 93 MB/s  | 1.3  |  48  | 
+|=========================================================================
+
+so while there may have some speedup due to the time difference, it's probably 
+not too much.  Hence, without any disk IO interference, there appears to be an 
+overall 20% improvement via the LP route.
+
+This supposition is borne out by examining the actual traffic thru the CENIC Tustin switches
+that LightPath data traverses to UCLA which is highly cyclical 
+http://goo.gl/ab5t7G[over the course of the day], 
+http://goo.gl/UZoUKH[the week] (below)
+
+image:cenic-periodicity.png[CENIC weekly graph]
+
+and shows additional http://goo.gl/jZp5FK[periodicities over the month], and
+http://goo.gl/SbR2mr[the year].  From this data, it looks like the maximum available 
+bandwidth is 10Gb/s (based on the 10Gb interface) but the maximum observed over 
+the course of the entire past year is only 
+1/5th that, about 2Gb/s or about 250MB/s, the maximum I was able to record.
+
+The entire UCI traffic thru CENIC is http://goo.gl/OpgZEH[available via this link].
+
+
+== Applications
+I tried a number of applications, over 3 protocols.
+
+=== 'cp' over NFS to UCLA
+
+The UCLA CASS system was mounted via http://en.wikipedia.org/wiki/Network_File_System[NFS] 
+over both the LightPath route and the 
+UCINet route to be used as target and sources for the data.  For all systems, 
+the mount command had the same options, tho the mountpoint was different due to 
+filesystem layout.
+
+-----------------------------------------------------------------
+sudo mount -t nfs -o resvport,rsize=65536,wsize=65536 \
+mango.cass.idre.ucla.edu:/datastore00/exports/home/mangalam /mnt/ucla
+-----------------------------------------------------------------
+
+Once the CASS/UCLA file storage was mounted, I tried serveral approaches to using it 
+both as a 'normal' user might, and also as an advanced user might.
+
+==== Using CASS/UCLA as a 'local fileserver' via UCInet
+
+In this case, I copied several LibreOffice documents to CASS/UCLA, forced a 
+local 'cache-drop' and then tried to open the documents form my laptop via UCINet.  
+Even 15MB word processing documents opened in less than a second and I could edit 
+and save the docs as if they were local documents.  
+A large part of this is due to the intelligent caching of files in RAM, so 
+this is not too surprising.  Problems with this approach of using NFS volumes on a laptop
+is that closing the laptop and moving to another network results in locked filehandles 
+to the NFS volume, and eventually, the laptop has to be rebooted to clear these.  
+'Soft-mounting' is a partial solution, but this can result in file corruption.
+
+Since NFS clients for Windows and Mac users are expensive, clumsy, and hard to debug, 
+and since the SMB/CIFS protocol is filtered over WANs for security and traffic reasons, 
+the only way to make use of the CASS/UCLA storage currently is via ssh-tunneled SMB, which,
+while possible for both http://www2.ece.ohio-state.edu/computing/ssh_win.html#PCSMB[Windows] 
+and http://goo.gl/8vsH5K[Macs], is yet another confusing step for 'normal' users.
+
+This implies that mod a large effort to create better NFS clients, large 
+fileservers meant for local use should be local.
+
+
+=== 'cp' to UCLA via LightPath
+
+The file linuxmint-17-kde-dvd-64bit.iso is 1531445248 bytes (1.5GB)
+
+-----------------------------------------------------------------
+Wed Jan 28 20:30:40 [1.07 0.45 0.20]  mangalam@compute-1-13:~
+229 $ time (cp linuxmint-17-kde-dvd-64bit.iso ucla/khj.iso  && sync)
+real    0m21.738s
+-----------------------------------------------------------------
+which equals 70MB/s
+
+Note that due to filecache effects, repeating this same command soon afterwards
+yields apparently better results.
+
+-----------------------------------------------------------------
+Wed Jan 28 20:47:44 [0.20 0.12 0.12]  mangalam@compute-1-13:~
+231 $ time (cp linuxmint-17-kde-dvd-64bit.iso ucla/khj.iso  && sync)
+real    0m15.555s
+-----------------------------------------------------------------
+equals 102MB/s
+
+=== 'cp' to UCLA via UCINet
+
+-----------------------------------------------------------------
+Wed Jan 28 20:40:14 [38.65 38.11 37.82]  mangalam@compute-7-9:~
+228 $ time (cp linuxmint-17-kde-dvd-64bit.iso ucla/khj.iso  && sync)
+real    0m20.281s
+-----------------------------------------------------------------
+
+which equals 70MB/s, almost identical to LightPath, above.  However, I have 
+seen bandwidths of at least double this in large copies of heterogeneous data
+over LightPath, so this could easily be due to network congestion.
+
+
+We link:#bwequalizes[note below] that the highest 2s bandwidth via Lightpath 
+was almost 200MB/s so there does not appear to be a 1Gb bottleneck in the path, 
+but I can't tell the upper limit of the connection.
+
+* NOTE: CAN WE GET AN IPERF/NETPERF STATION SET UP AT UCLA??*
+
+=== 'cp' from UCLA to UCI
+For copies from UCLA to UCI, I had to rely on disk-based transfers, since I 
+don't have shell access to the UCLA side to run 'dd' there.  Using the same 1.5GB
+file as the token:
+
+-----------------------------------------------------------------
+Wed Jan 28 16:14:28 [0.76 1.20 1.02]  mangalam@stunted:~
+183 $ time (cp ucla/linuxmint-17-kde-dvd-64bit.iso Linux-Mint.1.5G.iso && sync)
+real    0m38.703s
+-----------------------------------------------------------------
+
+which equals ~39MB/s.  The reverse copy (with the file renamed to defeat the 
+filecache), performed immediately afterwards:
+
+-----------------------------------------------------------------
+Wed Jan 28 16:19:02 [0.60 1.09 1.04]  mangalam@stunted:~
+186 $ time (cp linuxmint-17-kde-dvd-64bit.iso ucla/1.5GBfile && sync)
+real    0m29.057s
+-----------------------------------------------------------------
+
+transferred out at 52MB/s, about 35% faster, possibly due to the firewall interference
+with the data entering UCINet.
+
+For transfers over LightPath, there did not appear to be a significant difference
+between bandwidth and direction:
+
+-----------------------------------------------------------------
+Wed Jan 28 21:09:38 [0.00 0.01 0.05]  mangalam@compute-1-13:~
+233 $ time (cp linuxmint-17-kde-dvd-64bit.iso ucla/1.5.iso && sync)
+real    0m18.132s
+-----------------------------------------------------------------
+equals 85MB/s
+
+-----------------------------------------------------------------
+Wed Jan 28 21:12:40 [0.12 0.07 0.06]  mangalam@compute-1-13:~
+236 $ time (cp ucla/linuxmint-17-kde-dvd-64bit.iso ./skfh.iso && sync)
+real    0m19.587s
+-----------------------------------------------------------------
+equals 80MB/s
+
+Over a series of transfers, I did not see an imbalance in bandwidth between to and from
+UCLA, but the transfers coming into UCI were almost always slower than the transfers going out.
+
+Overall, for large file transfers that are not device-limited, 
+the LightPath connection seems to provide about 20%-50% improvement over the UCINet.
+
+
+For larger files (bigfile10Ga = 10GB), from HPC to UCLA via UCINet at this particular 
+time of day, the bandwidth of transfers seems fairly stable:
+
+-----------------------------------------------------------------
+Sun Jan 25 20:15:28 [0.41 0.30 0.21]  mangalam@compute-3-5:~
+75 $ time (cp ucla/bigfile10Ga . && sync)
+real    4m49.462s (= 36MB/s)
+-----------------------------------------------------------------
+
+In 7 trials, the average was 35MB/s, with the filecache force-dropped:
+
+-----------------------------------------------------------------
+echo 3 > /proc/sys/vm/drop_caches
+-----------------------------------------------------------------
+
+before each test.  This forces clears the pagecache, dentries and inodes caches.
+Interestingly, the reverse copy to UCLA goes impossibly fast (268MB/s) 
+after the 1st copy since I can't force the remote site to drop its filecache.  
+Note that this is faster than is even theoretically possible over 
+the 1Gb network).
+
+=== 'dd' over NFS
+
+Especially when testing network bandwidth, it's important to remove as many 
+bottlenecks as possible.  Disk devices can be such bottlenecks and the 
+efficient http://en.wikipedia.org/wiki/Page_cache[Linux file cache (aka page cache)] 
+can also wreak havoc with bandwidth tests due to retention of recent data both 
+locally and remotely.
+
+'dd' is a utility for converting and streaming raw bytes.  When used with 
+the memory device http://en.wikipedia.org/wiki//dev/zero[/dev/zero] which 
+spews a very fast, infinite stream of zeros, 
+it removes the bottleneck of any feeding disk device.
+
+For example even on the relatively puny 'stunted' laptop, dd can generate almost 17GB/s
+of output, which is much more than the 1.25GB/s of a 10Gb network. The other machines used
+for testing can generate at least 8.8GB/s, even when fairly loaded.
+
+-----------------------------------------------------------------
+Fri Jan 30 10:23:42 [0.22 0.33 0.33]  hjm@stunted:~/nacs/CloudStorage
+531 $ dd if=/dev/zero of=/dev/null bs=1024k count=10240
+10240+0 records in
+10240+0 records out
+10737418240 bytes (11 GB) copied, 0.639591 s, 16.8 GB/s
+-----------------------------------------------------------------
+
+'dd' reveals that in the absence of any bandwidth bottlenecks, LightPath can provide 
+a substantial improvement in speed to UCLA *as long as both the source and sink 
+devices can move data at above ~ 120MB/s*). In logging the network 
+bandwidth, the highest 2s rate measured was 195 MB/s, which is probably 
+close to the maximum we can expect for the end-to-end connection.  
+The yearly overview of the longhaul CENIC circuit that was used to test this 
+http://goo.gl/SbR2mr[reveals a max bandwidth of about 250MB/s], suggesting that there are 
+other bottlenecks in the path that have to be relieved before we can see better performance.
+
+==== 'dd' via LightPath
+
+-----------------------------------------------------------------
+Wed Jan 21 19:38:56 [2.52 2.43 2.50]  mangalam@compute-1-13:~
+89 $ dd if=/dev/zero of=ucla/bigfile10G bs=1024k count=10240 && sync
+10240+0 records in
+10240+0 records out
+10737418240 bytes (11 GB) copied, 88.402 s, 121 MB/s
+-----------------------------------------------------------------
+
+==== 'dd' via UCINet
+via an HPC node
+
+-----------------------------------------------------------------
+Wed Jan 21 19:53:47 [0.00 0.03 0.46]  mangalam@compute-3-5:~
+78 $ dd if=/dev/zero of=ucla/bigfile10G bs=1024k count=10240 && sync
+10240+0 records in
+10240+0 records out
+10737418240 bytes (11 GB) copied, 134.51 s, 79.8 MB/s
+-----------------------------------------------------------------
+
+and via the stunted laptop
+
+-----------------------------------------------------------------
+Wed Jan 28 16:09:43 [1.16 1.13 0.90]  mangalam@stunted:~
+181 $ dd if=/dev/zero of=ucla/bigfile10G bs=1024k count=10240 && sync
+10240+0 records in
+10240+0 records out
+10737418240 bytes (11 GB) copied, 114.854 s, 93.5 MB/s
+-----------------------------------------------------------------
+
+
+
+=== Disk:Network Imbalances
+
+In copying a file that had been staged to the local disk, I was able to copy 
+a 78GB file to UCLA as below.
+-----------------------------------------------------------------
+Wed Jan 21 20:17:13 [0.03 0.07 0.65]  mangalam@compute-1-13:~
+85 $ time (cp /tmp/643641.bam ucla && sync)
+real    11m28.600s
+-----------------------------------------------------------------
+This equals 113MB/s, slightly less than 'dd', possibly due to the device 
+limitations (a single spinning disk).
+
+
+[[bwequalizes]]
+This is supported by copying a file that is better distributed (can be dumped 
+at up to 300MB/s).  As shown below, that data is being slowed due to a 
+bottleneck in the LightPath interface that is currently being constricted to 
+about 60-76MB/s.  The difference is being buffered to filecache, which you can 
+see growing until the spare RAM is filled.
+-----------------------------------------------------------------
+LightPath interface   Disk Interface
+      eth0                 ib0        
+ KB/s in  KB/s out    KB/s in  KB/s out
+  291.84  76166.84   196457.8    293.95
+  300.39  76360.11   207111.4    313.91
+  309.42  76618.05   122787.8    176.13
+  297.00  76168.56   206738.7    296.94
+  290.22  76027.96   203149.0    282.78
+  288.57  75772.09   122318.3    163.79
+  248.52  57636.07   144947.0    192.83
+  246.76  57924.46   143088.5    203.01
+  253.38  60103.73   206404.9    286.50
+  277.56  62547.17   169291.3    241.48
+-----------------------------------------------------------------
+Some 30m later, you can see that the LightPath
+interface has opened up and the 2 channels 
+are equalizing.
+-----------------------------------------------------------------
+       eth0                  ib0        
+ KB/s in  KB/s out    KB/s in  KB/s out
+  676.73  182867.8   202256.2    301.12
+  583.29  165811.6   145918.3    211.27
+  670.93  178950.5   145066.2    212.12
+  591.61  164234.4   113352.4    163.91
+  612.66  166205.0   215283.2    327.21
+  671.32  182815.9   172252.0    250.87
+  652.03  179938.2   216097.6    329.17
+  689.72  186878.9   172207.8    261.11
+-----------------------------------------------------------------
+
+*Copying a 135GB file to UCLA*
+-----------------------------------------------------------------
+Wed Jan 21 22:22:10 [0.00 0.01 0.05]  mangalam@compute-1-13:~
+137 $ time (cp /som/fmacciar/broad/DF3/11C125948.bam ucla && sync)
+real    19m12.718s
+-----------------------------------------------------------------
+results in a bandwidth of about 120MB/s via LightPath, about the max bandwidth of 
+a 1Gb connection
+
+
+
+=== Aspera ascp to the Broad Institute
+http://download.asperasoft.com/download/docs/ascp/2.6/html/index.html[Aspera 
+ascp] uses Aspera's proprietary UDP-based data transfer protocol 
+http://asperasoft.com/software/web-applications/faspextm/[fasp] and appears to 
+be self-tuning to a degree.  
+
+I transferred several TB from the Broad Institute via UCINet and LightPath
+over several days, 
+ranging from 17.5MB/s to 53MB/s, averaging about 43MB/s  An example is shown below.
+
+==== Via LightPath
+
+Using the HPC's Interactive node which has the 10Gb ethernet card, I 
+transferred several hundred GB from the Broad Institute in Boston to HPC. An 
+example of this is shown below (extracted from a long series of transfers)
+
+-----------------------------------------------------------------
+Wed Jan 14 10:22:22 [1.06 1.17 0.90]  hmangala@compute-1-13:/som/hmangala/DF3
+1003 $ ascp -l 1G  -i $HOME/.ssh/id_rsa -T -k 1 
+GPC788@ozone.broadinstitute.org:<file> .
+Completed: 242449494K bytes transferred in 6388 seconds
+ == requesting 983820.bam ==
+983820.bam                                     100%  166GB  138Mb/s  1:24:37
+Completed: 174068615K bytes transferred in 5078 seconds
+ (280778K bits/sec), in 1 file.
+ == requesting MH0130096.bam ==
+MH0130096.bam                                  100%  173GB  438Mb/s    56:48
+Completed: 181912686K bytes transferred in 3408 seconds
+ (437191K bits/sec), in 1 file.
+-----------------------------------------------------------------
+In the latter case, this reduces ( 173GB / 3408s) to about 51MB/s.
+
+==== Via UCINet
+from and HPC node with a public interface.
+
+-----------------------------------------------------------------
+Wed Jan 21 16:33:35 [3.12 3.09 3.41]  hmangala@compute-3-5:~
+1000 $ ascp -l 1G  -i $HOME/.ssh/id_rsa -T -k 1 
+GPC788@ozone.broadinstitute.org:432363.bam .
+432363.bam                         100%  262GB  443Mb/s  1:27:15
+Completed: 275064554K bytes transferred in 5237 seconds
+ (430231K bits/sec), in 1 file.
+-----------------------------------------------------------------
+This reduces (262GB /5237s) to about 50MB/s, about as fast as LightPath.  Both
+paths are extremely variable both during the day and over the course of the week
+and I was not able to discern an advantage for either.
+
+
+
+==== untar a file over the NFS connection
+
+===== via UCINet
+I untarr'ed a BioPerl tarball of ~ 12MB (12562520 B), consisting of 3065 
+files and directories with a total decompressed sized of 49MB in multiple 
+configurations.  
+
+First, untar'ing on my laptop using the local disk as both 
+source and target.
+-----------------------------------------------------------------
+Fri Jan 16 13:18:15 [2.93 2.27 1.90]  mangalam@stunted:~
+128 $ time (tar -xzf BioPerl-1.6.923.tar.gz && sync)
+
+real    0m8.426s
+-----------------------------------------------------------------
+
+Then recursively deleting the directory so created.
+-----------------------------------------------------------------
+Wed Jan 21 16:48:15 [0.21 0.57 0.56]  mangalam@stunted:~
+170 $ time (rm -rf BioPerl-1.6.923 && sync)
+
+real    0m0.767s
+-----------------------------------------------------------------
+
+Second, untar'ing from my laptop to UCLA:
+-----------------------------------------------------------------
+Fri Jan 16 13:25:02 [2.92 2.61 2.15]  mangalam@stunted:~
+131 $ time (tar -C /mnt/ucla -xzf BioPerl-1.6.923.tar.gz && sync)
+
+real    2m44.627s
+
+-----------------------------------------------------------------
+This is 234X slower than the local untar, due to the latency of the connection.
+
+And finally deleted the remote directory:
+-----------------------------------------------------------------
+Fri Jan 16 13:27:32 [2.04 2.22 2.06]  mangalam@stunted:/mnt/ucla
+134 $ time (rm -rf BioPerl-1.6.923 && sync)
+
+real    0m47.090s
+-----------------------------------------------------------------
+This is about 60X slower than the local operation.
+
+===== via LightPath
+Untar the BioPerl tarball to the local filesystem:
+-----------------------------------------------------------------
+Wed Jan 21 17:51:08 [6.27 5.77 5.33]  mangalam@compute-1-13:~
+76 $ time (tar -C /tmp -xzf BioPerl-1.6.923.tar.gz  && sync)
+
+real    0m1.536s
+-----------------------------------------------------------------
+
+
+Untar the BioPerl tarball.to UCLA
+-----------------------------------------------------------------
+Wed Jan 21 17:44:51 [5.46 5.26 5.07]  mangalam@compute-1-13:~
+75 $ time (tar -C ucla -xzf BioPerl-1.6.923.tar.gz && sync)
+
+real    2m37.309s
+-----------------------------------------------------------------
+Essentially the same speed as via UCINet (2m44s)
+
+And finally delete the remote directory:
+-----------------------------------------------------------------
+Wed Jan 21 17:43:40 [5.25 5.21 5.04]  mangalam@compute-1-13:~
+74 $ time (rm -rf ucla/BioPerl-1.6.923/ && sync)
+
+real    0m42.657s
+-----------------------------------------------------------------
+10% faster than via UCINet (0m47s).
+
+The network latency to UCLA creates much longer execution times than the local 
+version, exaggerated when there are many file operations that need to be performed 
+at the source and sink sides.
+
+
+=== CrashPlanProE
+This is a Java-based application that runs continuously as both server and client 
+on your computer, backing up 
+files via a custom syncing operation.  It can use remote systems, or local disks
+as the storage and is one of the applications that CASS/UCLA supports natively via
+the CrashPlanProE server (which requires a yearly licensing fee of about $36.
+
+==== Backing up to CASS/UCLA via UCINet
+The initial backup of the entire /home/hjm takes about 2.7 days. /home/hjm contains 
+about 170GB in 412K files.
+
+After the initial backup, a re-sync takes bout 41m.
+
+==== Backing up to UCINet
+This test was interrupted by having to upgrade and patch the server. TODO.
+
+==== Backing up to a local hard disk
+The initial backup via CrashPlanProE to a local USB3 hard disk took 3.25hr.
+The re-sync took 11m for a days worth of changes; 1.5m for almost no changes.
+
+=== 'rsync' 
+'rsync' is the original block-syncing software which is the basis for many sync and
+share applications.  By generating and exchanging only checksums of disk blocks, it can 
+determine and exchange only those blocks which have changed.  This is extraordinarily 
+efficient.
+
+==== 'rsync' to a local hard disk
+An rsync operation of the same /home/hjm (with slightly more data) 
+as above to a local USB3-connected disk:
+-----------------------------------------------------------------
+time rsync -av hjm /media/hjm/a31704b3-f7e6-402e-8ab9-7795b7ca6dfb
+...
+sent 210,494,675,566 bytes  received 13,045,614 bytes  40,423,950.30 bytes/sec
+total size is 210,396,648,463  speedup is 1.00
+real    86m47.555s
+-----------------------------------------------------------------
+Note the speedup was 1.00. And afterwards, the re-sync.
+-----------------------------------------------------------------
+Mon Jan 26 23:07:24 [2.59 2.60 2.60]  root@stunted:/home
+504 $ time rsync -av hjm /media/hjm/a31704b3-f7e6-402e-8ab9-7795b7ca6dfb
+...
+sent 2,022,342,468 bytes  received 44,196 bytes  14,192,187.12 bytes/sec
+total size is 210,397,437,841  speedup is 104.03
+real    2m21.628s
+-----------------------------------------------------------------
+The speedup is about 100X faster.
+
+==== 'rsync' to a UCInet server
+rsync takes almost 2 times as long to push data over a 1Gb connection to a UCINet
+server 4 hops away.
+-----------------------------------------------------------------
+Mon Jan 26 14:37:42 [1.01 0.96 1.14]  hjm@stunted:/home
+503 $ time rsync -av /home/hjm  hjm@bduc-login:~/data
+   
+sent 210,359,165,748 bytes  received 13,291,992 bytes  23,910,036.68 bytes/sec
+total size is 210,419,161,639  speedup is 1.00
+real    146m38.380s
+-----------------------------------------------------------------
+or about 24MB/s over the 1Gb UCINet.
+
+A day later:
+-----------------------------------------------------------------
+Tue Jan 27 10:29:25 [1.26 1.00 0.87]  hjm@stunted:/home
+503 $ time rsync -av /home/hjm hjm@bduc-login:/data/hjm/
+...
+sent 774,816,735 bytes  received 1,719,812 bytes  10,860,651.01 bytes/sec
+total size is 210,402,521,781  speedup is 270.95
+real    1m10.983s
+-----------------------------------------------------------------
+
+
+==== rsync to UCLA host (via NFS over UCINet)
+Note that this runs both the server and client on the my laptop, with the information
+from UCLA traversing the network. In this case, the rsync is slower than it would
+be if the server was actually executing on the remote system since the information
+would only have to traverse the network 1X instead of 2.
+This test is only on a 50MB file tree, not my entire home dir.
+-----------------------------------------------------------------
+Mon Jan 26 10:57:53 [0.17 0.55 0.70]  mangalam@stunted:~
+217 $ time rsync -av BioPerl-1.6.923 ucla/
+sending incremental file list
+
+sent 56,012 bytes  received 6,639 bytes  1,018.72 bytes/sec
+total size is 46,275,341  speedup is 738.62
+
+real    1m0.774s
+-----------------------------------------------------------------
+

@@ -1,0 +1,105 @@
+= HPC & Linux: a gentle introduction to Linux on UCI's HPC cluster
+Instructor: Harry Mangalam <harry.mangalam@uci.edu>
+
+
+Presented by:
+
+- http://www.igb.uci.edu/[Institute of Genomics & Bioinformatics]
+- http://www.oit.uci.edu[Office of Information Technology]
+
+// export fileroot="/home/hjm/nacs/HPC_Linux_Class";  asciidoc -a icons -a toc2 -b html5 -a numbered ${fileroot}.txt;  scp ${fileroot}.html moo:~/public_html/biolinux/HPC_Linux_Class.html;  scp ${fileroot}.html root@ghtf-hpc.oit.uci.edu:/data/hpc/www/biolinux/HPC_Linux_Class.html;
+
+
+== Current Status
+
+We will be presenting the HPC/Linux class on Monday, April 28th. Please send an email to me <harry.mangalam@uci.edu> stating your interest and in what specifically you're interested (intro to Linux, advanced Linux, simple programming for scientists.
+
+
+== General Information
+
+This is a short class that teaches the basics of Linux on UCI's http://hpc.oit.uci.edu[HPC compute cluster] which runs the Linux Operating System.  Note that this class is usually presented along with a Bioinformatics class, so you may see a few references to 'BioLinux' and the Bioinformatics class.  Don't worry - we will not insist on an interest in Bioinformatics.  This class is solely dedicated to Linux.
+
+
+
+== Class Lecture Slides and Tutorial Notes
+You can determine if you're interested in taking the class by reviewing the class slides and tutorial scripts below.
+
+// http://moo.nac.uci.edu/%7ehjm/biolinux/Intro_to_BioLinux_R_bash_Perl.pdf
+
+=== Linux
+- http://moo.nac.uci.edu/%7ehjm/biolinux/Intro_to_BioLinux_Linux.pdf[Class slides (PDF) for the Linux part]
+//- http://moo.nac.uci.edu/%7ehjm/biolinux/Linux_Tutorial_1.html[Tutorial Script for the Linux part (1/2)]
+//- http://moo.nac.uci.edu/%7ehjm/biolinux/Linux_Tutorial_2.html[Tutorial Script for the Linux part (2/2)]
+- http://moo.nac.uci.edu/%7ehjm/biolinux/Linux_Tutorial_12.html[Consolidated Tutorial Script for the Linux part]
+
+As preparation for the Linux part, we strongly suggest viewing the http://software-carpentry.org/4_0/shell/index.html[Software Carpentry introduction to the shell] videos
+
+
+=== Tutorial Data
+Input and example data files for the tutorials http://hpc.oit.uci.edu/biolinux/data[are stored here], which is a browsable directory.  If there is a file called http://hpc.oit.uci.edu/biolinux/data/MANIFEST[MANIFEST], please read it for descriptions of the files you find there.
+
+
+== Target Audience
+This class was designed for faculty, postdocs and graduate students who are working on large analytical projects and want a quick introduction to cluster computing with Linux.  It assumes that the participants will be naive Linux users with some idea of the  analysis they want to achieve. The course has been split to into a Linux part (which may be of interest to non-BioSci students as well) and a Bioinformatics part, which is held separately.
+
+Mixing metaphors, this is not a Computer Science course. We will not be teaching you how the engine works; we will be teaching you how to drive.
+
+
+== Class Calendar & Location
+
+=== When
+The 1 day course will be held 9a-5p:
+
+*Monday, April 28th, 2014*
+
+=== Where
+Bren Hall 3011 Bldg 314 ('H8' on the http://communications.uci.edu//documents/pdf/UCI_13_map_campus_core.pdf[Campus Map]),
+or https://maps.google.com/?q=33.64341,-117.84190[here on Google Maps]
+(not in Sprague Hall, as listed previously).
+Look for signs at the main doors.
+
+//or https://www.google.com/maps/preview/@33.64341,-117.84190,19z
+
+== Availability, Cost, & Deadlines
+The class will consist of a morning lecture followed by an extended tutorial that will last thru the afternoon. Both sessions are available to the entire UCI community, but YOU MUST BE REGISTERED TO ATTEND. The class costs $50 and includes coffee, mid-session snacks and lunch.
+
+https://conference.ics.uci.edu/register/?conf_id=qwwl2N[Please pay at this link] by April 24th to assure your place in the class.
+
+For the tutorial, you must also have an http://hpc.oit.uci.edu[HPC cluster] account, which is free to all UCI researchers. Send email to <hpc-support@uci.edu> to obtain one.
+
+
+
+== Linux and the HPC cluster
+
+=== Lecture
+
+Introduction to Linux and why you should use it.  Overview of commands and getting around.
+What is/isn't a cluster, logging in with ssh, setting up your environment, text editors,
+quotas, data management, graphics, useful bash shell commands, environment
+variables, pattern matching and regular expressions, programs: how to find
+them, find out about them, run them, simple debugging.
+
+
+=== Tutorial
+
+Logging in with ssh, commandline editing, setting your prompt, transferring data in, editing, de/compressing, unpacking, basic bash and utility commands, cluster status commands, software modules, Grid Engine commands.  Introduction to simple data manipulation and scripting/ programming with bash, Perl, and R.
+
+Bring your specific problems to discuss with the Instructor & TAs.
+
+
+
+== Prerequisites for the tutorial:
+
+- a Mac, PC, or Linux laptop with wifi pre-registered with the http://www.oit.uci.edu/mobile/[UCI Mobile network].
+
+- If Mac: +
+http://cyberduck.ch[CyberDuck] or other graphical file transfer program (GFTP) + http://code.x2go.org/releases/binary-macosx/x2goclient/releases/3.99.2.1/x2goclient-3.99.2.1.dmg[the Mac x2go client].  We have had problems with the 4.0 release; please use the *3.99.2.1* release linked above.  Also, to get it working correctly with your X11 software, please start the X11 software first, THEN start x2go.
+
+- If Windows: +
+http://goo.gl/XbTF[the putty terminal program] +
+http://cyberduck.ch[CyberDuck], http://winscp.net[WinSCP] or other GFTP client. +
+Optionally, the http://code.x2go.org/releases/binary-win32/x2goclient/releases/4.0.0.3/x2goclient-4.0.0.3-setup.exe[the Windows x2go client], altho we have discovered that there are some applications that refuse to work with it.
+
+- If Linux: +
+The http://wiki.x2go.org/doku.php/doc:installation:x2goclient[x2go client] allows you to view graphical output from the HPC cluster.
+

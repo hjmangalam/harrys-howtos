@@ -1,0 +1,139 @@
+// Galaxy Uploading Doc               (c) 2013 University of California, Irvine
+// ----------------------------------------------------------------------------
+// Created this doc for HPC Biolinux class here at UCI / OIT for the RCS group.
+// 
+// Command:
+// asciidoc -b html5 -a icons -a toc2 -a numbered /data/users/aebrenne/www-files/qsub-biolinux.txt ; mv /data/users/aebrenne/www-files/qsub-biolinux.* .
+//
+// asciidoc cheatsheet: http://powerman.name/doc/asciidoc
+// asciidoc user guide: http://www.methods.co.nz/asciidoc/userguide.html
+//
+// @author	Adam Brenner <aebrenne@uci.edu>
+// @url		http://www.ics.uci.edu/~aebrenne/ 
+// @version	1.0
+
+HPC BioLinux QSub Example
+=========================
+Adam Brenner <aebrenne@uci.edu>, http://www.ics.uci.edu/~aebrenne/ 
+v1.0, 2013-07-23
+
+Qsub scripts are used to dispatch your jobs onto the http://hpc.oit.uci.edu/[HPC Cluster]. The purpose of this document is to provide an example of how this qsub script works.
+
+:numbered:
+Sample QSub Script
+------------------
+
+.Example Serial Job Qsub Script - serial-job.sh
+[source,bash]
+-----------------------------------------------
+#!/bin/bash
+#$ -N BioLinux-Test-Job
+#$ -q free*
+#$ -m beas
+
+# Your steps or series of steps to run your program.
+# Add as many lines as needed or call your external programs here.
+
+
+# In this example, we are running a command called "hostname"
+# which is built in command provided by the Linux OS.
+echo "Hello! I am running on compute node "; 
+hostname
+
+# We are now going to load a module (from module avail) and
+# run that program in our qsub script.
+
+# This is the name of the program as it appears in module avail
+echo ""
+echo "I am going to run a program now. Lets see if this works!"
+module load bowtie2/2.0.2
+bowtie2 --version
+
+
+# Now lets use some bash from lecture
+echo;
+for i in $(seq 1 10); do
+   # Anything between these lines will get ran 10 times
+   # You could easily run a program in here...like we did
+   # above via our "bowtie2" example.
+   echo "I am counting. I am at $i";
+done;
+-----------------------------------------------
+
+:numbered:
+Question to Ask Yourself
+------------------------
+ - What does the first line do? `#!/bin/bash`
+ 
+ - What do the following lines perform to the scheduler? 
+   
+   #$ -N BioLinux-Test-Job
+   #$ -q free*
+   #$ -m beas
+
+ - What do lines with `#` mean in the context of bash?
+ 
+ - What does the command `module avail` perform on the HPC cluster?
+ 
+ - What does the command `module load bowtie2/2.0.2` perform?
+ 
+ - What do the following lines perform within bash?
+ 
+   for i in $(seq 1 10); do
+       # Anything between these lines will get ran 10 times
+       # You could easily run a program in here...like we did
+       # above via our "bowtie2" example.
+       echo "I am counting. I am at $i";
+   done;
+
+
+:numbered:
+Answers
+-------
+* What does the first line do? `#!/bin/bash`
+  - [red]#This loads the bash shell and all commands after this will be interpreted by shell#
+
+* What do the following lines perform to the scheduler? 
+
+  #$ -N BioLinux-Test-Job
+  
+  - [red]#This provides a human/friendly name to your job. This is used in emails and log files.#
+  
+  #$ -q free*
+  
+  - [red]#This tells the scheduler which queue to submit to. You can submit to multiple queues using a command. For example `#$ -q free32, free64`.#
+  
+  #$ -m beas
+  
+  - [red]#This tells the scheduler how "chatty" it will be. It will send emails on begins (b), ends (e), aborts (a), or suspends (s)#
+
+* What do lines with `#` mean in the context of bash?
+
+  - [red]#This means a comment and is ignored by the bash shell.#
+
+* What does the command `module avail` perform on the HPC cluster?
+  
+  - [red]#`module avail` shows all the programs installed on HPC#
+
+* What does the command `module load bowtie2/2.0.2` perform?
+
+  - [red]#This loads the program bowtie2/2.0.2 and this program can now be used.#
+  
+
+* What do the following lines perform within bash?
+
+  for i in $(seq 1 10); do
+  
+  - [red]#The start of the for loop. The `i` is the variable we are going to use in our loop, `$(seq 1 10)` is the sequence we are running our loop. Note, you can also use `for i in `seq 1 10`` replacing `$()` with backticks. In this case, `seq 1 10` counts -- starting from 1 -- and ends at 10.#
+  
+      # Anything between these lines will get ran 10 times
+      # You could easily run a program in here...like we did
+      # above via our "bowtie2" example.
+      echo "I am counting. I am at $i";
+      
+      - [red]#The command we are running, in this case `echo` which just prints to screen.#
+      
+  done;
+  
+  - [red]#Finishes the for loop.#
+

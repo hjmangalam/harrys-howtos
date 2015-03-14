@@ -1,0 +1,191 @@
+= BigData Hints for Newbies
+by Harry Mangalam <harry.mangalam@uci.edu>
+v1.05 - Sept 8 2013
+:icons:
+
+
+//Harry Mangalam mailto:harry.mangalam@uci.edu[harry.mangalam@uci.edu]
+// this file is converted to the HTML via the command:
+
+// fileroot="/home/hjm/nacs/BigData4Newbies"; asciidoc -a icons -a toc2 -b html5 -a numbered ${fileroot}.txt; scp ${fileroot}.html ${fileroot}.txt  moo:~/public_html/biolinux
+
+// and push it to Wordpress:
+// blogpost.py  update  -c HowTos ${fileroot}.txt
+
+// don't forget that the HTML equiv of '~' = '%7e'
+// asciidoc cheatsheet: http://powerman.name/doc/asciidoc
+// asciidoc user guide: http://www.methods.co.nz/asciidoc/userguide.html
+
+== Introduction
+This document is not meant as a HOWTO for processing BigData; there are many such documents, and we don't have much to add in terms of expertise. Some types of data lend themselves to popular approaches such as http://en.wikipedia.org/wiki/HDFS#Hadoop_Distributed_File_System[Hadoop] and http://en.wikipedia.org/wiki/MapReduce[MapReduce]; some don't. This screed is meant simply as a cautionary note that there are some things that are fundamentally different about manipulating BigData on a cluster and there are some things that we strongly suggest you do and don't do.   
+
+== What is BigData?
+=== Volume, Velocity, and Variety
+BigData is often differentiated from other types of data by 'Volume, Velocity, and Variety'.  The 'Volume' is the sheer amount of the data.  'Velocity' alludes to the speed at which it has to handled to avoid being overwhelmed by it, typically via disk storage systems and processing  acceleration techniques such as the above mentioned 'Hadoop' and 'MapReduce'.  'Variety' refers to the heterogeneity of a lot of such data, tho in many cases, the by-domain content is fairly standardized (ie http://en.wikipedia.org/wiki/SAMtools[sam/bam] files for Genomics, http://en.wikipedia.org/wiki/Netcdf[netCDF] & http://en.wikipedia.org/wiki/Hdf5[HDF5] files for many Physical Sciences, http://en.wikipedia.org/wiki/FITS[FITS] for much data from Astronomical data.
+However, much of BigData comes in plaintext and plenty of it, so quite often a lot of parsing is required to extract the valid bits in order to analyze it.
+
+=== How Big is BigData?
+
+.The Bigness of BigData
+[cols="1,4,10",options="header"]
+|==============================================
+|# Bytes	| Byte name	/ Abbriev'n	| Approximation
+|	1/8		|  	bit (b)				| 0 or 1: the smallest amount of information.
+|	1		|	Byte (B)			| 8 bits, the smallest chunk normally represented in a programming language.
+|	2^10^	| 1,024 B (1 KB)		| a short email
+ is a few KBs
+|	2^20^	| 1,048,576 B (1 MB)	| a PhD Thesis
+; Human Chr 1
+ is ~250 MB
+|	2^30^	|	1,073,741,824 B (1 GB) |  
+the Human Genome
+ is 3,095,693,981 B (optimized, \~780 Mb @ 2b/base) ; a BluRay DVD holds 25GB per layer (most movie BluRays are dual-layer = 50GB); a Genomic bam file is ~150GB
+| 2^32^ 	| 4,294,967,296 (4GB)	| *fuzzy border between SmallData (32b) and BigData (64b)*
+|	2^40^	| 1,099,511,627,776 B (1 TB)	| 
+1/10th Library of Congress (LoC); the primary data fr. an Illumina HiSeq2K
+ is ~5 TB
+|	2^50^	| 1,125,899,906,842,624  B (1 PB) | 
+100X LoC; \~HPC's aggregate storage; ~100 PB is the yearly storage requirements of YouTube.
+|	2^60^	| 1,152,921,504,606,846,976 B (1 EB) | 
+the est. capacity of the NSA's data facility is ~12 EB
+|==============================================
+
+
+=== Variable range, floating point accuracy, and encoding.
+At this point it may be worth mentioning that data can be encoded in different ways, some more efficient than others. A '1' can be encoded in 1 'bit', but is typically encoded as a 'byte' in most computer languages. A byte is 8 bits and can encode 256 (or 2^8) different values.  Bytes are usually used to encode alphabetic characters, altho some character sets (DNA) can be encoded in fewer bits (2bit representation) and some languages like Java represent them with 2 bytes.
+Integer variables are handled by the size of value they need to handle.  
+
+.Integer Byte Sizes
+[options="header"]
+|==============================================
+|word size			| #bits	| range of variable
+|byte or char		| 8		| 256
+|int 				| 16	| 65,536
+|long int			| 32	| 4,294,967,296
+|long long int		| 64	| 1.84467440737e+19
+|==============================================
+
+Floating point representations are similar (ie single precision vs double precision), tho the actual bit count is implementation-dependent. See http://en.wikipedia.org/wiki/C_data_types[this wikipage] for more information on C data types (storage basis in popular BigData formats).
+
+== BigData on disk
+When data (Big or not) is stored on disk, it is almost always stored in files (altho very small data chunks can be stored in the http://en.wikipedia.org/wiki/Inode[inode] in some filesystem types).  Since you'll be using Linux for almost all your data manipulations, we'll describe how this works gnerally on a Linux filesystem.
+
+// , http://en.wikipedia.org/wiki/XFS[XFS] in this case.
+
+.Your machine vs Our machine
+[NOTE]
+==================================================================================
+If you're working on your own personal system, you probably will not have seen many of the things we'll be talking about.  That's because while your PC probably has a modern, multitasking OS, you are generally the only person using it.  On HPC and other clusters, there will be 10s of other interactive users as well as 1000s of batch jobs running.  This creates a lot of contention for disk IO so reading and writing your data more efficiently can have real benefits for you (and others).  What you do can have far-reaching impacts on others, so think before you hit 'Enter'.
+==================================================================================
+
+=== Inodes and Zotfiles
+Each file that is stored on a block (usual a disk) device has to have some location metadata stored to allow the OS to find it and its contents; the directory structure associates the 'filename' and this 'inode' information.  If you delete a file or dir, the file data is not lost formally, but the inode which is the 'pointer' to that data is; in practice, the loss of the inode is effectively the loss of the data.
+
+Any file that is written to disk requires an inode structure entry, whether it's 1 bit or 1TB.  Usually there is a surplus of inodes on a filesystem, but if users start using lots of very small files, then the inodes can be used up quickly.  This is known locally as the 'Zillions of Tiny file' or 'ZOTfile' problem.   
+
+Zotfiles are generally not a problem on your own system, but on a cluster, they are deadly - it takes approx the same time to process an inode for a file containing 1 byte as for one that contains 200GB. We have found users who had 20K files of <100 bytes in a dir, organizing/indexing those files by date, time, and a few variables. DO NOT DO THIS; THIS IS .. UNWISE.  If you have lots of tiny amounts of data to write onto disk, write it to the SAME FILE, even if you're writing to it from several processes.  There is a mechanism called http://en.wikipedia.org/wiki/File_locking[file-locking] that allows multiple processes to write to the same file without data loss or even very much contention.  We have http://moo.nac.uci.edu/~hjm/Job.Array.ZOT.html[documented this with examples]. 
+
+For example, instead of opening a file with a clever name, writing a tiny amount of data into it, then closing it, you would open a file once, then write fields that index or describe the variables with the variables themselves in a single line (in the simplest case) to the same file until the run was done, then close the file. Those fields allow you to find the data in a post-process operation.  
+
+Or you could use a relational database engine like http://en.wikipedia.org/wiki/Sqlite[SQLite] to write the data directly to a relational database as you go.
+
+
+== Streaming Reads and Writes.
+
+The ZOTfile problem is compounded on a cluster because the filesystems are continuously active, with disk heads moving continuously to satisfy waiting requests.  If the 2MB you're trying to read exist in 20K files, the heads have to move 20K times more to satisfy that request than if the 2MB was in 1 file.  If multiple ppl are reading or writing ZOTfiles, it obviously makes the problem much worse.  And trying to recurse thru directories filled with ZOTfiles makes the system horrifically slow.
+
+In order to optimize data IO, use 'streaming' reads and writes whenever possible.  'Streaming' does not refer to a particular technique per se but to the way you organize your data IO so that once your applications or utilities initiate IO, they will consume or produce a lot of data per operation.  Quite often, reads may not be as explicitly optimized since the OS is already highly optimized to read and buffer data, but writes can be optimized by simply writing a LOT of data at once, and if it can be compressed before writing either by deduplication or compression, so much the better.  So aggregate your small writes into a buffer and then write MBs at time rather than multiple KBs.  This has been shown to be MUCH more efficent than small writes on a variety of filesystems and technologies.
+
+.Aside: Pointless data replication
+[NOTE]
+==================================================================================
+We have found cases where output files, esp. log files (even from proprietary vendors), will consist of millions of identical lines, creating 100s of GB of useless information.  'Don't do this.'  If during your creation and debugging of your analysis scripts, you find it useful to have such output to denote repetition of a condition, keep track of your last output string and check that the newest string is not a duplicate of it.  If it is, just increment a counter to keep track of how many times it happened and on what line of the program.  You know about the C/C++/Perl *\_\_LINE__* macro, right? (returns the current line #).
+==================================================================================
+
+
+== Compression
+Many data formats are compressed (or effectively compressed due to optimal type-matching - recoding the variable to a smaller byte representation).  Unless your applications cannot use the files in compressed formats, 'keep the files compressed' and use the various utilities for peeking inside compressed archives to view them.  If you're writing your own utilities or applications, use existing compression libraries (http://www.zlib.net/[zlib] is the standard and it has been wrapped for all common scripting languages; there are others for special cases).  Worst case, use the Linux pipe operator (|) to decompress to STDOUT and read STDIN with your utilities to prevent the decompressed data from hitting disk.
+
+ie 
+-----------------------------------------------------------
+gunzip --stdout your-giant-compressed-file.gz | your-utility > tiny-output-file
+-----------------------------------------------------------
+
+Because of its use of matching tags, XML is very sensitive to compression (up to ~20X).  Don't leave large uncompressed XML files lying around.
+
+== Editing BigData
+The short version: *DON'T*.  Try not to be the member of your class who tried to open a 200GB compressed data file with 'nano'.  Use format-specific utilities to view such files and link:#checksums[hash values] to check if they're identical to what they should be. 
+
+== How to Move BigData
+First: DON'T or at least try not to.  
+
+Otherwise: Plan where your data will live for the life of your analysis and have it land there.  
+
+If you do have to move BigData across a network, see the document http://moo.nac.uci.edu/\~hjm/HOWTO_move_data.html[How to transfer large amounts of data via network]. 
+
+Summary: 
+
+- use 'rsync' for modified data
+- use 'bbcp' for new transfers of large single files, regardless of network
+- use 'tar/netcat' for deep/large dir structures for LANs
+- use 'tar/gzip/bbcp' to copy deep/large dir structures for WANs
+
+=== Don't duplicate BigData
+Don't forget that a 'mv' on the same filesystem is 'free' (an inode modification), but a 'cp' is very costly since it involves a complete file read and re-write - ie 2x the file size has to transit the OS and filesystem.
+
+[[checksums]]
+== Checksums work.  Use them
+When you're dealing with BigData, there is ample opportunity to corrupt that data during file moves across filesystems or across networks.  When you're importing or exporting BigData files, write the checksums to a MANIFEST so that you  can compare them with the originals. 'md5sum' is the usual utility to generate these http://en.wikipedia.org/wiki/Md5[MD5 hash sums] to check for file corruption.
+
+ie 
+-----------------------------------------------------------
+$ ls -l kyoko.tar.gz
+-rw-r--r-- 1 hjm hjm 97130091 Dec 23  2008 kyoko.tar.gz
+                            ^
+$ md5sum kyoko.tar.gz
+4c3ee3044a1225bc91c4ce59d4e805da  kyoko.tar.gz
+
+$ echo " " >> kyoko.tar.gz  # now append 2 bytes to the end
+ls -l kyoko.tar.gz
+-rw-r--r-- 1 hjm hjm 97130093 Sep  1 05:35 kyoko.tar.gz
+                            ^
+$ md5sum kyoko.tar.gz
+978ade1a938ff993968a97044c1e481b  kyoko.tar.gz     # completely different md5 hash   
+
+# can also use 'jacksum' to create the SHA-1 and most other hash values 
+$ jacksum -a sha1 -s "\t" -t "EEE, MMM d, yyyy 'at' h:mm a"  kyoko.tar.gz 
+08a0cdb267f2f5e9fc07d997d3f9996e4f7c16d1        Sun, Sep 1, 2013 at 5:35 AM     kyoko.tar.gz
+
+-----------------------------------------------------------
+
+== Useful BigData processing approaches
+
+Now that we've gone over some of the do's and don't of generic BigData storage and manipulation, here are some of the approaches for efficiently handling BigData.  There is a language dependence to some of these techniques, but most languages and applications have some facility to allow their use. In order to read & write to some file formats from self-writ utilities takes some training and practice, but most widely used apps (Mathematica, MATLAB, R, etc) already have this capability and so can transparently interconvert files.
+
+Some of these techniques are orthogonal or exclusive - it depends on what language and approach you're using.  For example, if you're using a relational DB store, the use of an HDF5 file is only a hindrance, but if your data is not relational, using a relational DB to store the results of a large simulation may be overkill.
+
+Similarly, if your data is going to be shared with other programs in the same language and they use the same internal data structure, why bother to export the data to different format.  In Perl and Python, you can dump the data in the native format and slurp it up again in the next utility with the Perl 'Data::Dumper' and similar approaches (see below).
+
+
+- *Files:* (http://en.wikipedia.org/wiki/Netcdf[netCDF] & http://en.wikipedia.org/wiki/Hdf5[HDF5], http://en.wikipedia.org/wiki/FITS[FITS]).  'netCDF4' is converging rapidly to 'HDF5'.  The utilities http://nco.sf.net[nco], http://meteora.ucsd.edu/~pierce/ncview_home_page.html[ncview], http://www.pytables.org/moin[Pytables], http://vitables.org/[Vitables], 
+- *Relational DBs:* (http://www.sqlite.org/[SQLite - a relational engine only], http://www.postgresql.org/[PostgreSQL server], http://www.mysql.com/[MySQL server] and variants, etc)
+- *Non-relational DBs (NoSQLs):* http://couchdb.apache.org/[CouchDB server], http://www.mongodb.org/[MongoDB server], etc
+- *Binary dumps:* (Perl's http://perldoc.perl.org/Data/Dumper.html[Data::Dumper] and http://perldoc.perl.org/functions/pack.html[pack], Python's https://wiki.python.org/moin/UsingPickle[pickle], http://docs.python.org/2/library/marshal.html[marshal], http://docs.python.org/2/library/shelve.html[shelve], and http://docs.python.org/2/library/struct.html[struct.pack]. If your data is going to be shared with other programs 'written in the same language' and they use the same internal data structure, why bother to export the data to different format.  In Perl and Python, you can dump the data in the native format and slurp it up again in the next utility. The 'pack' functions can optimally pack the variables using the shortest representation.
+- *Non-storage:* (http://en.wikipedia.org/wiki/Pipeline_(Unix)[pipes], http://en.wikipedia.org/wiki/Named_pipe[named pipes or FIFOs], http://en.wikipedia.org/wiki/Unix_domain_socket[sockets], network operations, etc).  If your workflow is amenable to NEVER hitting disk, it will be faster to pipeline the data from one analysis to the next using one of these techniques. Note that techniques that jump nodes are typically not SGE-friendly since the other nodes often can't be scheduled correctly.
+- *Keep it in memory:*  Once your data is in RAM, try to keep it there for as long as possible. RAM-based data access speed is always faster than disk-based systems, sometimes as much as 10^6^ times faster, depending on technology and type of access.
+http://queue.acm.org/detail.cfm?id=1563874[Here's a well-written discussion] about some of the transition problems from SmallData to BigData.
+
+== Example of Using HDF5 IO with Python/pandas
+
+http://pandas.pydata.org/[pandas] is an open source library providing high-performance, easy-to-use data structures and data analysis tools for http://en.wikipedia.org/wiki/Python_(programming_language)[Python].  While most such libaries make similar claims, 'pandas' actually seems to be true.
+
+http://proquest.safaribooksonline.com/[You can get access to all of O'Reilly's technical books for free here].  There is a good book called http://proquest.safaribooksonline.com/book/programming/python/9781449323592[Python for Data Analysis] that expands the approach I'm summarizing here
+
+
+
+== BigData: Big, but not forever
+At least on the HPC system.  Because of the 'volume' nature of BigData, it is critical to process it down to a manageable size and then get rid of it.  We have started our own background data mining of the filesystem to identify ZOTfiles and old files, but it would be best if you can perform such cleanout yourself.  Note that data on HPC is neither guaranteed nor backed up.  As such, data loss can happen at any time and if you require backup of your data, you need to provide it for yourself.
+
+
+== Source and Latest version
+The http://moo.nac.uci.edu/%7ehjm/biolinux/BigData4Newbies.html[latest HTML version is here], along with the http://moo.nac.uci.edu/%7ehjm/biolinux/BigData4Newbies.txt[source file] in http://www.methods.co.nz/asciidoc[asciidoc format]

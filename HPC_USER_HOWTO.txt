@@ -1,0 +1,2578 @@
+An Introduction to the HPC Computing Facility
+=============================================
+by Harry Mangalam <harry.mangalam@uci.edu>
+v1.45 - Jan 20, 2015
+:icons:
+
+
+//Harry Mangalam mailto:harry.mangalam@uci.edu[harry.mangalam@uci.edu]
+// this file is converted to the HTML via the command:
+
+// fileroot="/home/hjm/nacs/HPC_USER_HOWTO"; asciidoc -a icons -a toc2 -b html5 -a numbered ${fileroot}.txt; scp ${fileroot}.html ${fileroot}.txt moo:~/public_html;
+// scp ${fileroot}.html ${fileroot}.txt root@ghtf-hpc.oit.uci.edu:/data/hpc/www
+
+//    or in-place
+// fileroot="/data/hpc/www/HPC_USER_HOWTO"; asciidoc -a icons -a toc2 -a numbered -b html5
+${fileroot}.txt
+// on hpc, it takes about 6s to convert
+
+// don't forget that the HTML equiv of '~' = '%7e'
+// asciidoc cheatsheet: http://powerman.name/doc/asciidoc
+// asciidoc user guide: http://www.methods.co.nz/asciidoc/userguide.html
+
+
+[[beforeyoustart]]
+Please read this
+----------------
+- HPC is a shared facility, run on almost no budget, by a couple full-time admins
+(mailto:jfarran@uci.edu?Subject=HPC:[Joseph Farran], 
+mailto:harry.mangalam@uci.edu?Subject=HPC:[Harry Mangalam]) and a few part-time elves.
+
+- HPC is 'NOT' your personal machine.  It's shared by about 800 users of whom 100 or more may be
+using it at any one time. (Once connected, type 'w' into the terminal to see who's on the machine
+at the same time as you.) Actions you take on HPC affect all other users.
+
+- HPC has finite resources and bandwith.  It's only via the consensual use of the GridEngine
+scheduler that it remains a usable resource.  It uses QDR Infiniband among most of the high-density
+nodes and 1 GbE to connect the others.  QDR can support about 4GB/s max data rate; GbE can support
+about 100MB/s per connection.  That sounds like a lot, but not when it's being shared by 50 others
+and especially not when 15 of those others are all trying to copy 20GB files back and forth (see
+below) and even more not when there are 100 batch jobs trying to move 60GB data files back and
+forth.  *Think* before you engage in massive data manipulation.
+
+If you are unfamiliar with idea of a cluster, please read link:#clustercomputing[this brief
+description of cluster computing].
+
+
+[[whatswrong]]
+How to let us know what's wrong
+-------------------------------
+Since HPC is a research cluster, it is in perpetual flux as hardware, apps, libraries, and modules
+are added, updated, and/or modified so often a bug will creep in where none existed before.  When
+you find something missing or a behavior that seems odd, please let us know.  You can
+mailto:jfarran@uci.edu?Subject=HPC:[email the HPC admin here].
+
+Note that it will help considerably if you tell us more than 'It doesn't work', or 'I can't log
+in'.  If you want quick resolution of the problem, please send us as much relevant info as
+possible, including a description of 'what triggered the misbehavior'.  For us to help you, we have
+to be able to re-create the problem, so include the commandline you used, including all the
+options, the input and output file paths and preferably the command prompt which should include the
+node from which it was issued, and the time.
+
+If the misbehavior involves an error message, doing a Google search on *that error message
+verbatim* will often produce the answer. (see
+http://moo.nac.uci.edu/~hjm/FixITYourselfWithGoogle.html[Fix IT yourself with Google].
+
+While many of you are not programmers, you're dealing with programs, and if we are to have any hope
+of debugging the process that caused the failure, the more info the better (usually).  PLEASE READ
+http://www.chiark.greenend.org.uk/~sgtatham/bugs.html[How to Report Bugs Effectively] before you
+report a failure.  At least glance at it.
+
+If you're going to spend a lot of time with computers, you should also read Eric Raymond's
+encyclopedic http://www.catb.org/~esr/faqs/smart-questions.html[How To Ask Questions The Smart
+Way].   It will be of use thru your life.
+
+[[infoweneed]]
+=== The minimum information we need
+
+- the directory in which you're working ('pwd', if it's not in your prompt)
+- the machine  or node you're working on ('hostname', if it's not in your prompt')
+- the modules you've loaded ('module list')
+- what kind of computer and Operating System you're connecting from is often useful, especially for connection-related problems.
+- the version of the software can also be useful.
+- the command you used (*verbatim*)
+- or if it was caused by a script, the full path to the script.
+- the error that it caused (*verbatim*), including pointers to the error files if they were generated. SGE will drop error files in your $HOME dir named '"<SGE_NAME>.e<JOBID>"'.  You might also examine the contents of those files before you call for help.
+- copy the 'TEXT of the command and output' if possible. DO NOT send us a screenshot of the commands unless you're using a graphics program and the problem is more succinctly described with a screenshot. It's hard to scrape text from a screenshot.'
+- much of this info can be automatically generated by a decent prompt.  If you add one of the following PS1 lines to your '~/.bashrc', it will speed things up because you can just copy your prompt to supply the needed info:
+
+('verbatim' is not a command; it means 'exactly')
+----------------------------------------------------------
+# the colorless short version that creates a prompt like this:
+# Thu Mar 20 14:48:47 hjm@stunted:~/Downloads
+# 522 $
+
+PS1="\n\d \t \u@\h:\w\n \! \$ "
+
+# the colorful longer version that creates a prompt like this:
+# (the extra info [0.68 0.70 0.64] is the [1m 5m 15m load])
+
+# Thu Mar 20 12:08:38 [0.68 0.70 0.64]  hjm@stunted:~/nacs
+# 556 $
+
+PS1="\n\[\033[01;34m\]\d \t \[\033[00;33m\][\$(cat /proc/loadavg | cut -f1,2,3 -d' ')] \
+ \[\033[01;32m\]\u@\[\033[01;31m\]\h:\[\033[01;35m\]\w\n\! \$ \[\033[00m\]"
+----------------------------------------------------------
+
+
+Condo Nodes
+-----------
+HPC supports the use of 'condo nodes'.  These are privately owned, but integrated into the HPC
+infrastructure to take advantage of the shared applications and administration.  These nodes are
+usually configured to allow public jobs to run on them when their owners are not using them.  If
+the owners want to reclaim all the cores for a heavy analysis job, other jobs running on it may be
+suspended or even killed if RAM is limiting.
+
+The free Qs (free64, free32, free*) are the Qs to which unaffiliated users can submit jobs to run
+on all free cores.  Just beware that your job may be suspended as described above
+
+
+How do I get an account?
+------------------------
+By default, HPC is open to all postgrad UCI researchers, altho it is be available to undergrads
+with faculty sponsorship.
+You request an account by sending a message *including your UCINetID* to
+mailto:jfarran@uci.edu?Subject=HPC:Account_Request[Joseph Farran].  You should get an
+acknowledgement within a few hours and your account should be available then.
+
+For non-condo owners, there is no cost to use HPC, but neither is there any 'right' to use it.
+Your account may be terminated if we observe activity that runs counter to good cluster
+citizenship.  This include attempted hacking, using your account to pirate software,  and other
+proprietary digital content, crack passwords, repeated attempts to jump the GridEngine queue, ignoring 'cease & desist'' emails from admins, etc.
+See http://www.policies.uci.edu/adm/pols/714-18.html[UC Irvine's policies for complete guidelines].
+
+[[connect]]
+How do I connect to HPC?
+~~~~~~~~~~~~~~~~~~~~~~~~~
+You 'must' use http://en.wikipedia.org/wiki/Secure_Shell[ssh], an encrypted terminal protocol. Be
+sure to use the '-Y' or '-X' options, if you want to view X11 graphics (link:#graphics[see below]).
+
+*On a Mac*, you can use the 'Applications -> Utilities -> Terminal' app, but a much better (and
+also free alternative is http://www.iterm2.com[iterm2], which does a much better jobs at trapping
+mouse input and sending it on, and also forwarding the correct keyboard mappings.  MacOSX
+(post-Mountain Lion) no longer includes its own 'X11.app' but it supports native X11 graphics with
+http://xquartz.macosforge.org/landing/[XQuartz], which should be started before you start the
+X11-requiring application on HPC. +
+*On Windows*, use the excellent http://www.chiark.greenend.org.uk/~sgtatham/putty/[putty]. To use
+X11 graphics, see also link:#XonWin[the section on Xming below]. +
+*On Linux*, we assume that you know how to start a Terminal session with one of the bazillion
+terminal apps (http://konsole.kde.org/[konsole] &
+http://software.jessies.org/terminator/[terminator] are 2 good ones). +
+
+http://en.wikipedia.org/wiki/Telnet[Telnet] access is NOT available, since it is not encrypted and
+can easily be packet-sniffed.
+
+Use your UCINetID and associated password to log into the login node ('hpc.oit.uci.edu') via *ssh*.
+
+To connect using a Mac or Linux, open the Terminal application and type:
+-----------------------------------------------------------------------------
+ssh -Y UCINetID@hpc.oit.uci.edu
+# the '-Y' requests that the X11 protocol is tunneled back to you, encrypted inside of ssh.
+-----------------------------------------------------------------------------
+
+
+[[passwordless_ssh]]
+How to set up passwordless ssh
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Passwordless ssh is now set up for you automatically when your account is activated, so you don't
+have to do this manually.  However, as a reference for those of you who want to set it up on other
+machines, I've moved the documentation to the link:#HowtoPasswordlessSsh[Appendix].
+
+//The automatic setup also includes setting the '~/.ssh/config' file to prevent the "first time ssh
+challenge problem".
+
+If a Mac or Linux user, you may also be interested in using 'ssh' to execute commands on remote
+machines.  This is http://moo.nac.uci.edu/~hjm/SSHoutingWithSsh.html[described here.]
+
+// Note that in order to help you debug login and other problems, the sysadmins' public ssh keys
+are also added to your '~/.ssh/authorized_keys' file.  If you do not want this, you're welcome to
+comment it out, but unless it's active, we can't help you with problems that require a direct login.
+
+[[ssherrors]]
+ssh errors
+~~~~~~~~~~
+
+Occasionally you may get the error below when you try to log into HPC or among the HPC nodes:
+
+-----------------------------------------------------------------------
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@    WARNING: REMOTE HOST IDENTIFICATION HAS CHANGED!     @
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+IT IS POSSIBLE THAT SOMEONE IS DOING SOMETHING NASTY!
+ Someone could be eavesdropping on you right now (man-in-the-middle attack)!
+It is also possible that the RSA host key has just been changed.
+The fingerprint for the RSA key sent by the remote host is
+93:c1:d0:97:e8:a0:f5:91:13:89:7d:94:6c:aa:9b:8c.
+ Please contact your system administrator.
+Add correct host key in /Users/joeuser/.ssh/known_hosts to get rid of this message.
+Offending key in /Users/joeuser/.ssh/known_hosts:2
+RSA host key for hpc.oit.uci.edu has changed and you have requested strict checking.
+ Host key verification failed.
+-----------------------------------------------------------------------
+
+The reason for this error is that the computer to which you're connecting to has changed its
+identification key.  This might be due to the mentioned 'man-in-the-middle' attack but is far more
+likely to be an administrative change that has caused the HPC node to have changed its ID.  This
+may be due to a change in hardware, reconfiguration of the node, a reboot, an upgrade, etc.
+
+The fix is buried in the error message itself.
+-----------------------------------------------------------------------
+Offending key in /Users/joeuser/.ssh/known_hosts:2
+-----------------------------------------------------------------------
+Simply edit that file and delete the line referenced.  When you log in again, there will be a
+notification that the key has been added to your 'known_hosts' file.  More simply, you can also
+just delete your '~/.ssh/known_hosts' file.  The missing connection info will be regenerated when
+you ssh to new nodes.
+
+Should you want to be able to log in regardless of this warning, you'll have to edit the
+'/etc/ssh/ssh_config' file on your own Mac or Linux machine (sorry, Windows users) and add the 2
+lines as shown below.   There are http://goo.gl/rCeE[good reasons for not doing this], but it's a
+convenience that many of us use.  Consider it the 'rolling stop' of ssh security.
+
+-----------------------------------------------------------------------
+Host *
+        StrictHostKeyChecking ask
+-----------------------------------------------------------------------
+After you do that, you'll still get the warning (which you should investigate) but you'll be able
+to log in.
+
+If you're using http://www.chiark.greenend.org.uk/~sgtatham/putty/[putty] on Windows, you won't be
+able to effect this security skip-around. http://goo.gl/rCeE[Read why here].
+
+
+After you log in...
+~~~~~~~~~~~~~~~~~~~
+Logging in to *hpc.oit.uci.edu* will give you access to a Linux shell,
+(http://www.gnu.org/software/bash/[bash] by default, http://www.tcsh.org/Home[tcsh], ksh available).
+If you are a complete Linux novice, yo umay want to look over the locally produced Linux Tutorials
+http://moo.nac.uci.edu/~hjm/biolinux/Linux_Tutorial_1.html[part 1 - connecting, simple commands]
+and http://moo.nac.uci.edu/~hjm/biolinux/Linux_Tutorial_2.html[part 2 - More Intro to Linux, bash,
+Perl, R] which were written specifically for new HPC users.
+
+
+.Some bash pointers.
+[NOTE]
+===========================================================================
+The default shell (or environment in which you type commands) for your
+HPC login is 'bash'.  It looks like the Windows CMD shell, but is
+MUCH more powerful.  There's a good exposition of some of the things
+you can do with the shell
+http://www.catonmat.net/blog/the-definitive-guide-to-bash-command-line-history/[here]
+and a
+http://www.catonmat.net/blog/wp-content/plugins/wp-downloadMonitor/user_uploads/bash-history-cheat-s
+heet.pdf[good cheatsheet here].
+If you're going to spend some time working on HPC, it's worth your
+while to learn some of the more advanced commands and tricks.
+
+If you're going to be using HPC for more than a few times, it's useful to set up a file of aliases
+to useful commands and then 'source' that file from your '~/.bashrc'.
+ie:
+---------------------------------------------------------------------------
+# the ~/.aliases file contains shortcuts for frequently used commands
+# your ~/.bashrc file should source that file: '. ~/aliases'
+alias someh="ssh -Y somehost"  # ssh to 'somehost'
+alias asrch="apt-cache search" # only useful on Debian derivatives
+alias ashow="apt-cache show"   # only useful on Debian derivatives
+alias hg="history|grep "       # search history for this regex
+alias pg="ps aux |grep "       # search processes for this regex
+alias nu="ls -lt | head -11"   # what are the 11 newest files?
+alias big="ls -lhS | head -20" # what are the 20 biggest files?
+# and even some more complicated commands
+alias edaccheck='cd /sys/devices/system/edac/mc &&  grep [0-9]* mc*/csrow*/[cu]e_count'
+---------------------------------------------------------------------------
+
+You can also customize your bash prompt to produce more info than the default 'user@host'.
+While you're waiting for your calculations to finish, check out the definitive
+http://tldp.org/HOWTO/Bash-Prompt-HOWTO[bash prompt HOWTO] and / or use
+http://bashish.sourceforge.net/[bashish] to customize your bash environment.
+
+http://www.dirb.info[DirB] is a set of bash functions that make it very easy
+to bookmark and skip back and forth to those bookmarks. Download the file from
+the URL above, 'source' it early in your '.bashrc' and then read how to use it
+via http://moo.nac.uci.edu/~hjm/DirB.pdf[this link].  It's very simple and
+very effective. Very briefly, 's bookmark' to set a bookmark, 'g bookmark' to cd to
+bookmark, 'sl' to list bookmarks.  Recommended if you have deep dir trees and
+need to keep hopping among the leaves.
+===========================================================================
+
+.Make sure bash knows if this is an interactive login
+[NOTE]
+==================================================================================
+If you have customized your '.bashrc' to spit out some useful data when you log in (such as the
+number of jobs you have running), make sure to wrap that command in a test for an interactive
+shell.  Otherwise, when you try to 'scp' or 'sftp' or 'rsync' data to your HPC account, your shell
+will unexpectedly vomit up the same text into the connecting program with unpleasant results.  Wrap
+those commands with something like this in your '.bashrc':
+
+----------------------------------------------------------
+interactive=`echo $- | grep -c i `
+if [ ${interactive} = 1 ] ; then
+  # put all your intereractive stuff in here:
+  # ie tell me what my 22 newest files are
+  ls -lt | head -22
+fi
+----------------------------------------------------------
+==================================================================================
+
+You will also have access to the resources of the HPC via the Grid Engine (GE aka SGE) commands.
+The most frequently used commands for GE are 'qsub' to submit a batch job and 'qstat' to check the
+status of your jobs.  Also 'q' to display the status of all GE queues.  You can also check the
+status of various resources with the 'qconf' command.  See the
+http://gridengine.info/files/SGE_Cheat_Sheet.pdf[SGE cheatsheet] for more details.
+
+The login node should be considered your 1st stop in doing real work.  You can copy files to and
+from your home directory via the login node, edit files, compile and test code, etc, but you
+shouldn't run any long (>1 hr) jobs on the login node itself.  If you do and it impacts the
+performance of the login node (and we notice), we'll kill them off to keep the login node
+responsive.  To do real work, please request a node from the interactive queue, like this:
+
+-----------------------------------------------------------------
+# for a 64bit interactive node
+hmangala@hpc:~ $ qrsh
+
+# wait a few seconds...
+Rocks Compute Node
+Rocks 6.1 (Emerald Boa)
+Profile built 17:23 04-Dec-2012
+
+Kickstarted 17:38 04-Dec-2012
+
+Thu Jan 03 14:56:27 [0.00 0.00 0.00]  hmangala@compute-12-20:~
+1001 $
+# ready to go...
+-----------------------------------------------------------------
+
+[[datastorageonhpc]]
+Data Storage on HPC
+--------------------
+
+Quotas for Regular users
+~~~~~~~~~~~~~~~~~~~~~~~~
+Unlike other clusters, a regular user (not part of a condo ownership group) will get 20GB of
+storage; condo owners will get storage that they have negotiated with OIT.  Regular users can use
+arbitrary amounts of temporary storage on the */w2* filesystem, altho this data is expected to be
+*active*; idle data may be deleted with short notice unless the user has notified us in advance.
+
+We encourage you to use this temporary data storage, up to hundreds of GB, but we also warn you
+that if we detect large directories that have not been used in weeks, we retain the right to clean
+them out.  The larger the dataset, the more scrutiny it will get.
+IF YOU HAVE LARGE DATASETS AND ARE NOT USING THEM, THEY MAY DISAPPEAR WITHOUT WARNING. We mean it
+when we say that if you generate valuable data, it is up to you to back it up elsewhere ASAP.
+
+[[diskusage]]
+=== How to check your disk usage
+Storage is always in short supply. The '/w2' filesystem is almost full; many of you are approaching your 'HOME' quotas (20GB) on '/data/users', and many of you are still generating Zillions of Tiny files (ZOTfiles), the scabies of storage systems. In order for you to figure out how much and how many files you're using, we have a few tools that can help you figure out how much storage you're using and in what way.
+
+==== Commandline tools
+These are utilities that can be used from your login shell - they require no http://en.wikipedia.org/wiki/X_Window_System[X11 graphics] nor a specialized connection like link:#x2go[x2go].
+
+===== df & du
+*df* reports 'disk free' or how much space is left on a particular filesystem in total.  It does not break it down by user or dir.
+----------------------------------------------------------------
+$ df -h    # -h gives sizes in 'human' readable format.
+Filesystem            Size  Used Avail Use% Mounted on
+/dev/sda5              87G   48G   35G  58% /
+tmpfs                  32G  8.0K   32G   1% /dev/shm
+/dev/sda1             870M  117M  708M  15% /boot
+/dev/sda6             570G   18G  524G   4% /state/partition1
+/dev/sda3             116G   48G   63G  44% /var
+tmpfs                  16G  3.2G   13G  21% /var/lib/ganglia/rrds
+/dev/sdb              932G  203G  729G  22% /mirrors
+nas-1-1.local:/data   5.5T  2.4T  3.2T  43% /data
+fhgfs_nodev           170T   83T   87T  49% /ffs
+bs1:/gl               339T  256T   83T  76% /gl
+
+
+$ df -h /gl  # specifying a filesystem reports only that one
+Filesystem            Size  Used Avail Use% Mounted on
+bs1:/gl               339T  256T   83T  76% /gl
+----------------------------------------------------------------
+
+*du* is 'disk usage' and reports on specific dirs.
+
+----------------------------------------------------------------
+root@hpc-s:/compute-3-5/TVB-install/TVB_Distribution
+1021 $ du -shs *
+20K     LICENSE_TVB.txt
+396K    THIRD_PARTY_LICENSES
+38M     api
+24K     bin
+8.8M    demo_data
+13M     docs
+479M    tvb_data
+538M    total
+----------------------------------------------------------------
+
+'du' will by default recurse to the bottom of subdirs, tho you can restrict it to a certain depth with '-d'. See 'man du' for more info.
+
+===== tree
+
+*tree* provides a text-based listing that displays the complete dir structure as a pseudographic.  Deep dir trees are best piped into 'less' to view it more easily.  'tree' has many options (try 'tree --help' or 'man tree')
+
+----------------------------------------------------------------
+$ tree -sh | less
+|-- [ 596] id_dsa.pub
+|-- [ 44] repos
+| |-- [4.0K] ca1
+| | |-- [1.7K] ANsyn.mod
+| | |-- [2.3K] ExpGABAab.mod
+| | |-- [5.4K] Gfluct2.mod
+| | |-- [1.8K] MyExp2Sid.mod
+| | |-- [1.8K] MyExp2Sidnw.mod
+| | |-- [8.7K] README.txt
+| | |-- [2.9K] STDPE2Sid.mod
+| | |-- [2.7K] buff_Ca.mod
+| | |-- [4.8K] burststim2.mod
+| | |-- [ 22K] ca1.hoc
+| | |-- [2.5K] cad.mod
+| | |-- [4.0K] cellframes
+| | | |-- [ 11K] class_axoaxoniccell.hoc
+| | | |-- [8.8K] class_bistratifiedcell.hoc
+| | | |-- [8.6K] class_cckcell.hoc
+| | | |-- [4.5K] class_dgbasketcell.hoc
+| | | |-- [4.5K] class_dgbistratifiedcell.hoc
+| | | |-- [9.8K] class_ivycell.hoc
+<etc>
+----------------------------------------------------------------
+
+===== ls
+The trusty 'ls' can also be used as an analytic tool. The '-R' flag forces it to recurse to the bottom of the dir, so 'ls -lR | wc' will count how many files and dirs are in the current dir.
+
+----------------------------------------------------------------
+$ ls -lR | wc
+17902  139311  997536
+
+NB: wc output is 'lines words characters' so the above means
+   17902 lines (or files + dirs)
+  139311 words (lots of words for each line)
+  997536 this many characters in total (in the listing)
+----------------------------------------------------------------
+
+'ls' also has a 'sort by size' option (-S) that lists the largest files first, which is useful for discovering unexpectedly large files lurking in dirs.
+
+----------------------------------------------------------------
+$ ls -lSh |head
+total 541M
+-rw-r--r--  1 hjm  hjm    85M Dec 23  2008 2sigma.tar.gz
+-rw-r--r--  1 hjm  hjm    26M May 13  2013 HPC.cf.tar.bz2
+-rw-r--r--  1 hjm  hjm    25M Mar 12  2013 red+blue_all.txt
+-rw-r--r--  1 hjm  hjm    13M Jul 12 12:41 SVSManual.qch
+-rw-r--r--  1 hjm  hjm    12M Dec  3  2010 LinuxJournal_01_2011_SysAdmin.pdf
+-rw-r--r--  1 hjm  hjm   7.2M Jul 12 12:41 SVSManual.pdf
+-rw-rw-r--  1 hjm  hjm   6.4M Jul 29  2011 BackupPC_Project.tar.gz
+<etc>
+----------------------------------------------------------------
+
+
+
+==== Graphical tools
+Right now there's really only one useful tool for this on HPC.
+
+[[kdirstat]]
+===== kdirstat
+http://kdirstat.sourceforge.net/[kdirstat] (also for http://www.derlien.com/[Mac] and  http://windirstat.info/[Windows], very quickly recurses thru the directory structure and makes a graphic of the layout - even colors it depending on what kind of file it is.  The output is interactive and you can easily identify large files or dirs containing many files in the output.  You can click the different dirs to open and close them and select files by clicking on the list up top or the icons below and the 2 panes will sync at that file.
+
+Some examples are:
+
+- http://hpc.oit.uci.edu:/kdirstat-all.png[overview of an entire dir].
+- http://hpc.oit.uci.edu:/kdirstat-byfile.png[view by file by clicking on icon].  Note the red box outlining the tile representing the 'file size'.
+- http://hpc.oit.uci.edu:/kdirstat-bydir.png[view by subdir].  Note the red box outlining the 'size of the entire subdir'.
+
+To use kdirstat, you'll need to use a connection to HPC that can render http://en.wikipedia.org/wiki/X_Window_System[X11/XWindow graphics]. It can be a native X11 client like a recent Linux distro, an X11 client like http://xquartz.macosforge.org/landing[Xquartz] for the Mac, or an X11 compressor client like http://wiki.x2go.org/doku.php[x2go] (clients for Mac, Win, and Linux). The last is the best performing over multiple hops.  http://moo.nac.uci.edu/~hjm/biolinux/Linux_Tutorial_1.html#_x2go[How to set it up for use on HPC.]
+
+
+
+[[filestoandfrom]]
+=== How do I get my files to and from HPC?
+
+[[badeols]]
+.Line endings in files from Windows and MacOS vs Linux/Unix/MacOSX
+**************************************************************
+If you are creating data on Windows (or using an old Mac editor) and saving it as 'plain text' for
+use on Linux, many  applications will save the data with DOS 'end-of-line' )(EOL) characters (a
+'Carriage Return' plus a 'Line Feed' aka 'CRLF') as opposed to the Linux/MacOSX newline (a line
+feed alone aka 'LF').  This may cause problems on Linux as only some applications will detect and
+automatically correct Windows newlines.  Ditto visual editors which you might think would give you
+an indication of this.  Most editors will give you a choice as to which newline type you want when
+you save the file, but sometimes the choice is not obvious.  In any case, unless you're sure of how
+your data is formatted, you can pass it though the Linux utility 'dos2unix' which will replace the
+Windows newline with a Linux newline:
+
+ $ dos2unix windows.file linux.file
+
+Ditto for the case of the old MacOS editor.  In this case the EOL is is a 'CR' only.  Fix it by
+passing it thru 'mac2unix'
+
+ $ mac2unix macosfile linux.file
+
+In both cases if the 'linux.file is omitted, the original file will be converted.
+
+http://en.wikipedia.org/wiki/Newline[Read the whole sordid history of the newline here]
+**************************************************************
+
+
+This is covered in more detail in the document
+http://moo.nac.uci.edu/~hjm/HOWTO_move_data.html[HOWTO Move Data].
+There are several ways to get your files to and from HPC.  The most direct, most generally
+available way is via http://en.wikipedia.org/wiki/Secure_copy[scp].  Besides the commandline *scp*
+utility bundled with all Linux and OSX versions, there are GUI clients for MacOSX, Windows, and of
+course, Linux. Some other GUI clients are described below. If you have large collections of files
+or large individual files that change only partially, you might be interested in using
+http://moo.nac.uci.edu/%7ehjm/HOWTO_move_data.html#rsync[rsync] (included on Linux and OSX, with
+variants available for Windows.).
+
+Once you copy your data to your HPC '$HOME' directory, it is available to all the compute nodes via
+the same mount point on each, so if you need to refer to it in a 'SGE' script, you can reference
+the same file in the same way on all nodes. ie: '/data/users/hmangala/my/file' will be the same
+file on all nodes.
+
+Windows
+^^^^^^^
+The hands-down, no-question-about-it, go-to utility here is the free http://www.winscp.net[WinSCP],
+which gives you a graphical interface for SCP, SFTP and FTP. http://cyberduck.ch/[Cyberduck] is
+also available for Windows now as well.
+
+MacOSX
+^^^^^^
+There may be others but it looks like the winner here is the oddly named, but freely available
+http://cyberduck.ch/[Cyberduck], which provides graphical file browsing via FTP, SCP/SFTP, WebDAV,
+and even Amazon S3(!).
+
+Linux
+^^^^^
+The full range of high-speed data commandline utilities are available via the above-referenced
+http://moo.nac.uci.edu/~hjm/HOWTO_move_data.html[HOWTO Move Data].  Summary: For ease of use and
+general availability, it's hard to beat 'scp'.  For updating data archives, 'rsync' is a utility
+that all users should know (there's a graphical version called 'grsync' on HPC.  And for moving
+large amounts of data between long distances, 'bbcp' is an extraordinary tool.
+
+
+[[archivemount]]
+archivemount
+~~~~~~~~~~~~
+Once you've generated some data on HPC, you may want to keep it handy for a short time while you're
+further processing it.  In order to keep it both compact and accessible, HPC supports the
+'archivemount' utility on the 'login/hpc' node.  This allows you to mount a compressed archive
+(tar.gz, tar.bz2, and zip archives) on a mountpoint as a
+http://en.wikipedia.org/wiki/Filesystem_in_Userspace[fuse filesystem].  You can 'cd' into the
+archive, modify files in place, copy files out of the archive, or copy files into the archive.
+When you unmount the archive, the changes are saved into the archive. Here's an
+http://www.linux-mag.com/id/7825[extended article on it from Linux Mag].
+
+Here's an example of how to use 'archivemount' with a 84MB data tarball (jksrc.zip'') that you want
+to interact with.
+
+-----------------------------------------------------------------
+# how big is this thang?
+$ ls -lh
+total 84M
+-rw-r--r-- 1 hmangala hmangala 84M Jun 15 14:55 jksrc.zip
+
+# OK - 84MB, which is fine.  Now let's make a mount point for it.
+
+$ mkdir jk
+
+$ ls
+jk/  jksrc.zip
+
+# so now we have a zipfile and a mountpoint.  That's all we need to archivemount
+# let's time it just to see how long it takes to unpack and mount this archive:
+
+$ time archivemount jksrc.zip jk
+
+real    0m0.810s  <-  less than a second wall clock time
+user    0m0.682s
+sys     0m0.112s
+
+$ cd jk      # cd into the top of the file tree.
+
+# lets see what the top of this file tree looks like.  All file utils can work on this data
+structure
+$ tree |head -11
+.
+`-- kent
+    |-- build
+    |   |-- build.crontab
+    |   |-- dosEolnCheck
+    |   |-- kentBuild
+    |   |-- kentGetNBuild
+    |   `-- makeErrFilter
+    |-- java
+    |   |-- build
+    |   |-- build.xml
+<etc>
+
+# and the bottom of the file tree.
+$ tree |tail
+            |   |-- wabaCrude.h
+            |   `-- wabaCrude.sql
+            |-- xaShow
+            |   |-- makefile
+            |   `-- xaShow.c
+            `-- xenWorm
+                |-- makefile
+                `-- xenWorm.c
+
+2286 directories, 12793 files <- lots of files that don't take up anymore 'real' space on the disk.
+
+
+# how does it show up with 'df'?  See the last line..
+
+$ df
+Filesystem           1K-blocks      Used Available Use% Mounted on
+/dev/md2             373484336  11607976 342598364   4% /
+/dev/md1               1019144     47180    919356   5% /boot
+tmpfs                  8254876         0   8254876   0% /dev/shm
+/dev/sdc             12695180544 6467766252 6227414292  51% /data
+bduc-sched.nacs.uci.edu:/share/sge62
+                      66946520   8335072  55155872  14% /sge62
+fuse                 1048576000         0 1048576000   0% /home/hmangala/build/fs/jk
+
+
+# finally, !!IMPORTANTLY!! un-mount it.
+
+$ cd ..   # cd out of the tree
+
+$ fusermount -u jk    # unmount it with 'fusermount -u'
+
+-----------------------------------------------------------------
+
+.Don't make huge archives if you're going to use archivemount
+[NOTE]
+==================================================================================
+'archivemount' has to "unpack" the archive before it mounts it, so trying to 'archivemount' an
+enormous archive will be slow and frustrating.  If you're planning on using this approach,
+please restrict the size of your archives to  ~100MB.
+
+If you need to process huge files, please consider using
+http://en.wikipedia.org/wiki/NetCDF[netCDF] or http://en.wikipedia.org/wiki/HDF5[HDF5] formatted
+files and http://nco.sf.net[nco] or http://www.pytables.org/moin[pytables] to process them.
+'NetCDF' and 'HDF5' are highly structured, binary formats that are both extremely compact and
+extremely fast to parse/process.  HPC has a number of utilities for processing both types of files
+including http://www.r-project.org/[R], http://nco.sf.net[nco], and
+https://wci.llnl.gov/codes/visit/[VISIT].
+
+If you can't use HDF5 or netCDF, please keep your files compressed.  Many domains allow large files
+to be processed as compressed archives (compressed bam format instead of uncompressed fastq format,
+for example).
+==================================================================================
+
+
+[[sshfs]]
+sshfs
+~~~~~
+
+http://en.wikipedia.org/wiki/SSHFS[sshfs] is a utility for OSX and Linux that allows you to mount
+remote directories in your HPC home dir.  Since it operates in 'user-mode', you don't have to be
+'root' or use 'sudo' to use it. It's very easy to use and you don't have to alert us to use it..
+
+You have to be able to ssh to the machine from which you want to exchange files, typically the
+desktop or laptop you're connecting to HPC from (ergo WinPCs cannot do this without much more
+effort).  For MacOSX and Linux, in the example below assume I'm connecting from a laptop named
+'ringo' to the HPC 'login' node.  I have a valid HPC login ('hmangala') and my login on 'ringo' is
+'frodo'.
+
+-----------------------------------------------------------------
+frodo@ringo:~ $ ssh hpc.oit.uci.edu  # from ringo, ssh to HPC with passwordless ssh
+
+ # <HPC login stuff deleted>
+
+# make a dir named 'ringo' for the ringo filesystem mountpoint
+hmangala@hpc:~  $ mkdir ringo
+
+# sshfs-attach the remote filesystem to HPC on ~/ringo
+# NOTE: you usually have to provide the FULL PATH to the remote dir, not '~'
+# using '~' on the local side (the last arg) is OK.
+
+# ie: this is WRONG:
+# hmangala@hpc:~  $ sshfs frodo@ringo.dept.uci.edu:~ ringo    # WRONG
+#                                                         ^
+# this is RIGHT:
+hmangala@hpc:~  $ sshfs frodo@ringo.dept.uci.edu:/home/frodo ~/ringo
+
+hmangala@hpc:~  $ ls -l |head
+total 4790888
+drwxr-xr-x   2 hmangala hmangala          6 Dec 10 14:17 ringo/  # the new mountpoint for ringo
+-rw-r--r--   1 hmangala hmangala       3388 Sep 22 16:25 9.2.zip
+-rw-r--r--   1 hmangala hmangala       4636 Dec  8 10:18 acct
+-rw-r--r--   1 hmangala hmangala        501 Dec  8 10:20 acct.cpu.user
+-rwxr-xr-x   1 hmangala hmangala        892 Nov 11 08:55 alias*
+-rw-r--r--   1 hmangala hmangala        691 Sep 30 13:21 all3.needs
+
+ <etc>         ^^^^^^^^^^^^^^^^^ note the ownership
+
+# now I cd into the 'ringo' dir
+hmangala@hpc:~  $ cd ringo
+
+hmangala@hpc:~/ringo  $ ls -lt |head
+total 4820212
+drwxr-xr-x 1 frodo frodo       20480 2009-12-10 14:43 nacs/
+drwxr-xr-x 1 frodo frodo        4096 2009-12-10 14:41 Mail/
+-rw------- 1 frodo frodo          61 2009-12-10 12:54 ~Untitled
+-rw-r--r-- 1 frodo frodo          42 2009-12-10 12:44 testfromclaw
+-rw-r--r-- 1 frodo frodo      627033 2009-12-10 11:22 sun_virtualbox_3.1.pdf
+
+#<etc>       ^^^^^^^^^^^ note the ownership.  Even tho I'm on hpc, the original ownership is intact
+
+# writing from HPC to ringo filesystem
+hmangala@hpc:~/ringo  $ echo "testing testing" > test_from_bduc
+
+hmangala@hpc:~/ringo  $ cat test_from_bduc
+testing testing
+
+hmangala@hpc:~/ringo  $ ls -lt |head
+total 4820216
+drwxr-xr-x 1 frodo frodo       20480 2009-12-10 14:47 nacs/
+-rw-r--r-- 1 frodo frodo          16 2009-12-10 14:46 test_from_bduc
+drwxr-xr-x 1 frodo frodo        4096 2009-12-10 14:41 Mail/
+#            ^^^^^^^^^^^  even tho I wrote it as 'hmangala' on HPC, it's owned by 'frodo'
+
+# and finally, unmount the sshfs mounted filesystem.
+hmangala@hpc:~/ringo $ fusermount -u ringo
+
+# get more info on sshfs with 'man sshfs'
+-----------------------------------------------------------------
+
+[[yourdata]]
+YOU are responsible for your data
+---------------------------------
+We *do not* have the resources to provide backups of your data.  If you store valuable data on HPC,
+it is 'ENTIRELY' your responsibility to protect it by backing it up elsewhere. You can do so via
+the mechanisms discussed above, especially with (if using a Mac or Linux) 'rsync', which will copy
+only those bytes which have changed, making it extremely efficient.  Using rsync (with examples)
+http://moo.nac.uci.edu/~hjm/HOWTO_move_data.html#rsync[is described here].
+
+
+
+How do I do stuff?
+------------------
+On the login node, you shouldn't do anything too strenuous (computationally).  If you run something
+that takes more than an hour or so to complete, you should be running on an interactive node (via
+'qrsh') or submit it to one of the batch queues (via 'qsub batch_script.sh').
+
+
+Can I compile code?
+~~~~~~~~~~~~~~~~~~~
+Yes. +
+We have the full GNU toolchain available on both the login nodes so normal compilation tools such
+as autoconf, automake,  libtool, make, ant, gcc, g++, gfortran, gdb, ddd, java, python, R, perl,
+etc are available to you.  We also have some proprietary compilers or debuggers available - the
+Intel & PGC compilers and the TotalView Debugger (see the link:#modules[Modules section below] for
+details).  Please let us know if there are other tools or libraries you need that aren't available.
+
+
+Compiling your own code
+^^^^^^^^^^^^^^^^^^^^^^^
+You can always compile your own (or downloaded) code.  Compile it in its own subdir and when you've
+built it, install it rooted from your own home directory in the usual lib, include, bin, man
+directories, except that they're rooted from your $HOME dir (~/lib, ~/include, ~/bin, ~/man).
+
+If the code is well-designed, it should have a 'configure' shell script in the top-level dir.  The
+'./configure --help' command should then give you a list of all the parameters it accepts.
+Typically, all such scripts will accept the '--prefix' flag.  You can use this to tell it to
+install everything
+in your $HOME dir. ie:
+
+---------------------------------------------------------------------
+./configure --prefix=/data/users/you  ...other options..
+---------------------------------------------------------------------
+
+'configure', when it completes successfully will generate a 'Makefile'.
+At this point, you can type 'make' (or 'make -j2' to compile on 2 CPUs) and the code will be
+compiled into whatever kind of executable is called for. Once the code has been compiled
+successfully (there may be a 'make test' or 'make check' option to run tests to check for this),
+you can install it in your $HOME directory tree with 'make install'.
+
+Then you can run it out of your '\~/bin' dir without interfering with other
+code.  In order for you to be able to run it transparently, you will have to prepend your '\~/bin'
+to the 'PATH' environment variable, typically by editing it into the appropriate line in your
+'~/.bashrc'.
+
+---------------------------------------------------------------------
+export PATH=~/bin:${PATH}
+---------------------------------------------------------------------
+
+[[appsavailable]]
+How do I find out what's available?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+[[modules]]
+Via the module command
+^^^^^^^^^^^^^^^^^^^^^^
+We use the tcl-based http://modules.sourceforge.net/[environment module system] to wrangle
+non-standard software versions and subsystems into submission.
+To find out what modules are available, simply type:
+-----------------------------------------------------------------
+$ module avail # output is long & changes so much it's not useful to include it here
+-----------------------------------------------------------------
+
+To load a particular module, use the 'module load <module/version>' command:
+-----------------------------------------------------------------
+$ module load bedtools/2.15.0  # for example
+-----------------------------------------------------------------
+
+If a module has a dependency, it should set it up for you automatically. Let us know if it doesn't.
+ If you note that a module has an update that we should install, tell us.
+
+Also, if you neglect the version number, it will load the numerically highest version, which does
+not necessarily mean the latest, since some groups use odd numbering schemes.  For example,
+'samtools/0.1.7' is numerically higher (but older) than 'samtools/0.1.18'.
+
+[[honeydo]]
+.If you want an app upgraded/updated
+[NOTE]
+===========================================================================
+If you need the newest version of an app, FIRST make sure that we don't
+already have it installed.  See 'module avail' above. THEN please supply us
+with a link to the updated version so we don't have to scour the internet
+for it. If it's going to require a long dependency list, please also supplyy
+us with an indication of what that is. If it's an app that few other people
+will ever use, consider downloading it and installing it in your own ~/bin
+directory.  If after that you think it's worthwhile, we'd certainly consider
+installing it system-wide.  See the notes on http://hpc.oit.uci.edu/compile-software[setting up
+personal modules]
+
+===========================================================================
+
+Via the shell
+^^^^^^^^^^^^^
+This is a bit tricky.  There are literally thousands of applications that are available and many of
+them have names that are entirely unrelated to their function.  In order to determine whether a
+well-known application is already on the system, you can simply try typing its name.  If it's NOT
+installed or not on your executable's PATH, the shell will return *command not found*.
+
+All the interactive nodes have *TAB completion* enabled, at least in the 'bash' shell.  This means
+that if you type a few characters of the name and hit <TAB> twice, the system will try to compete
+the command for you.  If there are multiple executables that match those characters, the shell will
+present all the alternatives to you. ie
+
+-----------------------------------------------------------------
+$ jo<TAB><TAB>
+jobs        jockey-kde  joe         join
+-----------------------------------------------------------------
+
+You can then complete the command or enter enough characters to make the command unique and hit
+<TAB> again and the command will complete.
+
+Via the YUM installer Database
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+The CentOS *yum* repositories will let you search all the applications in the repositories that we
+have enabled which are currently:
+
+-----------------------------------------------------------------
+CentOS-Base.repo       elrepo.repo        mirrors-rpmforge-extras   rpmforge.repo
+CentOS-Debuginfo.repo  epel.repo          mirrors-rpmforge-testing  x2go.repo
+CentOS-Media.repo      epel-testing.repo  RCS
+CentOS-Vault.repo      mirrors-rpmforge   rocks-local.repo
+-----------------------------------------------------------------
+If you have favorites that supply notable apps or libs, let us know.
+
+To search for the ones that can be installed direct from the repositories, use 'yum search':
+
+-----------------------------------------------------------------
+$ yum search fasta
+======================================= N/S Matched: fasta ========================================
+perl-Tie-File-AnyData-Bio-Fasta.noarch : Accessing fasta records in a file via Perl array
+-----------------------------------------------------------------
+
+To see a more detailed descripton of the application, use 'yum info'
+
+-----------------------------------------------------------------
+$ yum info perl-Tie-File-AnyData-Bio-Fasta.noarch
+Available Packages
+Name        : perl-Tie-File-AnyData-Bio-Fasta
+Arch        : noarch
+Version     : 0.01
+Release     : 1.el6.rf
+Size        : 8.4 k
+Repo        : rpmforge
+Summary     : Accessing fasta records in a file via Perl array
+URL         : http://search.cpan.org/dist/Tie-File-AnyData-Bio-Fasta/
+License     : Artistic/GPL
+Description : Tie::File::AnyData::Bio::Fasta allows the management of fasta files via a Perl
+            : array through Tie::File::AnyData, so read the documentation of this module for
+            : further details on its internals.
+-----------------------------------------------------------------
+
+. Debian/Ubuntu repositries are ~5X larger
+[NOTE]
+===============================================================================
+Note that the Debian/Ubuntu repositories have about 5 times more entries than the yum repositories,
+so if you can find a Ubuntu host, you can search those repositories for applications that appear to
+do what you need and request that we acquire them.  On Ubuntu machines, use 'apt-cache search
+<search term>' to search and 'apt-cache show <specific entry name> to show full information.
+===============================================================================
+
+*HOWEVER*, this only tells you that the application or library is available, not whether it's
+installed.  To find out whether it's installed, you use 'yum list <rpm name>'.
+
+-----------------------------------------------------------------
+$ yum list zlib
+Installed Packages
+zlib.x86_64                    1.2.3-27.el6
+@anaconda-base-201211270324.x86_64/6.1.0
+Available Packages
+zlib.i686                      1.2.3-27.el6                    Rocks-6.1
+
+-----------------------------------------------------------------
+
+Via the Internet
+^^^^^^^^^^^^^^^^
+
+Obviously, a much wider ocean to search.  My first approach is to use a Google search constructed
+of the platform, application name, and/or function of the software.  Something like
+
+-----------------------------------------------------------------
+linux image photography hdr 'high dynamic range'  # '' enforces the exact phrase
+-----------------------------------------------------------------
+which yields http://tinyurl.com/nf5qrn[this page of results.]
+
+Also, don't be afraid to try http://www.google.com/advanced_search?hl=en[Google's Advanced Search]
+or even http://www.google.com/linux[Google's Linux Search].
+
+After evaluating the results, you'll come to a package that seems to be what you're after,
+pfstools, for example.  If you didn't find this in the previous searches of the application
+databases, you can look again, searching explicitly:
+
+-----------------------------------------------------------------
+$yum info rsync
+Installed Packages
+Name        : rsync
+Arch        : x86_64
+Version     : 3.0.6
+Release     : 9.el6
+Size        : 682 k
+Repo        : installed
+From repo   : anaconda-base-201211270324.x86_64
+Summary     : A program for synchronizing files over a network
+URL         : http://rsync.samba.org/
+License     : GPLv3+
+Description : Rsync uses a reliable algorithm to bring remote and host files into
+            : sync very quickly. Rsync is fast because it just sends the differences
+            : in the files over the network instead of sending the complete
+            : files. Rsync is often used as a very powerful mirroring process or
+            : just as a more capable replacement for the rcp command. A technical
+            : report which describes the rsync algorithm is included in this
+            : package.
+...
+-----------------------------------------------------------------
+and then you can ask an admin to install it for you.  Typically the apps found in the application
+repositories lag the latest releases by a few point versions, so if you really need the latest
+version, you'll have to download the source code or binary package and install it from that
+package.  You can compile your own version as a private package, but to install it as a system
+binary, you'll have to ask one of the admins.
+
+
+Interactive Use
+~~~~~~~~~~~~~~~
+Logging on to an interactive node may be all that you need.  If you want to slice & dice data
+interactively, either with a graphical app like
+http://www.mathworks.com/products/matlab/description1.html[MATLAB],
+https://wci.llnl.gov/codes/visit/[VISIT], http://jmp.com/[JMP], or
+http://www.clustal.org/[clustalx], or a commandline app like http://nco.sf.net[nco] or
+http://moo.nac.uci.edu/~hjm/scut_cols_HOWTO.html[scut] or even hybrids like
+http://gnuplot.info/[gnuplot] or http://www.r-project.org/[R], you can run them from any of the
+interactive nodes, read, analyze and save data to your '$HOME' directory.  As long as you satisfy
+the link:#graphics[graphics] requirements, you can view the output of the X11 graphics programs as
+well.
+
+bash Shortcuts
+~~~~~~~~~~~~~~
+The bash shell allows an infinite amount of customization and shortcuts via scripts and the 'alias'
+command.  Should you wish to make use of such things (such as 'nu' to show you the newest files in
+a directory or 'll' to show you the long ls output in human readable form), you can define them
+yourself by typing them at the commandline:
+
+-----------------------------------------------------------------
+alias nu="ls -lt |head -22" # gives you the 22 newest files in the dir
+alias ll="ls -l"   # long 'ls' output
+alias llh="ls -lh" # long 'ls' output in human (KB, MB, GB, etc) form
+alias lll="ls -lh |less" # pipe the preceding one into the 'less' pager
+
+# for aliases, there can be no spaces between the alias and the start of
+# definition: ie
+[myalias = "what it means"] is wrong.  It has to be
+--------^^^
+[myalias="what it means"]
+-------^^^
+-----------------------------------------------------------------
+
+You can also place all your useful aliases into your '\~/.bashrc' file so that all of them are
+defined when you log in. Or separate them from the '\~/.bashrc' by placing them into a '\~/.alias'
+file and have it sourced from your '~/.bashrc' file when you log in.  That separation makes it
+easier to move your 'alias library' from machine to machine.
+
+
+[[byobu]]
+byobu and screen: keeping a session alive between logins
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+In most cases, when you log out of an interactive session, the processes associated with that login
+will also be killed off, even if you've put them in the background (by appending '&' to the
+starting command).  If you regularly need a process to continue after you've logged out, you should
+submit it to the GE scheduler with 'qsub' (link:#SGE_batch_jobs[see immediately below]).
+
+However, sometimes it is convenient to continue a long-running process when you have to log out (as
+when you have to shut down your network connection to take your laptop home).   In this case, you
+can use the  under-appreciated 'screen' program, which establishes a long-running proxy connection
+on the remote machine that you can detach from and then re-attach to without losing the connection.
+ As far as the remote machine is concerned, you've never logged off, so your running processes
+aren't killed off.  When you re-establish the connection by logging in again, you can re-attach to
+the screen proxy and take up as if you've never been away.
+
+The only downsides are that the terminal scrollback is usually lost and that you cannot start an
+X11 graphics session from a byobu terminal since the remote 'DISPLAY' variable doesn't get set
+correctly.
+
+You can also use 'screen' as a terminal multiplexer, allowing multiple terminal sessions to be used
+from one login, especially useful if you're using Windows with PuTTY that doesn't have a multiple
+terminal function built into it.
+
+For these reasons, 'screen' by itself is a very powerful and useful utility, but it is admittedly
+hard to use, even with http://www.catonmat.net/download/screen.cheat.sheet.pdf[a good cheatsheet]
+https://www.youtube.com/watch?v=b2nZdChQvAs[and a video].
+To the rescue comes a 'screen' wrapper called 'byobu' which provides a much easier-to-use interface
+to the 'screen' utility.  'byobu' has been installed on all the interactive nodes on HPC and can be
+started by typing:
+
+-----------------------------------------------------------------
+$ byobu
+-----------------------------------------------------------------
+
+There will a momentary screen flash as it refreshes and re-displays the login, and then the screen
+will look similar, except for 2 lines along the bottom that show the screen status.  In the images
+below, the one at left is 'without byobu'; at right is 'with byobu'.  The 'byobu' screen shows 3
+active sessions: 'login', 'claw_1', and 'bowtie'.  The graphical tabs at the bottom are part of the
+KDE application http://konsole.kde.org/[konsole] which also supports multiplexed sessions (allowing
+you to multi-multiplex sessions (polyplex?))
+
+image:without_byobu_s.jpg[without byobu]  image:with_byobu_s.jpg[with byobu]
+
+The help screen, shown below,
+can always be gotten to by hitting the '<F9>' key, followed by the '<Enter>' key.
+
+-----------------------------------------------------------------
+Byobu 2.57 is an enhancement to GNU Screen, a command line
+tool providing live system status, dynamic window management,
+and some convenient keybindings:
+
+F2    Create a new window    |  F6    Detach from the session
+F3    Go to the prev window  |  F7    Enter scrollback mode
+F4    Go to the next window  |  F8    Re-title a window
+F5    Reload profile         |  F9    Configuration
+                             |  F12   Lock this terminal
+'screen -r'  - reattach      |  <ctrl-A> Escape sequence
+'man screen' - screen's help | 'man byobu'  - byobu's help
+-----------------------------------------------------------------
+
+Most usefully, you can create new sessions with the 'F2' key, switch between them with 'F3/F4' and
+detach from the screen session with 'F6'. It depends on your OS and your terminal emulator whether
+the 'F keys' will work correctly.  The 'screen' control keys almost always work. See the cheatsheet
+below.
+
+Note that you must have started a 'screen' session before you can detach, so to make sure you're
+always in a screen session, you can have it start automatically on login by changing the state of
+the *Byobu currently launches at login* flag (at bottom of screen after the 1st 'F9'.
+
+When you log back in after having detached, type 'byobu' again to re-attach to all your running
+processes.  If you set 'byobu' to start automatically on login, there will be no need of this, of
+course, as it will have started.
+
+Note that 'byobu' is just a wrapper for 'screen' and the native 'screen' commands continue to work.
+ As you become more familiar with 'byobu', you'll probably find yourself using more of the native
+'screen' commands.  See this very good
+http://www.catonmat.net/download/screen.cheat.sheet.pdf[screen cheatsheet].
+
+[[EnvVars]]
+Environment Variables
+---------------------
+Environment variables ('envvars') are those which are set for your session and can be modified for
+your use.  They include directives to the shell as to which browser or editor you want started when
+needed, or application-specific paths to describe where some data, executables, or libraries are
+located.  For example, here is some of my envvar list, generated by 'printenv':
+
+-----------------------------------------------------------------
+$ printenv
+MANPATH=/usr/local/arx/man:/opt/gridengine/man:/usr/share/man/en:/usr/share/man:/usr/local/share/man
+:/usr/java/latest/man:/opt/rocks/man:/opt/ganglia/man:/opt/sun-ct/man:/opt/gridengine/man
+HOSTNAME=hpc.oit.uci.edu
+TERM=screen-bce
+SHELL=/bin/bash
+ECLIPSE_HOME=/opt/eclipse
+HISTSIZE=1000
+GTK2_RC_FILES=/data/users/hmangala/.gtkrc-2.0
+SSH_CLIENT=10.1.1.1 42655 22
+SGE_CELL=default
+SGE_ARCH=lx-amd64
+QTDIR=/usr/lib64/qt-3.3
+QTINC=/usr/lib64/qt-3.3/include
+SSH_TTY=/dev/pts/17
+ANT_HOME=/opt/rocks
+USER=hmangala
+LS_COLORS=no=00:fi=00:di=01;34:ln=01;36:pi=40;33:so=01;35:bd=40;33;01:cd=40;33;01:or=01;05;37;41:mi=
+01;05;37;41:ex=01;32:*.cmd=01;32:*.exe=01;32:*.com=01;32:*.btm=01;32:*.bat=01;32:*.sh=01;32:*.csh=01
+;32:*.tar=01;31:*.tgz=01;31:*.arj=01;31:*.taz=01;31:*.lzh=01;31:*.zip=01;31:*.z=01;31:*.Z=01;31:*.gz
+=01;31:*.bz2=01;31:*.bz=01;31:*.tz=01;31:*.rpm=01;31:*.cpio=01;31:*.jpg=01;35:*.gif=01;35:*.bmp=01;3
+5:*.xbm=01;35:*.xpm=01;35:*.png=01;35:*.tif=01;35:
+ROCKS_ROOT=/opt/rocks
+XEDITOR=nedit
+MAIL=/var/spool/mail/hmangala
+PATH=/data/users/hmangala/bin:/usr/local/sbin:/usr/local/bin:/bin:/sbin:/usr/bin:/usr/sbin:/usr/X11R
+6/bin:/opt/gridengine/bin:/opt/gridengine/bin/lx-amd64:/usr/lib64/qt-3.3/bin:/usr/local/bin:/bin:/us
+r/bin:/usr/local/sbin:/usr/sbin:/sbin:/opt/eclipse:/opt/ganglia/bin:/opt/ganglia/sbin:/data/hpc/bin:
+/data/hpc/etc:/usr/java/latest/bin:/opt/rocks/bin:/opt/rocks/sbin:/data/users/hmangala/bin
+PWD=/data/users/hmangala
+JAVA_HOME=/usr/java/latest
+EDITOR=joe
+SGE_EXECD_PORT=6445
+
+...
+-----------------------------------------------------------------
+Many of these are generated by the bash shell or by system login processes.  Some ones that I set
+are:
+
+-----------------------------------------------------------------
+EDITOR=joe                   # the text editor to be invoked from 'less' by typing 'v'
+TACGLIB=/usr/local/lib/tacg  # a data dir for a particular application
+XEDITOR=nedit                # my default GUI/X11 editor
+BROWSER=/usr/bin/firefox     # my default web browser
+-----------------------------------------------------------------
+
+Many applications require a set of 'envvars' to define paths to particular libraries or to data
+sets.  In 'bash', you define an 'envvar' very simply by setting it with an '=':
+
+-----------------------------------------------------------------
+# for example, PATH is the directory tree thru which the shell will search for executables
+PATH=/usr/bin
+
+# you can append to it (search the new dir after the defined PATH):
+PATH=$PATH:/usr/local/bin
+
+# or prepend to it (search the new dir before the defined PATH)
+PATH=/usr/local/bin:$PATH
+
+-----------------------------------------------------------------
+
+Note that when you 'assign to' these 'envvars', you use the 'non-$name' version
+and when you use them in bash scripts, you use the '$name' version.  Further,
+in some cases when you use the '$name' version, if it's not clear by context
+what is a variable or not, using braces {} to isolate the name can help ('${name}')
+as well as allowing you to do additional magic with 'parameter expansion'
+(using the braced variable to get values from shell or to perform additional
+work on the variable).  Double parentheses (()) are used to indicate that arithmentic is
+being performed on the variables.  Note that inside the parens, you don't
+have to use the '$name':
+
+-----------------------------------------------------------------
+# using $a, $b, & $c in an arithmetic expression:
+$ a=56;  b=35 c=1221
+$ echo $((a + b * 4/c))
+56
+
+# note this will be integer math, so '56' is returned, not '56.1146601147'
+-----------------------------------------------------------------
+
+See http://goo.gl/JvxnT[this bit on stackoverflow] for a longer, but still brief explanation.
+
+[[SGE]]
+[[SGE_batch_jobs]]
+SGE Batch Submission & Queues
+-----------------------------
+If you have jobs that are very long or require multiple nodes to run, you'll have to 'submit' jobs
+to an SGE Queue (aka Q).
+
+*qsub job_name.sh* will submit the job described by 'job_name.sh' to SGE, which will look for an
+appropriate Q and then start the job running via that Q.  For more on the Qs available on HPC and
+who can use them and how, please see http://hpc.oit.uci.edu/running-jobs[Running Jobs on The HPC
+Cluster], a description of the http://hpc.oit.uci.edu/queues[system Qs], and especially
+http://hpc.oit.uci.edu/free-queue[the free Qs].
+
+Once you log into the login node (via 'ssh -Y <your_UCINetID>@hpc.oit.uci.edu'), you can
+get an idea of the hosts that are currently up by issuing the *qhost* command. You can find out the
+status of your jobs with *qstat -u <your-login>* alone, which will tell you the status of *your*
+jobs or 'qstat' alone, which will tell you the status of all jobs currently queued or running.  A
+very useful PDF cheatsheet for the SGE 'q' commands
+http://gridengine.info/files/SGE_Cheat_Sheet.pdf[is here].
+
+To get an idea of the overall cluster load, type 'q', which will display all the Qs with usage and
+available nodes shown.
+
+
+SGE qstat state codes
+~~~~~~~~~~~~~~~~~~~~~
+When you type qstat, the 'State' codes can tell you a lot about what's 
+happening.  But only if you know what they mean.  Here's what most of them mean.
+
+SGE status codes:
+[options="header"]
+|========================================================================================
+|Category   |  State                                         | SGE Letter Code
+|Pending    |  pending                                       | qw
+|           |  pending, user hold                            | qw
+|           |  pending, system hold                          | hqw
+|           |  pending, user and system hold                 | hqw
+|           |  pending, user hold, re-queue                  | hRwq
+|           |  pending, system hold, re-queue                | hRwq
+|           |  pending, user and system hold, re-queue       | hRwq
+|Running    |  running                                       | r
+|           |  transferring                                  | t
+|           |  running, re-submit                            | Rr
+|           |  transferring, re-submit                       | Rt
+|Suspended  |  job suspended                                 |s, ts
+|           |  queue suspended                               | S, tS
+|           |  queue suspended by alarm                      | T, tT
+|           |  all suspended with re-submit                  | Rs, Rts, RS, RtS, RT, RtT
+|Error      | all pending states with error                  | Eqw, Ehqw, EhRqw
+|Deleted    | all running and suspended states with deletion | dr, dt, dRr, dRt, ds, dS, dT, dRs,
+dRS, dRT
+|========================================================================================
+
+http://impact.open.ac.uk/?q=faq/7[Original table here].
+
+
+qsub scripts
+~~~~~~~~~~~~
+Kevin Thornton, a knowledgeable cluster user and certified geek, has written his own
+http://hpc.oit.uci.edu/~krthornt/BioClusterGE.pdf[Introduction to using the HPC cluster],
+especially describing preparing qsub scripts and creating 'array jobs'.  It is also worth a read.
+
+The shell script that you submit ('job_name.sh' above) should be written in 'bash' and should
+completely describe the job, including where the inputs and outputs are to be written (if not
+specified, the default is your home directory).  The following is a simple shell script that
+defines 'bash' as the job environment, calls 'date', waits 20s and then calls it again.
+
+-------------------------------------------------------
+#!/bin/bash
+
+# request Bourne shell as shell for job
+#$ -S /bin/bash
+
+# print date and time
+date
+# Sleep for 20 seconds
+sleep 20
+# print date and time again
+date
+-------------------------------------------------------
+
+Note that your script has to include (usually at the end) at least one line that executes something
+- generally a compiled program but it could also be a Perl or Python script (which could also
+invoke a number of other programs). Otherwise your SGE job won't do anything.
+
+[[keepdatalocal]]
+Using qsub scripts to keep data local
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+HPC depends on a network-shared '/data' filesystem.  The actual disks are on a network file server
+node so users are local to the data when they log in.  However, when you submit an SGE job, unless
+otherwise specified, the nodes have to read the data over the network and write it back across the
+network.  This is fine when the total data involved is a few MB, such as is often the case with
+molecular dynamics runs - small data in, lots of computation, small data out.  However, if your
+jobs involve 100s or 1000s of MB, the network traffic can grind the entire cluster to a halt.
+
+To prevent this network armaggedon, there is a '/scratch' directory on each node (writable by all
+users, but 'sticky' - files written can only be deleted by the user who wrote them).
+
+-------------------------------------------------------
+$ ls -ld /scratch
+drwxrwxrwt 6 root root 4096 Oct 29 18:20 /scratch/
+         ^
+         + the 't' indicates 'stickiness'
+--------------------------------------------------------
+
+If there is a chance that your job will consume or emit lots of data, please use the local /scratch
+dir to *stage your data*, and especially your output.
+
+This is dirt simple to do.  Since your qsub script executes on each node,
+your script should copy the data from your '$HOME dir' to '/scratch/$USER/input' to stage the data,
+then specify '/scratch/$USER/input' as input, with your application writing to
+'/scratch/$USER/output_node#'. When the application has finished, copy the output files back to
+your '$HOME dir' again, and finally cleaning up the '/scratch/$USER/whatever' afterwards.
+
+Here's https://wiki.duke.edu/display/SCSC/Scratch+Disk+Space[another page of information] on using
+scratch space.
+
+
+More example qsub scripts
+^^^^^^^^^^^^^^^^^^^^^^^^^
+- an http://moo.nac.uci.edu/~hjm/bduc/scratchjob.sh[example script] that does data copying to
+/scratch
+- another http://moo.nac.uci.edu/~hjm/bduc/scratch_example_2.sh[example script that uses /scratch]
+and collates and moves data back to $HOME after it's done.
+- http://moo.nac.uci.edu/~hjm/bduc/sleeper1.sh[sleeper1.sh] is a slightly more elaborate one.
+- http://moo.nac.uci.edu/~hjm/bduc/fsl_sub[fsl_sub] is a longer, much more elaborate one that uses
+a variety of parameters and tests to set up the run.
+- http://moo.nac.uci.edu/~hjm/bduc/array_job.sh[array_job.sh] is a qsub script that implements an
+array job - it uses SGE's internal counter to vary the parameters to a command.  This example also
+uses some primitive bash arithmetic to calculate the parameters.
+- http://moo.nac.uci.edu/~hjm/bduc/qsub_generate.py[qsub_generate.py] is a Python script for
+generating serial qsubs, in a manner similar to the SGE array jobs.  However, if you need more
+control over your inputs & outputs and /or are more familiar with Python, it may be useful.
+- a script that launches http://moo.nac.uci.edu/~hjm/bduc/MPI_suspendable.sh[an MPI script] in a
+way that allows it to *suspend and restart*.  If you do not write your MPI scripts in this way and
+try to suspend them, they will be aborted and you'll lose your intermediate data.
+(NB: it can take minutes for an MPI job to smoothly suspend; only seconds to restart).
+
+
+[[stagingdata]]
+.Staging data - some important caveats
+[IMPORTANT]
+==================================================================================
+*READING:* Copying data to the remote node makes sense when you have large input data and it has to
+be repeatedly parsed.  It makes less sense when a lot of data has to be read *once* and is then
+ignored. (If the data is only read once, why copy it?  Just read it in the script.)  If you stage
+it to '/scratch', it is still traversing the network once so there is little advantage. (If you
+have significant data to be re-read on an ongoing basis, contact me and depending on circumstances,
+we may be able to let you leave it on the '/scratch' system of a set of nodes for an extended
+period of time.  Otherwise, we expect that all '/scratch' data will be cleaned up post-job.
+
+*WRITING:* Due to the link:#writeperfongl[limitations of the gluster filesystem], where zillions of
+small writes can result in very bad write performance, it may make sense to stage your *output* to
+the node-local '/scratch' dir and then copy the output files to their final resting places after
+the analysis.  This will bypass gluster's bad performance on repeated small writes and instead do a
+single streaming write after everything has been written (at which gluster is very good).
+
+If it does make sense to stage your data, please try to follow the guidelines below.  If the
+cluster locks up, offending jobs will be deleted without warning so ask me if you have questions.
+
+*Limit your staging bandwidth* +
+If your job(s) are going to require a mass copy (for example, if you submit 20 jobs that each have
+to copy 1GB), then throttle your job appropriately by using a bandwidth-limiting protocol like 'scp
+-C -l 2000' instead of 'cp'.  This 'scp' command compresses the data and also limits the bandwidth
+to ~250KB/s in the above case ('2000' refers to KiloBITS, not KiloBYTES).  'scp' will work without
+requiring passwords, just like 'ssh' within the cluster.  The syntax is slightly different tho.
+
+-------------------------------------------------------------------------------
+# use scp to copy from my $HOME dir to a local node /scratch dir as would be required in a qsub
+script
+scp -C -l 2000 10.1.255.239:/data/users/hmangala/my_file /scratch/hmangala
+-------------------------------------------------------------------------------
+
+This prevents a few bandwidth-unlimited jobs from causing the available cluster bandwidth to drop
+to zero, locking up all users.
+If you have 'a single job' that will copy a single 100MB file, then don't worry about it; just copy
+it directly.
+
+Assume the aggregate bandwidth of the cluster is about '100 MB/s'.  No set of jobs should exceed
+half of that, so if you're submitting 50 jobs, the total bandwidth should be set to no more than
+50MB/s or 1 MB/s per job or in scp terms '-l 10000'.
+
+*Check the network before you submit a job* +
+While there's no way to predict the cluster environment after you submit a job, there's no reason
+to make an existing BAD situation WORSE.  If the cluster is exhibiting network congestion, don't
+add to it by submitting 100 staging jobs. (and if it does appear to be lagging,
+mailto:harry.mangalam@uci.edu[please let me know])
+
+[[congestion]]
+*How to check for cluster congestion* +
+On the login node, you can use a number of tools to see what the status is.
+
+- 'top' give you an updating summary of the top CPU-using processes on the node.  If the top
+processes include 'nfsd', and the load average is above \~4 with no user processes exceeding 100%,
+then the cluster can be considered congested. Most users have a multi-colored prompt that shows the
+current 5m, 10m, & 15m load on the system in square brackets.
+-------------------------------------------------------------------------------
+Fri Sep 23 14:56:15 [0.13 0.20 0.36]  hjm@bongo:~
+617 $
+-------------------------------------------------------------------------------
+
+(For those that don't have the fancy prompt, you can add it by inserting the following line into
+your '\~/.profile' or '~/.bashrc'.)
+-------------------------------------------------------------------------------
+PS1="\n\[\033[01;34m\]\d \t \[\033[00;33m\][\$(cat /proc/loadavg | cut -f1,2,3 -d' ')] \
+\[\033[01;32m\]\u@\[\033[01;31m\]\h:\[\033[01;33m\]\w\n\! \$ \[\033[00m\]"
+-------------------------------------------------------------------------------
+
+- 'nfswatch' produces a 'top'-like output that can display a number of usage patterns on NFS,
+including top client by hostname, username, etc.
+- 'nethogs' produces a 'top'-like output that shows which processes are using the most bandwidth.
+- 'ifstat' will produce a continuous, instantaneous chart of network interface output.
+- 'dstat' will produce a similar readout of many system parameters including CPU, memory usage,
+network, and storage activity.
+- 'htop' produces a colored, top-like output that is multiply sortable to debug what's happening
+with the system.
+- 'atop' produces yet another top-like output but highlights saturated systems.  It provides more
+info to the root user, but is also useful for regular users.
+- 'iftop' produces a very useful (but only available to root) text-based, updating diagram of
+network bandwidth by endpoints.  Mentioned as it might be useful to users on their own machines.
+- 'etherape' will produce a graphical ring picture of your network with connections colored by
+connection type and sized by amount of data flowing thru it.
+
+==================================================================================
+
+Fixing qsub errors
+~~~~~~~~~~~~~~~~~~
+
+Occasionally, a script will hiccup and put your job into an error state.  This can be seen by the
+qstat *state* output:
+-------------------------------------------------------
+$ qstat -u '*'
+
+job-ID  prior   name       user         state submit/start at     queue
+slots ja-task-ID
+ - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+- - - - - - - -
+   6868 0.62500 simple.sh  hmangala     E     06/08/2009 11:29:02 free@compute-1-1
+                                       ^^^
+-------------------------------------------------------
+
+the *E* (^^^) means that the job is in an *ERROR* state.  You can either delete the job with *qdel*:
+-------------------------------------------------------
+qdel <Job ID> # deletes the job
+-------------------------------------------------------
+
+or often change it's status with the *qmod* command.
+
+-------------------------------------------------------
+qmod -cj <Job ID> # clears the error state of the job
+-------------------------------------------------------
+
+[[SGE_script_params]]
+Some useful SGE script parameters
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+When you submit an SGE script, it is processed by 'both bash and SGE'. In order to protect the SGE
+directives from being misinterpreted by 'bash', they are prefixed by '#$'  This prefix causes bash
+to ignore the rest of the line (considers it a comment), but allows SGE to process the directive
+correctly.
+
+So, the rules are:
+
+- If it's a bash command, don't prefix it at all.
+- If it's an SGE directive, prefix it with both characters ('#$').
+- If it's a comment, prefix it only with a '#'.
+
+//#$ -q long*@a64-*  # run only on these nodes in this Q
+
+Here are some of the most frequently used
+-------------------------------------------------------
+#$ -N job_name     # this name shows in qstat
+#$ -S /bin/bash    # run with this shell
+#$ -q free64     # run in this Q
+#$ -l h_rt=50:00:00  # need 50 hour runtime
+#$ -l mem_free=2G  # need 2GB free RAM
+#$ -pe mpich 4     # define parallel env and request 4 CPU cores
+#$ -cwd            # run the job out of the current directory
+                   # (the one from which you ran the script)
+#$ -o job_name.out # the name of the output file
+#$ -e job_name.err # the name of the error file
+#  or
+#$ -o job_name.outerr -j y            # '-j y' merges stdout and stderr
+
+#$ -t 0-10:2       # task index range (for looping); generates 0 2 4..10
+#                    Uses $SGE_TASK_ID to find out whether they are task
+#$ -notify         # send mail about this job
+#$ -M <email> -    # to the this <email> address.
+#$ -m beas         # send a mail to owner when the job
+#                      begins (b), ends (e), aborts (a),
+#                      or suspends (s).
+-------------------------------------------------------
+
+When a job starts, a number of SGE environment variables are set and are available to the job
+script.
+
+Here are most of them:
+
+- ARC - The Sun Grid Engine architecture name of the node on which the job is running; the name is
+compiled-in into the sge_execd binary
+- SGE_ROOT - The Sun Grid Engine root directory as set for sge_execd before start-up or the default
+/usr/SGE
+- SGE_CELL - The Sun Grid Engine cell in which the job executes
+- SGE_JOB_SPOOL_DIR - The directory used by sge_shepherd(8) to store jobrelated data during job
+execution
+- SGE_O_HOME - The home directory path of the job owner on the host from which the job was submitted
+- SGE_O_HOST - The host from which the job was submitted
+- SGE_O_LOGNAME - The login name of the job owner on the host from which the job was submitted
+- SGE_O_MAIL - The content of the MAIL environment variable in the context of the job submission
+command
+- SGE_O_PATH - The content of the PATH environment variable in the context of the job submission
+command
+- SGE_O_SHELL - The content of the SHELL environment variable in the context of the job submission
+command
+- SGE_O_TZ - The content of the TZ environment variable in the context of the job submission command
+- SGE_O_WORKDIR - The working directory of the job submission command
+- SGE_CKPT_ENV - Specifies the checkpointing environment (as selected with the qsub -ckpt option)
+under which a checkpointing job executes
+- SGE_CKPT_DIR - Only set for checkpointing jobs; contains path ckpt_dir (see the checkpoint manual
+page) of the checkpoint interface
+- SGE_STDERR_PATH - The path name of the file to which the standard error stream of the job is
+diverted; commonly used for enhancing the output with error messages from prolog, epilog, parallel
+environment start/stop or checkpointing scripts
+- SGE_STDOUT_PATH - The path name of the file to which the standard output stream of the job is
+diverted; commonly used for enhancing the output with messages from prolog, epilog, parallel
+environment start/stop or checkpointing scripts
+- SGE_TASK_ID - The task identifier in the array job represented by this task
+- ENVIRONMENT - Always set to BATCH; this variable indicates that the script is run in batch mode
+- HOME - The user's home directory path from the passwd file
+- HOSTNAME - The host name of the node on which the job is running
+- JOB_ID - A unique identifier assigned by the sge_qmaster when the job was submitted; the job ID
+is a decimal integer in the range to 99999
+- JOB_NAME - The job name, built from the qsub script filename, a period, and the digits of the job
+ID; this default may be overwritten by qsub -N
+- LOGNAME - The user's login name from the passwd file
+- NHOSTS - The number of hosts in use by a parallel job
+- NQUEUES - The number of queues allocated for the job (always 1 for serial jobs)
+- NSLOTS - The number of queue slots in use by a parallel job
+
+The above was extracted from http://www.cbi.utsa.edu/sge_tutorial[this useful page].
+For more on SGE shell scripts, http://nbcr.sdsc.edu/pub/wiki/index.php?title=Sample_SGE_Script[see
+here].
+
+For a sample SGE script that uses mpich2, link:#mpich2script[see below]
+
+Where do I get more info on SGE?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Oracles purchase of Sun has resulted in a major disorganization of SGE (now OGE) documentation.  If
+a link doesn't work, it may be because of this kerfuffle.  Tell me if a link doesn't work anymore
+and I'll try to fix it.
+
+ * The ROCKS group has a http://www.rocksclusters.org/rocksapalooza/2006/lab-sge.pdf[very good SGE
+Introduction] from the User's perspective.  Ignore the ROCKS-specific bits.
+ * http://www.google.com/search?hl=en&q=Sun+Grid+Engine&btnG=Search[Google Sun Grid Engine] is a
+good, easy start.  Maybe you'll be lucky.. :)
+ * http://gridengine.info/[Chris Dagdigian's SGE site] is very good and has an
+http://wiki.gridengine.info/wiki/index.php?Main_Page[excellent wiki]
+ * The official http://www.oracle.com/technetwork/oem/grid-engine-166852.html[Sun (now Oracle) Grid
+Engine site] has a lot
+    of good links.
+ * The http://wikis.sun.com/display/sungridengine/Home[SGE docs] are the final
+   word, but there are a lot of pages to cover.
+
+If you need to run an MPI parallel job, you can request the needed resources by Q as well by
+specifying the resources inside the shell script (more on this later) or externally via the -q and
+-pe flags (type 'man sge_pe' on one of the HPC nodes).
+
+
+
+Special cases
+-------------
+
+Editing Huge Files
+~~~~~~~~~~~~~~~~~~
+In a word, *don't*.  Many research domains generate or use multi-GB text files. Prime offenders are
+log files and High-Thruput Sequencing files such as those from Illumina. These are meant to be
+processed programmatically, not with an interactive editor. When you use most such editors, it
+typically tried to load the entire thing into memory and generates various cache files.  (If you know of a text editor that handles such files without doing this, please let me know.)
+
+Otherwise, use the utilities http://goo.gl/6kBwR[head] which will dump the 1st few lines of a file,  http://goo.gl/ISdl2[tail] which will dump the last few lines of a file,
+http://goo.gl/3vB04[grep] which will allow you to search for http://en.wikipedia.org/wiki/Regular_expression[regular expressions], http://goo.gl/PQY80[split] which will split the file into smaller bits, http://goo.gl/nDbu[less], a pager which allows you to page thru a text document,
+http://goo.gl/nZwOX[sed] a stream editor which allows you to change one regex with another, and http://goo.gl/r8YOc[tr] the translate utility which allows you to translate or delete character strings to another, possibly in combinations with
+http://goo.gl/TkFSc[Perl]/http://goo.gl/Vjqc[Python] to peek into such files and or change them.
+
+http://en.wikipedia.org/wiki/Grep[grep] especially is one of the most useful tools for text
+processing you'll ever use.
+
+
+For example, the following command starts at 2,000,000 lines into a file and stops at 2,500,000
+lines and shows that range in the 'less' pager.
+
+---------------------------------------------------------------------
+$ perl -n -e 'print if ( 2000000 .. 2500000)' humongo.txt | less
+---------------------------------------------------------------------
+
+In addition, please use the compression utilities http://goo.gl/WQGhy[gzip/gunzip],
+http://goo.gl/baoIB[bzip2], http://goo.gl/VpiyQ[zip], http://goo.gl/7sdXN[zcat], etc instead of the
+http://goo.gl/b2828[ark] graphical utility on such files. 'ark' apparently tries to store
+everything in RAM before dumping it.
+
+
+NAMD scripts
+~~~~~~~~~~~~
+http://www.ks.uiuc.edu/Research/namd/[namd] is a molecular dynamics application that interfaces
+well with http://www.ks.uiuc.edu/Research/vmd/[VMD]. Both of these are available on HPC - see the
+output of the 'module avail' command.
+
+The 'qsub' scripts to submit 'namd 2.7' jobs to the SGE Q'ing system are a bit tricky due to the
+way early 'namd' is compiled - the specification of the worker nodes is provided by the 'charmrun'
+executable and some complicated additional files supplied with the 'namd' package.  This means that
+'namd2.7x' is more complicated to set up and run than 'namd2.8x'.  The 'qsub' scripts are provided
+separately below.
+
+R on HPC
+~~~~~~~~~
+
+http://www.r-project.org[R] is an object-oriented language for statistical computing, like SAS (see
+below).  It is becoming increasingly popular among both academic and commercial users to the extent
+that it was http://www.nytimes.com/2009/01/07/technology/business-computing/07program.html[noted in
+the New York Times] in early 2009.  For a very simple overview with links to other, better
+resources, see http://moo.nac.uci.edu/~hjm/AnRCheatsheet.html[this link]
+
+There are multiple versions of R on HPC, and they do not all behave identically because of module
+requirements or simply due to time required to install.  If you run across a situation where a
+library isn't available, please let us know.
+
+For most things, everything works identically.  The things that don't usually have to do with
+parallel processing in R and the underlying
+http://en.wikipedia.org/wiki/Message_Passing_Interface[Message Passing Interface] (MPI) technology.
+If a parallel library in R doesn't work as expected, please let us know.
+
+We also support 'http://www.rstudio.com/[RStudio] on the HPC login node.  You'll need to 'module load' your favorite R version and then type 'rstudio'.  It should pop up on your local screen as long as you've logged in with link:#x2go[x2go] or started an X11 server.  See link:#connect[the connection section] and link:#graphics[the Graphics section] to make sure you can view X11 graphics.
+
+[[sas93]]
+SAS 9.3 for Linux
+~~~~~~~~~~~~~~~~~
+
+We have a single node-locked license for SAS 9.3 on the login node.  While the license is for that
+node only, as many instances of SAS can be run as there is RAM for it.
+
+To start SAS on the login node:
+-------------------------------------------------------
+ssh -Y <Your_UCINETID>@hpc.oit.uci.edu
+
+# then change directories (cd) to where your data is
+cd /dir/holding/data
+
+# and start SAS
+sas
+-------------------------------------------------------
+
+This will start an X11 SAS session, opening several windows on your monitor (as long as you have an
+active X11 server running).  If you're connecting from Mac or Windows, link:#graphics[please see
+this link].
+
+You can use the SAS program editor (one of the windows that opens automatically), or use any other
+editor you want and paste or import that code into SAS.  The combination of
+http://www.gnu.org/software/emacs/[emacs] and http://ess.r-project.org/[ESS (Emacs Speaks
+Statistics)] is a very powerful combination.  It's mostly targeted to the R language, but it also
+supports SAS and Stata.
+
+http://www.nedit.org[Nedit] also has a
+http://www.nedit.org/ftp/contrib/highlighting/sas.1.0.pats[template file for SAS].
+
+
+Parallel jobs
+~~~~~~~~~~~~~
+
+HPC supports several http://en.wikipedia.org/wiki/Message_Passing_Interface[MPI] variants.
+
+MPICH2
+^^^^^^
+
+HPC provides mpich in 2 versions; 'mpich 1.2.7', 'mpich2 1.4.1', and 'mpich 3.0.4'
+in conjunction with a few compiler combinations.  Please choose the best one via 'module avail'.
+
+- To compile MPI programs, you'll have to link:#modules[module load] the correct MPICH/MPICH2
+environment:
+----------------------------------------------------------------
+module load mpich2
+----------------------------------------------------------------
+
+- you may need to create the file *~/.mpd.conf*, as below:
+----------------------------------------------------------------
+cd
+# replace 'thisismysecretpassword' with something random.
+# You won't have to remember it.
+echo "MPD_SECRETWORD=thisismysecretpassword" >.mpd.conf
+chmod og-rw .mpd.conf
+----------------------------------------------------------------
+
+- your mpich2 qsub scripts have to include the 2 following lines in order to allow
+SGE to find the PATHS to executables and libraries
+----------------------------------------------------------------
+module load mpich2
+export MPD_CON_EXT="sge_$JOB_ID.$SGE_TASK_ID"
+----------------------------------------------------------------
+
+[[mpich2script]]
+A full MPICH2 script is shown below.  Note the '#$ -pe mpich2 8' line which
+sets up the MPICH2 parallel environment for SGE and requests 8 slots (CPUs).
+(see link:#SGE_script_params[above] for more SGE script parameters)
+----------------------------------------------------------------
+#!/bin/bash
+# good idea to be explicit about using /bin/bash (NOT /bin/sh).
+# Some Linux distros symlink bash -> dash for a lighter weight
+# shell, which works 99% of the time but causes unimaginable pain
+# in those 1% occassions.
+
+# Note that SGE directives are prefixed by '#$' and plain comments are prefixed by '#'.
+# Text after the '<-' should be removed before executing.
+
+#$ -q long    <- the name of the Q you want to submit to
+#$ -pe mpich2 8    <- load the mpich2 parallel env and ask for 8 slots
+#$ -S /bin/bash    <- run the job under bash
+#$ -M harry.mangalam@uci.edu <- mail this guy ..
+#$ -m bea          <- .. when the script (b)egins, (e)nds, or (a)borts or (s)uspends
+#$ -N cells500     <- name of the job in the qstat output
+#$ -o cells500.out <- name of the output file.
+#
+module load mpich2              <- load the mpich2 environment
+export MPD_CON_EXT="sge_$JOB_ID.$SGE_TASK_ID" <- this is REQUIRED for SGE to set it up.
+module load neuron              <- load another env (specific for 'neuron')
+export NRNHOME=/apps/neuron/7.0 <- ditto
+cd /data/users/hmangala/newmodel      <- cd to this dir before executing
+echo "calling mpiexec now"      <- some deugging text
+mpiexec -np 8 nrniv -mpi -nobanner -nogui /data/users/hmangala/newmodel/model-2.1.hoc
+# above, start the job with 'mpiexec -np 8', followed by the executable command.
+----------------------------------------------------------------
+
+OPENMPI
+^^^^^^^
+HPC also supports the openMPI versions '1.4.4, 1.6.0, 1.6.3, 1.6.5', also in multiple
+compiler combinations.  OpenMPI is more easily set up for runs than mpich, at least
+in the earlier versions.  However using them is fairly similar and the recent versions are very compatible.
+
+
+
+MATLAB
+~~~~~~
+
+MATLAB can be started from the login node by loading the appropriate module and typing 'matlab':
+--------------------------------------------------------------------
+module load MATLAB
+matlab
+--------------------------------------------------------------------
+This will start the MATLAB Desktop on the login node which is fine to edit and check code but NOT to run computationally heavy jobs.  If you need to do that, use 'qrsh' to be moved to another machine and then use the above sequence to start MATLAB on the secondary node.
+
+
+
+We have a few licenses for interactive MATLAB on the HPC cluster which are decremented from the campus
+MATLAB license pool.  They are meant for running interactive, relatively short-term MATLAB jobs,
+typically less than a couple hours.  If they go longer than that, or we see that you've launched
+several MATLAB jobs, they are liable to be killed off.
+
+If you want to run long jobs using MATLAB code, the accepted practice is to compile your MATLAB
+'.m' code to a native executable using the MATLAB compiler 'mcc' and then submit that code, along
+with your data to an SGE Q (see above for submitting batch jobs).  This approach does not require a
+MATLAB license, so you can run as many instances of this compiled code for as long as you want
+without impacting the campus license pool.
+
+The official mechanics of doing this http://tinyurl.com/nebw3e[is described here].
+
+Some additional notes from someone who has done this link:#matlabcompiler[is in the Appendix].
+
+[[matlab-license-status]]
+==== MATLAB license status
+
+You can check the license status of the campus MATLAB pool with the following command (after you 'module load MATLAB'):
+
+--------------------------------------------------------------------
+$MATLAB/bin/glnxa64/lmutil lmstat -a -c 1711@seshat.nacs.uci.edu
+
+#Please include the above line in your qsub scripts if you're using MATLAB to make sure the license server is online.
+
+# you can check more specifically by then grepping thru the output.
+# For example to find the status of the Distributed Computing Toolbox licenses:
+
+$MATLAB/bin/glnxa64/lmutil lmstat -a -c 1711@seshat.nacs.uci.edu | grep Distrib_Computing_Toolbox
+--------------------------------------------------------------------
+
+
+MATLAB Alternatives
+~~~~~~~~~~~~~~~~~~~
+There are a number of MATLAB alternatives, the most popular of which are available on HPC.  Since
+these are Open Source, they aren't limited in the number of simultaneous uses, altho you should
+always try to run batch jobs in the SGE queue if possible.
+http://moo.nac.uci.edu/~hjm/ManipulatingDataOnLinux.html#MathModel[See this doc for an overview of
+them and further links].
+
+GPUs
+~~~~
+HPC has one node that contains 4 recent Nvidia GPUs.  Please see http://hpc.oit.uci.edu/gpu[this
+document] for more information on the GPUs and how to use them.
+
+
+[[graphics]]
+Graphics
+--------
+All the interactive nodes will have the full set of X11 graphical tools and libraries. However,
+since you'll be running remotely, any application that requires OpenGL, while it will probably run,
+will run so slowly that you won't want to run it for long.  If you have an application that
+requires OpenGL, you'll be much better off downloading the processed data to your own desktop and
+running the application locally.
+
+If you connect using Linux
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+In order to have access to these X11 tools via Linux, your local Linux must have the X11 libraries
+available. Unless you have explicitly excluded them, all modern Linux distros include X11 runtime
+libraries.  Don't forget to use the the '-Y' flag when you connect using ssh to tunnel the X11
+display back to your machine:
+-----------------------------------------------------------------------
+ssh -Y your_UCINetID@hpc.oit.uci.edu
+-----------------------------------------------------------------------
+
+If you connect using MacOSX
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+MacOSX no longer supplies the previous X11 libraries and applications, so for modern Macs, you'll have to install the (still free) http://xquartz.macosforge.org/landing/[XQuartz] package by yourself.  XQuartz is also required by the link:#x2go[x2go] package to view graphical applications remotely.
+
+[[XonWin]]
+If you connect using Windows
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+There are quite a few ways to use a Linux system besides logging into it directly from the console.
+
+- remote shell access, using http://www.chiark.greenend.org.uk/~sgtatham/putty/[PuTTY], a free ssh
+client, which even allows X11 forwarding so that you can use it with Xming (below) to view
+Graphical apps from HPC. 'Putty' is a straight ssh terminal connection that allows you to securely
+connect to the Linux server and interact with it in a purely text-based basis. For a shell/terminal
+cognoscenti, it's considerably less capable than any of the terminal apps (konsole, eterm,
+gnome-terminal, etc) that come with Linux, but it's fine for establishing the 1st connection to the
+Linux server. If you're going to run anything that requires an X11 GUI, you'll need to set PuTTY to
+do X11 forwarding.  To enable this, double-click the PuTTY icon to bring up the PuTTY configuration
+window. On the left Pane, follow the clickpath: 'Connection -> SSH -> X11 -> set the Enable X11
+Forwarding'. After setting this, click on Session at top of the pane, and set a name in 'Saved
+Sessions' on lower right pane, click the [Save] button to save the connection information so that
+the next time you need to connect, the correct setting will already be set.  You can customize
+PuTTY with a number of add-ons and config tweaks,
+http://www.thegeekstuff.com/2008/08/turbocharge-putty-with-12-powerful-add-ons-software-for-geeks-3/[some of which are described here.]
+
+[[x2go]]
+- http://wwwx2go.org[x2go] is a dramatic improvement on the NoMachine code (see below), in ease of installation
+performance, and features.  You can download the clients for OSX, Windows, and Linux
+http://www.x2go.org/doku.php/download:start[for free here].  The server has been installed on the
+HPC login node and all you have to do is configure your client to connect to it.  http://moo.nac.uci.edu/~hjm/biolinux/Linux_Tutorial_1.html#_x2go[See this link] for instructions to do so.
+
+
+[[xming]]
+- http://sourceforge.net/projects/xming/[Xming], a lightweight and free X11 server (client, in
+normal terminology). Xming provides 'only the X server', as opposed to 'Cygwin/X' below.  Xming
+provides the X server that displays the X11 GUI information that comes from the Linux machine. When
+started, it looks like it has done nothing, but it has started a hidden X11 window (note the Xming
+icon in the toolbar). When you start an X application on the Linux server (after logging in with
+PuTTY as described above), it will accept a connection from the Linux machine and display the X11
+app as a single window that looks very much like a normal MS WinXP window. You'll be able to move
+it around, minimize it, maximize it and close it by clicking on the appropriate button in the title
+bar. There may be a slight lag in response in that window, but over the University network, it
+should be be acceptable.
+
+- if you have trouble setting up Putty and Xming, please see
+http://www.math.umn.edu/systems_guide/putty_xwin32.html[this page which describes it in more
+detail, with screenshots]
+
+- http://x.cygwin.com/[Cygwin/X], another free, but much larger and capable X server (combined with
+an entire Linux-on-Windows implementation). Provides much more power and requires much more user
+configuration than Xming.  Cygwin/X provides not only a free Xserver but nearly the entire Linux
+experience to Windows. This is more than what most normal users want (both in diskspace and
+configuration), especially if you have a real Linux server to use. The X11 server is very good tho,
+as you might expect.
+
+- http://www.realvnc.com/[VNC server and client]. A decent way to connect to a server, but
+outclassed by the link:#x2go[x2go system described below].
+
+
+- http://nomachine.com/[NoMachine] http://www.nomachine.com/download.php[Server and Clients], a
+system much like the VNC system but much more efficient and therefore has better performance.
+Better than VNS due to its compression routines.  NoMachine still makes its client available for
+free but has closed its server source code so it is no longer useful to HPC.  The older source code
+has been forked and improved by the x2go group (above) and that is the solution we recommend now.
+
+
+
+
+How to Manipulate Data on Linux
+-------------------------------
+
+This is a topic for a another document named
+http://moo.nac.uci.edu/~hjm/ManipulatingDataOnLinux.html[Manipulating Data on Linux] and the
+documents and sites referred to therein.
+
+[[qanda]]
+Frequently Asked Questions
+--------------------------
+OK, maybe not frequently, but cogently, and CAQ just doesn't have the same ring.
+If you have other questions, please ask them.  If they address a frequent theme, I'll add them
+here.  In any case, I'll try to answer them.
+
+
+
+
+=== What's a node?  Is it the same as a processor?
+
+A node refers to a self-contained chassis that has its own power supply, motherboard (containing
+RAM, CPU, controllers, IO slots and devices (like ethernet ports), various wires and unidentifiable
+electrogrunge).  It usually contains a disk, altho this is not necessary with
+boot-over-the-network.  It's not the same as a processor.  Typical HPC nodes (from the Jurassic
+period) have 2-4 CPU cores per node.  Modern nodes have 8 to >100 cores.
+
+=== When I submit a .sh script with qsub, does the following line refer to 10 processors or 10 nodes or what?
+ #$ -pe openmpi 10
+
+10 processor *cores*.  Most modern physical CPUs (the thing that plugs into the motherboard socket)
+have multiple processor cores internally these days.
+
+=== What about the call to mpiexec?
+ mpiexec -np 10 nrniv -mpi -nobanner -nogui modelbal.hoc
+
+Same thing as above.  That's why they should be the same number.
+
+=== Is it possible for the processors on one node to be working on different jobs?
+Yes, altho the scheduler can be told to try to keep the jobs on 1 node (better for sharing memory
+objects like libs, but worse if there's significant contention for other resources like disk &
+network IO).  Most of the MPI environments on HPC are currently set to spread out the jobs rather
+than bunch them together on as few nodes as possible.
+
+=== If CPU 1 (working on Job A) fails, does it bring down CPU 2 (working on Job B)?
+No, and in fact it doesn't typically work that way. A job does not run
+on a particular CPU; on a multi-core node, different threads of the
+same job can hop among CPU cores.  The kernel allocates threads and
+processes to whatever resources it has to optimize the job.
+
+=== Is the performance of processor 1 dependent on whether processor 2 is engaged in the same or
+different job?
+It depends. The computational bits of a thread, when they are being executed
+on a CPU, don't interfere much with the other processor. They do share
+memory, interrupts, and IO so if they're doing roughly the same
+thing at roughly the same time, they'll typically want to read and
+write at the same time and thus compete for those resources.  That was the rationale for 'spreading
+out' the MPI jobs rather than 'filling up' nodes.
+
+=== Is it possible for one processor to use more than its "share" of the memory available to the node?
+i.e., is it wrong for me to count on having a certain amount of memory just because I've specified
+a certain number of processors (nodes?) for my job?
+The CPU running prog1 will request the RAM that it needs independent
+of other CPUs running prog1 or prog2, prog3, etc.  If the node gets close to running
+out of real RAM, it will start to swap idle (haven't-been-
+accessed-recently) pages of RAM to the disk, freeing up more RAM for
+active programs.  If the computer runs out of both RAM and swap, it will hopefully
+kill off the offending programs until it regains enough RAM to
+function and then it will continue until it happens
+again.  This is why you should try to estimate the amount of RAM your prog
+will use and indicate that to the scheduler with the '-l mem_free' directive.  See
+link:#SGE_script_params[the section above.]
+
+=== Why I can ssh to HPC but can't scp files to it?
+Probably because you edited your '.bashrc' (or '.zrc' or '.tcshrc') to emit something useful when
+you log in.  (Both scp and ssh have a useful option '-v' that puts it into 'verbose' mode that
+tells you much more about what the process is doing and why it fails). You need to mask this output
+from non-interactive logins like 'scp' and remote 'ssh' execution by placing such commands inside a
+*test for an interactive shell*. When using bash, you would typically do something like this:
+-------------------------------------------------------------------
+interactive=`echo $- | grep -c i `
+if [ ${interactive} = 1 ] ; then
+  # tell me what my 22 latest files are
+  ls -lt | head -22
+fi
+-------------------------------------------------------------------
+
+=== Where are the Perl/Python scripts that came with an application?
+It's often the case that an app is delivered with a number of scripts that make use of it in a particular way. If the application itself is written in that language and is delivered as a library that is supposed to be installed as part of the Python / Perl tree, we'll install it directly into the Perl / Python libs (currently 'perl/5.16.2' or 'enthought_python/7.3.2').
+
+If it's a standalone script, which doesn't require such integration, it'll go in the app's 'bin' dir.  In either case, the module should set up the paths so you can just call the script. For example, in the case of 'rseqc', if you 'module load rseqc', it will also 'module load enthought_python' and set up all the paths:
+
+-------------------------------------------------------------------
+$ module load rseqc
+
+# bam2wig.py is a script supplied with rseqc, but installed with enthought_python
+$ which bam2wig.py     # where is it installed?
+/data/apps/enthought_python/7.3.2/bin/bam2wig.py
+
+# so it's installed in the enthought_python tree. If the scripts aren't automatically found,
+# the module probably isn't written correctly, so let us know.
+-------------------------------------------------------------------
+
+[[mypython]]
+=== How to I install my own Python module?
+
+Some modules are clearly not going to be used by most HPC users.  For those Python modules and libs, we suggest that you install and maintain them locally.  For most users, you'll want to use the 'enthought_python' module as a basis, so start from there and then use 'pip' to install the package locally.
+
+-------------------------------------------------------------------
+$ module load enthought_python
+$ pip install --user PeachPy   # as an example
+Downloading/unpacking PeachPy
+  Running setup.py egg_info for package PeachPy
+
+Installing collected packages: PeachPy
+  Running setup.py install for PeachPy
+
+Successfully installed PeachPy
+Cleaning up...
+-------------------------------------------------------------------
+This installs the module 'PeachPy' into your local dir '~/.local/lib/python2.7/site-packages'.
+
+NB: use 'pip' instead of 'easy_install' if there's a choice. 'easy_install' seems to be deprecated or at least is not as smooth and reversible as 'pip'.
+
+You might also use the package http://www.virtualenv.org/en/latest/[virtualenv] to isolate your packages from the system versions.
+
+Both 'pip' and 'virtualenv' are installed as part of the 'enthought_python' module.
+
+
+=== How do I write the shebang line so that the script is portable?
+Many interpreted languages Perl, Python, bash, Ruby, etc) can be run like
+any other application by just making it executable and naming the script:
+-------------------------------------------------------------------
+$ chmod +x /path/to/myname.pl
+$ myname.pl --opt1=bannana --scope=34 --infile=/path/to/my/file
+-------------------------------------------------------------------
+
+This is accomplished by specifying the 'shebang' line, the 1st line of the script
+that specifies the interpreter.  It's typically of the form:
+-------------------------------------------------------------------
+#!/path/to/intepreter
+
+... rest of script ...
+
+-------------------------------------------------------------------
+
+This is usually the path to the system-supplied interpreter, which is generally fine for personal use, but on a cluster or for an app that is meant to be shared more widely, it can generate odd  error messages if the system doesn't have the interpreter in the expected place.  Recent versions of bash (4.2.25, for example) will produce a useful error message if the interpreter is in the wrong place:
+-------------------------------------------------------------------
+$ scut --opt1=this --opt2=that
+bash: /home/hjm/bin/scut: /usr/local/bin/perl: bad interpreter: No such file or directory
+-------------------------------------------------------------------
+The above error message diagrams the failure, like a traceback: you tried to execute 'scut', but it failed because the specified interpreter '/usr/local/bin/perl' didn't exist.
+
+The way to specify the shebang line portably is to use the 'env' mechanism which asks the environment what it knows about, rather than telling the system what to do and risk it knot knowing.
+
+-------------------------------------------------------------------
+#    so instead of telling the system to use a specific Perl '
+$ /usr/bin/perl
+#    and risk it not being there, or conflicting with various libs that
+#    the script needs that might be in a different installation..
+#    you ask the environment to use the Perl it knows about
+$ /usr/bin/env perl
+#    so if you've 'module load'ed a different Perl, the environment
+#    now knows about it and will direct the script to use it instead.
+-------------------------------------------------------------------
+
+. You can't use flags in an 'env' shebang
+***************************************************
+The kernel only accepts one argument for
+  #!/usr/bin/env [interpreter]
+so while
+  #!/usr/bin/env perl
+is valid, additional parameters are not. Many coders use Perl's '-w' flag to
+help debug their scripts and while you can specify it in the regular shebang,
+you will need to remove it in the 'env' version.
+
+Some workarounds are to modify a calling bash script and prepend the word
+"perl -w" before you call your perl script if you want warnings. You can
+also modify your perl script internall to:
+ use warnings;
+***************************************************
+==== Where is my job running?
+
+Use 'qstat'.
+---------------------------------------------------------------
+$ qstat -u UCINETID
+job-ID  prior   name       user    state submit/start at     queue             slots ja-task-ID
+ ----------------------------------------------------------------------------------------
+ 978260 0.07021 ap1_fast   UCINETID   r  10/25/2013 16:09:13 cee@compute-4-5.local    1
+ 978262 0.07021 ap2_fast   UCINETID   r  10/25/2013 16:09:53 cee@compute-4-5.local    1
+ 978279 0.07021 ap3_fast   UCINETID   r  10/25/2013 16:10:43 cee@compute-4-5.local    1
+ 978281 0.07021 chm_rpt_fa UCINETID   r  10/25/2013 16:11:03 cee@compute-4-5.local    1
+# your job is running on this node ------------------------------^^^^^^^^^^^^^^^^^
+---------------------------------------------------------------
+
+==== How do I tell how much RAM my application is using?
+
+Use 'top'.  'ssh' to the node running your application (see above) and run top:
+
+---------------------------------------------------------------
+ssh -t compute-4-5 'top -M'
+---------------------------------------------------------------
+
+'top' will show you how much RAM the app is using and how much is available. The partial output below shows that there are multiple runs of 'Flexf' running, the 1st one using 945MB of RAM ('RES' for resident) which is 0.4% of the total RAM (252 GB) on the machine - note the line *Mem: 252.395G  total*.  The VIRT (virtual) RAM use is the total of the RES, plus any shared memory plus swapped mem plus mapped memory from libraries. The other numbers to note are the 'used' RAM (how much RAM is in use on the node) and the 'cached' RAM.  In the case below, the amount used *77.836G used* includes the amount cached *44.507G cached* (the amount used for caching files IO), so the amount of RAM being actively used by applications and the OS is the difference (~33GB), so the node has quite a lot of available RAM (~220GB), more than the amount noted as 'free' (174.55GB)
+
+'top' itself is using 15.608 MB in total (VIRT) of which 3.532MB is RAM-Resident (RES), which is eqaul to the amount referred to in the %MEM column. The node has 132291304k total (132GB) of which 102286304k (102GB) is 'used' and 30GB are free. (this is somewhat misleading since the 'used' total includes the RAM that's being used for file-caching (~59GB 'cached', which can be reclaimed quickly if needed).
+
+--------------------------------------------------------------
+top - 08:02:58 up 27 days, 11:45,  1 user,  load average: 16.00, 16.00, 15.99
+Tasks: 1376 total,  17 running, 1359 sleeping,   0 stopped,   0 zombie
+Cpu(s): 25.0%us,  0.0%sy,  0.0%ni, 75.0%id,  0.0%wa,  0.0%hi,  0.0%si,  0.0%st
+Mem:   252.395G total,   77.836G used,  174.559G free,  220.191M buffers
+Swap:   16.602G total,    0.000k used,   16.602G free,   44.507G cached
+
+  PID USER      PR  NI  VIRT  RES  SHR S %CPU %MEM    TIME+  COMMAND
+  959 aamelire  20   0 1423m 945m 2140 R 100.0  0.4  18283:44 Flexf
+ 5014 aamelire  20   0 2097m 1.0g 2144 R 100.0  0.4   1227:04 Flexf
+ 5448 aamelire  20   0 2050m 1.1g 2140 R 100.0  0.4   1227:00 Flexf
+ 5741 aamelire  20   0 1950m 843m 2140 R 100.0  0.3   1226:40 Flexf
+ 6218 aamelire  20   0 1924m 1.7g 2140 R 100.0  0.7  18257:42 Flexf
+ 7502 aamelire  20   0 5182m 4.4g 2140 R 100.0  1.7  18256:46 Flexf                                                       --------------------------------------------------------------
+
+
+// ENDOFAQS
+Appendix
+--------
+
+[[clustercomputing]]
+Cluster Computing
+-----------------
+
+What is a cluster?
+~~~~~~~~~~~~~~~~~~
+A compute cluster is typically composed of a pool of computers (aka nodes) that allow users (and
+there are usually several to several hundred simultaneous users) to spread compute jobs over them
+in a way that allows the maximum number of jobs to matched to number of computers.  The cluster is
+often composed of specialized login nodes, compute nodes, storage nodes, and specialty nodes (ie: a
+large memory node, a GPU node, an FPGA node, a database server node, etc)
+
+The HPC cluster consists of about 100 computers, each of which has 4-64 64bit CPU cores and 8-256GB
+RAM.  All these nodes have a small amount of local disk storage (filesystems or fs) that are directly
+connected with the node that hold its Operating System, a few utilities and some scratch space (in
+/scratch).  Some nodes have considerably larger local storage to provide more storage for a
+specific application or to the research group that bought it.  All the nodes communicate with each
+other over a private 1 Gb/s ethernet network, via a few central switches. This means that each
+node can communicate at almost 100MB/s total bandwidth with all the other nodes but there is a
+bottleneck at the switches and at frequently used nodes, such as the login node and at main storage
+nodes.
+
+Additionally on HPC, most nodes also communicate over QDR Infiniband at about 4 GB/s so traffic from our large filesystems to compute nodes are quite fast.
+
+
+
+[[homevsgl]]
+The difference between your 'HOME' dir and gluster-based dirs
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+The main storage system for HPC was the '/data' filesystem, provided by the
+'nas-1-1' node.  The 'HOME' filesystem is a 5.5TB RAID6. 'RAID6' means that it can lose
+2 disks before it will lose any data.  However, if more than 2 disks are lost, ALL data will be
+lost.  It has been supplemented by the '/gl' filesystem which is a distributed http://www.gluster.org/[gluster fs].  On the
+gluster fs, data is spread file-wise over 8 RAID6s on 4 different servers, each of which hosts 1/4
+of the files, so even if a whole node is destroyed, 3/4 of the files will survive.  This may be of
+little comfort if the one file you need is among the lost, but that's why we repeat the mantra
+'Back up your files if they are of value.'
+
+The *Strongly Suggested* approach is to put your code and and small intermediate analyses on
+'HOME' and keep your large data and intermediate files on '/gl' if you can.  In this way, you'll be able to
+search thru your files quickly, but when you submit large jobs to the cluster via SGE, they won't
+bog down the 'login' node, nor will they interfere with other cluster jobs since '/gl' is a
+distributed FS (and on average, only 1/4 of the cluster nodes will be interacting with the same
+storage node as your job).  In other words, it scales well.
+
+
+[[writeperfongl]]
+Write performance on '/gl', especially with many small writes.
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+IMPORTANT: *If you do not understand the following, please contact an admin to explain it; it's
+important.*
+
+Unlike the http://en.wikipedia.org/wiki/Network_File_System[Network File System] (NFS) provided by
+'HOME', the '/gl' filesystem has some odd quirks that can either destroy performance or be
+used to greatly enhance it. If you have written your own code or are using an app that writes
+zillions of tiny chunks of data to 'STDOUT', and you are storing the results on the '/gl' fs, you
+should consider passing the output thru 'gzip' to consolidate the writes into a continuous stream.
+If you don't do this, each write will be considered a separate IO event and the performance on the
+'/gl' fs will be .. well .. atrocious.  We recently ran into this with the 'bedtools' utility
+'genomeCoverageBed'.  It read in a multi-GB file quickly but then choked while writing the ~2GB
+output file, increasing the runtime by >30X.
+
+If, however, the STDOUT is passed thru 'gzip', the wallclock runtime decreases even below the usual
+runtime and you end up with an output file that it already compressed to about 1/5 the usual size.
+
+
+The here's how to do it using the explicit example we used and a generic one
+--------------------------------------------------------------------------------
+# all the files are on the /gl fs
+
+module load bedtools/2.15.0
+ ...
+cd /gl/where/your/files/are
+
+# this is the usual (but incredibly slow) way
+genomeCoverageBed -ibam RS_11261.bam  -g ref/dmel-all-chromosome-r5.1.fasta -d  > output.cov.gz
+
+# this is the MUCH faster way, even tho you're using more CPU time
+# (gzip is in another process using another CPU)
+genomeCoverageBed -ibam RS_11261.bam  -g ref/dmel-all-chromosome-r5.1.fasta -d |gzip > output.cov.gz
+# .............................................................................^^^^^^
+
+# the generic example:
+someapp --opt1 --opt2 --input=/gl/me/input_file | gzip > /gl/me/output_file.
+--------------------------------------------------------------------------------
+[[namedpipes]]
+Use *named pipes* instead of files
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Note that the gzip trick mentioned above will only work with applications that write their data to
+'STDOUT'.  If the app explicitly writes to a file, then you can use a
+http://en.wikipedia.org/wiki/Named_pipe[named pipe] (aka 'fifo' - first in, first out) to capture
+and process the output.
+
+--------------------------------------------------------------------------------
+mkfifo /gl/me/npipe  # create a named pipe
+# use the named pipe as the output file and send the process into the background with '&'
+some_app --input=/gl/me/gigantic_input.fq.gz --out=/gl/me/npipe --match=33 --kmer=64 ... &
+
+# now read from the named pipe and gzip it in one go
+gzip < /gl/me/npipe > /gl/me/some_app.out.gz
+
+# and finally delete the named pipe, just as you would a file.
+rm /gl/me/npipe
+--------------------------------------------------------------------------------
+
+
+Some words about Big Data
+~~~~~~~~~~~~~~~~~~~~~~~~~
+To new users, especially to users who have never done BIG DATA work before:   Understand what it
+is you're trying to do and what that means to the system. Consider the size of your data, the
+pipes that you're trying to force it thru and what analyses you're trying to get it to perform.
+
+It should not be be necessary to posit this, but there are clearly users who don't understand it.
+There is a '1000 fold difference' between each of these:
+
+- 1,000 bytes, a KILOBYTE (KB) ~ an email
+- 1,000,000 bytes, a MEGABYTE (MB) ~ a PhD thesis
+- 1,000,000,000 bytes, a GIGABYTE (GB) ~ 30 X the 10 Volume 'The Story of Civilization'.
+- 1,000,000,000,000 bytes, a TERABYTE (TB) ~ 1/10 of the text content of the Library of Congress.
+- 1,000,000,000,000,000 bytes, a PETABYTE (PB) ~ 100 X the text content of the Library of Congress
+
+HPC has about 30TB of storage on '/gl' to be shared among 400 users, and the instantaneous needs of
+those users varies
+tremendously. We do not use disk quotas to enforce user limits to allow substantial dynamic storage
+use.  However, if
+you use hundreds of GB, the onus is on you to clean up your files and decrease that usage as soon
+as you're done with
+it.
+
+1 Big File vs Zillions of Tiny Files
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+This subject - arcane as it might seem - is important enough to merit its own subsection.  Because
+HPC is community infrastructure, efficient use of its resources is important.   Tiny files require
+almost the same amount of directory space as a large file, so if you have only 100bytes to store,
+store it in single file. However, the problems start compounding when there are many of them.
+Because of the way data is stored on disk, 10 MB stored in ZOTfiles of 100bytes each can easily
+take up NOT 10MB, but more than 400MB - *40 times* more space.
+Worse, data stored in this manner makes many operations very slow - instead of looking up 1
+directory entry, the OS has to look up 100,000.  This means 100,000 times more disk head movement,
+with a concommittent decrease in performance and disk lifetime.  If you are writing your own
+utilities, whether in Perl , C, Java, or Haskell, please use efficient data storage techniques,
+minimally as indexed file appending, preferably as 'real' data storage such as binary formats,
+http://www.hdfgroup.org/HDF5/[HDF5] and http://www.unidata.ucar.edu/software/netcdf/[netCDF], and
+don't forget about in-memory data compression (for example, using the excellent free
+http://zlib.net/[zlib library] or language-specific libraries that use compression, such as:
+------------------------------------------------------------------------------------
+libio-compress-perl - bundle of IO::Compress modules
+python-snappy - Python library for the snappy compression library from Google
+------------------------------------------------------------------------------------
+
+If you are using someone else's analytical tools and you find they are writing ZOTfiles, ask them,
+'plead with them' to fix this problem.  Despite the sophistication of the routines that may be in
+the tools, it is a mark of a poor programmer to continue this practice.
+
+Reducing your own ZOTfiles
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+Adam and I have written a utlity that can help address this problem if you're generating ZOTfiles.
+It can coordinate multiple writes into a single file from hundreds of processes via the use of file
+locking.  It is described http://moo.nac.uci.edu/~hjm/Job.Array.ZOT.html[here in more detail],
+including a link to the 'zotkill.pl' utility.
+
+
+[[HowtoPasswordlessSsh]]
+HOWTO: Passwordless ssh
+~~~~~~~~~~~~~~~~~~~~~~~
+'Passwordless ssh' will allow you to ssh/scp to frequently used hosts without entering a passphrase
+each time.  *The process below works on Linux and Mac only*. Windows clients can do it as well, but
+it's a different procedure.  However, regardless of your desktop machine, you can use passwordless
+ssh to log in to all the nodes of the HPC cluster once you've logged into the login node.
+
+
+.Note for HPC Parallel / MPICH2 Users
+***************************************************
+If you're going to be using MPI, via some variant of MPI (MPICH, MPICH2, OpenMPI),
+or another parallel toolkit, you almost certainly will have to set this
+up to work on HPC so you (or your scripts) can passwordlessly ssh to
+other nodes.  For HPC users using only serial programs it can still be useful
+as it cuts down on the amount of typing of passwords you'll have to do.
+
+And it's dead simple.
+***************************************************
+
+
+In a terminal on your Mac or Linux machine, type:
+
+-----------------------------------------------------------------------------
+# for no passphrase, use
+ssh-keygen -b 1024 -N ""
+
+# if you want to use a passphrase:
+ssh-keygen -b 1024 -N "your passphrase"
+# but you probably /don't/ want a passphrase - else why would you be going thru this?
+-----------------------------------------------------------------------------
+
+save to the default places.
+
+*For the HPC cluster case:* Since all cluster nodes share a common */home*, all you have
+to do is rename the public key file (normally *id_rsa.pub* in your ~/.ssh dir) to *authorized_keys*.
+
+*For unrelated (non-cluster) hosts:* 'Linux users', use the 'ssh-copy-id' command, included as part
+of your ssh distribution. ('Mac users' will have to do it manually, described just below.)
+'ssh-copy-id' does all the copying one shot, using your *\~/.ssh/id_rsa.pub* key (by default; use
+the -i option to specify another identity file, say *~/.ssh/id_dsa.pub* if you're using DSA keys)
+
+-------------------------------------------------------
+ssh-copy-id  your_login@hpc.oit.uci.edu
+# you'll have to enter your password one last time to get it there.
+-------------------------------------------------------
+
+What this does is to scp *id_rsa.pub* to the remote host (the ssh server your're trying to log
+into) and append that key to the remote file *~/.ssh/authorized_keys*.  If things don't work, check
+that the *id_rsa.pub* file has been appended correctly.
+
+Then verify that it's worked by ssh'ing to HPC.  You shouldn't have to enter a password anymore.
+
+
+*For Mac users*, scp the same keys to the remote host and append your public key to the remote
+*~/.ssh/authorized_keys*.  Here are the commands below.  Just modify the UCINETID value and mouse
+them into the *Terminal* window on your local Mac.
+
+-------------------------------------------------------
+bash  # starts the bash shell just to make sure the rest of the commands work
+cd    # makes sure you're in your local home dir
+export UCINETID=""  # fill in the empty quotes with *your UCINETID*
+
+# you'll need to enter the password manually for the next 2 commands)
+
+scp ~/.ssh/id_rsa.pub ${UCINETID}@hpc.oit.uci.edu:~/.ssh/id_rsa.pub
+ssh ${UCINETID}@hpc.oit.uci.edu 'cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys'
+
+# and now you should be able to ssh in without a password
+ssh ${UCINETID}@hpc.oit.uci.edu
+
+-------------------------------------------------------
+
+
+
+.First time challenge from ssh
+*******************************************************************
+If this is the 1st time you're connecting to HPC from your Mac (or PC), you'll get a
+challenge like this:
+
+-------------------------------------------------------
+The authenticity of host 'hpc.oit.uci.edu (128.200.15.20)' can't be established.
+RSA key fingerprint is 57:70:23:8e:e1:15:8c:51:b0:52:ca:c7:a8:e9:26:9b.
+Are you sure you want to continue connecting (yes/no)?
+-------------------------------------------------------
+
+and you have to type 'yes'.
+
+For MPI / Parallel users, you should set up a local *~/.ssh/config* file to
+tell ssh to ignore such requests.  The file should contain:
+
+-------------------------------------------------------
+Host *
+   StrictHostKeyChecking no
+-------------------------------------------------------
+
+and must be chmod'ed to be readable only by you.  ie
+
+-------------------------------------------------------
+chmod go-rw ~/.ssh/config
+-------------------------------------------------------
+
+
+*******************************************************************
+
+
+[[matlabcompiler]]
+Notes on using the MATLAB comiler on the HPC cluster
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+(Thanks to 'Michael Vershinin' and 'Fan Wang' for their help and patience in debugging this
+procedure).
+
+As noted, the official docs for compiling your MATLAB code is http://tinyurl.com/nebw3e[is
+described here] (note that many of the MATLAB links will require that you create a Mathworks account).  Before you start hurling your '.m' code at the compiler, please read the
+following for some hints.
+
+The following is a simple case where all the MATLAB code is in a single file, say 'test.m'.
+Note that for the easiest path, you should write your MATLAB code to compile as a function.
+This means that keyword 'function' has to be used to define the MATLAB code
+(link:#matlab_compile_example[see example below]).
+If you want to pass parameters to the function, you have include a function parameter indicating
+this.
+---------------------------------------------------------------------
+# Before you use any MATLAB utilities, you will have to load the
+# MATLAB environment via the 'module' command
+
+module load MATLAB/r2011b
+
+# for a C file dependency, you compile it with 'mex'.  Note that mex doesn't like
+# C++ style comments (//), so you'll have to change them to the C style /* comment */
+
+mex some_C_code.c    # -> produces 'some_C_code.mexa64'
+
+# then compile the MATLAB code for a standalone application.
+# (type mcc -? for all mcc options)
+
+# If the m-code has a C file dependency which has already been mex-compiled,
+# mcc will detect the requirement and link the '.mexa64' file automatically.
+
+mcc -m test.m  # -> 'test'  (can take a minute or more)
+
+# !! if you have additional files that are dependencies, you may have to define
+# !! them via the '-I /path/to/dir' flags to describe the dirs where your
+# !! additional m code resides.
+
+# for a _C_ shared lib (named libmymatlib.so) with multiple input .m files
+
+mcc -B csharedlib:libmymatlib file1.m file2.m file3.m
+
+
+# for a _C++_ shared lib (named libmymatlib.so) with multiple input .m files
+
+mcc -B cpplib:libmymatlib file1.m file2.m file3.m
+
+---------------------------------------------------------------------
+
+[[passingvars]]
+Passing variables to compiled MATLAB applications
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Also, few programs will be useful with all the variables compiled statically.  There are a few ways
+to pass variables to the program - the easiest for a single or a few variables is to use the the
+http://www.mathworks.com/help/techdoc/ref/input.html[MATLAB 'input' function] to read in a
+character, string, or vector and process it internally to provide the required variables.
+
+Another way, especially if you have a large number of variables to pass, 'include the variables in
+a file' and feed that file to the matlab app. This will require that the matlab app is designed to
+read a file and parse it correctly.
+
+Both are described in some detail in the official MATLAB documentation
+http://www.mathworks.com/help/toolbox/compiler/f13-1005831.html#f13-1006802[Passing Arguments to
+and from a Standalone Application].
+
+More examples are described http://its.virginia.edu/research/matlab/compiler.html#Example[here, in
+the example *function matlab_sim()*] and in the text following.
+
+
+Files produced by the mcc compiler
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+In the 'standalone' case which will probably be the most popular approach on HPC, the mcc
+compilation will generate a number of files:
+
+---------------------------------------------------------------------
+readme.txt  ...............  autogen'd description of the process
+test   ....................  the 'semi-executable'
+test.m  ...................  original 'm code'
+test_main.c  ..............  C code wrapper for the converted m code
+test_mcc_component_data.c .  m code translated into C code
+run_test.sh  ..............  the script that wraps and runs the executable
+test.prj  .................  XML description of the entire compilation
+                               dependencies (Project file)
+---------------------------------------------------------------------
+
+In order to now run the executable to test it, you can run the auto-generated  'run_test.sh'
+shell script, *HOWEVER* to submit it to SGE, you should not write your qsub script 
+to call 'run_test.sh'.  
+The fact that the 'run_test.sh' wraps the native executable 'shields' it from SGE process control and can cause
+a lot of unexpected behavior.  Instead, write your qsub script to call the native executable 
+directly (you may have to inspect the 'run_xxx.sh' and copy some setup variables into the qsub script).
+  Otherwise the shell wrapper 
+will intercept the process control commands and usually misbehave.
+
+So while you can test it for a few minutes like this on an interactive node:
+---------------------------------------------------------------------
+./run_test.sh [matlab_root] [arguments]
+
+# where the [matlab_root] would be '/data/apps/matlab/r2011b' for the
+# matlab version that supports the compiler
+# and [arguments] are inputs to the matlab function 'test' (separated by space
+# if there are multiple input arguments).
+---------------------------------------------------------------------
+you have to run it via the scheduler in a link:#QSUB[qsub script].
+for long/production runs
+
+ie:, you will have to create a qsub script (call it 'runmycode.sh')
+like this:
+
+---------------------------------------------------------------------
+#!/bin/bash
+
+#$ -S /bin/bash          # run with this shell
+
+#$ -N comp_matlab_run    # this name shows in qstat
+#$ -q long               # run in this Q
+#$ -l h_rt=50:00:00      # need 50 hour runtime
+#$ -l mem_free=2G        # need 2GB free RAM
+#$ -l scr_free=1G        # need 1 GB scratch space
+#$ -cwd            # run the job out of the current directory;
+                   # (the one from which you ran the script)
+
+./test  [arguments]
+---------------------------------------------------------------------
+
+and qsub it to SGE:
+
+---------------------------------------------------------------------
+qsub runmycode.sh
+---------------------------------------------------------------------
+
+
+
+[[matlab_compile_example]]
+MATLAB Compilation Example
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+Below is a very simple example showing how to compile and execute some MATLAB code.
+Save the following code to a file named 'average.m'.
+---------------------------------------------------------------------
+function y = average(x)
+% AVERAGE Mean of vector elements.
+% AVERAGE(X) is the mean of vector, where X is a vector of
+% elements. Nonvector input results in an error.
+[m,n] = size(x);
+if (~((m == 1) | (n == 1)) | (m == 1 & n == 1))
+    error('Input must be a vector')
+end
+y = sum(x)/length(x);      % Actual computation
+y
+---------------------------------------------------------------------
+
+Once the code is saved as 'average.m', compile by copying and pasting into a terminal window.
+
+---------------------------------------------------------------------
+module load MATLAB/r2011b   # load the MATLAB environment
+mcc -m average.m;           # compile the code (takes many seconds)
+z=1:99                      # assign the input vector to a shell variable
+./average $z                # call the executable with the range (also very slow)
+# or equivalently and more directly
+./average 1:99
+---------------------------------------------------------------------
+
+Note also that if you're going to run this under SGE as multiple instances, each instance will have
+to run with the appropriate MATLAB environment so you will have
+to preface each exec with the 'module load MATLAB/r2011b' directive.
+
+
+[[missinglibs]]
+Resolving Missing Libraries
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Many of the problems we hear about are due to missing or incompatible library dependencies.  A
+complicated program (like R) has many such dependencies:
+----------------------------------------------------------------------------
+$ ldd libR.so
+        linux-vdso.so.1 =>  (0x00007fff003fc000)
+        libblas.so.3 => /usr/lib64/libblas.so.3 (0x00002b83c1c32000)
+        libgfortran.so.3 => /usr/lib64/libgfortran.so.3 (0x00002b83c1e88000)
+        libm.so.6 => /lib64/libm.so.6 (0x00002b83c217c000)
+        libreadline.so.5 => /apps/readline/5.2/lib/libreadline.so.5 (0x00002b83c23ff000)
+        libncurses.so.5 => /usr/lib64/libncurses.so.5 (0x00002b83c263c000)
+        libz.so.1 => /usr/NX/lib/libz.so.1 (0x00002b83c2899000)
+        librt.so.1 => /lib64/librt.so.1 (0x00002b83c29ad000)
+        libdl.so.2 => /lib64/libdl.so.2 (0x00002b83c2bb7000)
+        libfunky.so.2 => not found
+        libgomp.so.1 => /usr/lib64/libgomp.so.1 (0x00002b83c2dbb000)
+        libpthread.so.0 => /lib64/libpthread.so.0 (0x00002b83c2fc8000)
+        libc.so.6 => /lib64/libc.so.6 (0x00002b83c31e4000)
+        /lib64/ld-linux-x86-64.so.2 (0x0000003fe7600000)
+        libgfortran.so.1 => /usr/lib64/libgfortran.so.1 (0x00002b83c353c000)
+
+(there is no libfunky.so.2 dependency yet in R)
+----------------------------------------------------------------------------
+
+and each of them typically has more, so it's fairly common for an update to break such dependency
+chains, if only due to a few missing or changed functions.
+
+If you run into a problem that seems to related to this, such as:
+
+----------------------------------------------------------------------------
+unable to load shared object '/apps/R/2.14.0/lib64/R/modules/libfunky.so.2':/
+   libfrenemy.so.3: cannot open shared object file: No such file or
+directory
+----------------------------------------------------------------------------
+The above extract implies that the library 'libfunky.so.2' can't find 'libfrenemy.so.3' to resolve
+missing functions, so that lib may be missing on the node that emitted the error.
+
+If this error is emitted from a node during a batch job, it may be hard to debug which nodes are in
+error.  To resolve this by yourself, it's sometimes useful to use
+http://moo.nac.uci.edu/~hjm/clusterfork/[clusterfork] to debug the problem.
+
+In the above case, you would issue a command such as:
+----------------------------------------------------------------------------
+ cf --target=PERC 'module load R/2.14.0;  \
+   ldd /apps/R/2.14.0/lib64/R/modules/libfunky.so.2 |grep found'
+----------------------------------------------------------------------------
+where the 'libfunky.so.2' is the library in question.  The results will capture the STDERR and
+STDOUT from the single-quoted command in node-named files in a subdir that begins with
+'REMOTE_CMD-' in the working directory.  Examining those files usually identify the offending
+nodes.
+
+*Please be careful in using 'cf' since you can easily overwhelm the cluster if the command demands
+a lot of CPU or disk activity*.  Try the command on one node first to determine the effect and only
+issue the 'cf' command after you've perfected it.
+
+Release information & Latest version
+------------------------------------
+The latest version of this document should always be available
+http://moo.nac.uci.edu/~hjm/bduc/HPC_USER_HOWTO.html[here].  The
+http://www.methods.co.nz/asciidoc/[asciidoc] source is available
+http://moo.nac.uci.edu/~hjm/bduc/HPC_USER_HOWTO.txt[here].
+
+This document is released under the http://www.gnu.org/licenses/fdl.txt[GNU Free Documentation
+License].

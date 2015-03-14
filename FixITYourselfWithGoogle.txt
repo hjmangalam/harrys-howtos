@@ -1,0 +1,170 @@
+Fix IT Yourself with Google
+===========================
+by Harry Mangalam <harry.mangalam@uci.edu> 
+v1.3, Dec 1, 2010
+
+:icons:
+//Harry Mangalam mailto:harry.mangalam@uci.edu[harry.mangalam@uci.edu]
+// this file is converted to the HTML with the command:
+// export fileroot="/home/hjm/nacs/FixITYourselfWithGoogle"; asciidoc -a toc -a numbered ${fileroot}.txt; scp ${fileroot}.[ht]*   moo:~/public_html
+
+// the HTML equiv of '~' = '%7e'
+
+[quote, Trinity, The Matrix (1999)]
+____________________________________________________________________
+The answer is out there, Neo, and it's looking for you, and it will find you if you want it to.
+____________________________________________________________________
+
+
+.Abstract
+****************************************************************
+With search engines such as Google, Bing, and Yahoo indexing the 
+Internet, most day-to-day IT problems can be resolved by a simple query and reading a few paragraphs.
+Users will typically find the  answers faster than if they tried to read the product documentation or called on technical support and will learn to use search engines to solve other technical questions. 
+
+One of the most oft-used rationales for buying proprietary software (excellent support) is
+weakened considerably when Google can usually provide an answer faster and more reliably than paid support.
+****************************************************************
+
+Summary
+-------
+If you have an IT problem whose solution is not immediately obvious, use Google to resolve your problem.  It will almost always take less time than trying to call IT support.  As 'query terms', omit any personal details (username, computer identification) and include the name of the Operating System (OS), the platform (if not inherently associated with the OS), the application, the version number, terms related to the error, and if possible, the exact error message in quotes. ie:
+
+--------------------------------------------------------------------
+MacOSX Microsoft Entourage "The SMTP server does not recognize any of the authentication methods"
+--------------------------------------------------------------------
+
+http://tinyurl.com/35vm9dx[Let me Google that for you.]
+
+Introduction
+------------
+I'm slightly horrified that there is a need to write this, but even among technical users, there seems to be a widespread ignorance or reluctance to using Google to solve their own problems. 
+
+There's a web page called http://www.lmgtfy.com[lmgtfy], apparently for support people tired of answering the same simple question again and again.  You type in your search terms and it provides a http://tinyurl.com/[tinyurl] that animates how simple it is to type in a Google search to get the answer. (see 'Let me Google that for you' link above.) It's a slightly less abusive response than what the http://lmgtfy.com/?q=bofh[BOFH] would provide, tho it can be interpreted as somewhat snarky.  However, it demonstrates an overwhelmingly frequent truth: 'someone else has already encountered this problem, solved it, and has posted the solution'.
+
+While the ranking algorithms of the major web search engines are closely held trade secrets, all of them try to put the most relevant ones at the top of the search results.  All you have do is learn how to phrase your search terms and if necessary, use the advanced search capability to narrow the search, for example to reduce the relevant time window.
+
+
+
+An Example of Paid Technical Support
+------------------------------------
+One reason for using Google over Paid Technical Support (PTS) is the often infuriating bloody-mindedness of PTS staff.  Not that I don't have some sympathy for them, but you'd think that part of their job is to make you satisfied with their product instead of making you swear that you'll try to avoid it like the plague.
+
+A PTS call often goes like this: 
+
+Me:: I'm running TBT version 9.2 on a 64 bit Linux platform and when I try to run xxx it complains and says: ERROR: Unable to load the Java Virtual Machine.
+
+TBT:: What version of Java are you running?
+
+Me:: There are several versions of Java available on the system but TBT installed its own JRE in its own tree and the installation tests passed everything.
+
+TBT:: What version of Java are you running?
+
+Me:: Well, the default version is Java version "1.6.0"
+
+TBT:: We don't support "1.6.0".
+
+Me:: Yes, I know.  I read the documentation.  I had supposed that if you supplied your own 465MB of Java code, you'd probably want to direct TBT 9.2 to use it.
+
+TBT:: We don't support Java 1.6.0.
+
+Me:: Yes, I just acknowledged that.  Can you at least tell me a diagnostic that will tell me whether the TBT code is finding your Java code?
+
+TBT:: run 'proc javainfo'
+
+Me:: Yes, I ran 'proc javainfo'.  It said: *ERROR: Unable to load the Java Virtual Machine.*  Can you tell me WHY it can't find your JRE?
+
+TBT:: What version of Linux are you running this on?
+
+Me:: It's Ubuntu version 8.10.
+
+TBT:: We don't support Ubuntu.
+
+Me:: Yes, I also know that, but the error does not appear to be Distro-related.  Can I talk to someone who might be able to give me some technical assistance?
+
+TBT:: No, we don't suport Ubuntu.
+
+Me (later):: OK, I've mounted the TBT NFS partition on a RedHat OS.  I ran the same diagnostics.  It still gives me the same errors  Can you help me now?
+
+TBT:: We don't support NFS.
+
+Me:: sigh...
+
+This was from the Technical Support Line of TBT, (the largest private software company in the world). Is it any wonder that so many suffer from *PTSD*?  It's like the old Microsoft joke about the http://www.weirdity.com/jokes/microsoft.shtml[airplane lost in the fog] (see Lost in Space) except even surlier.  For this, we're paying them for support?
+
+I eventually figured out that the version of Java that TBT provided for a *64bit* system was a very old *32bit Java* that required the 32bit compatibility libs.  It had nothing to do with Java 'per se' or OS versions.
+
+How did I find this out?  
+
+As paraphrased above, the paid support from TBT didn't help (and caused me to waste about half a day jumping thru the various hoops he wanted me to jump thru).  So I asked Google.  You can http://kb.ucla.edu/articles/sas-on-64b-ubuntu-linux[read the resolution here], but in the end, it was Google's indexing and ranking of zillions of web pages followed by some reading that got me to the answer.  The reason it took me so long is that TBT, like many proprietary software companies, hides much of their customer support database so Google can't index it.
+
+Google the Error Message
+------------------------
+The most frequent sequence for me (a Linux geek) is one where I'm trying to install an unusual package and I get a compilation error that leads back to an exotic missing library.  Where to find this library?  Copy the error message into the Google tool bar and (usually) on the 1st page of hits will be the answer.  If it's not, I try a different set of query keywords or try filtering using http://www.google.com/advanced_search?hl=en[Google Advanced Search Page].  I rarely find the answer by continuing to read after the 1st page on the same query.  And if I'm looking for pre-existing code, I can try http://code.google.com/[Google Code] or one of the other Code sites such as http://www.sf.net[Sourceforge] or UCI's own http://sourcerer.ics.uci.edu/[Sourceror].
+
+This specific problem may be quite alien to people who have to support Windows and Macintosh, but the problem domain is essentially identical.  A typical sequence that occurs repeatedly is that a program fails and emits an error message. If you're very lucky, the error message will tell exactly what has gone wrong:
+
+----------------------------------------------------------------
+ERROR: At line 452 in function GetReverseComplement(), 
+the input file you specified [/home/hjm/seqs/hlef.fasta] 
+could not be read. Check existence / permissions of that file.
+----------------------------------------------------------------
+
+This pretty much explains how to fix the problem. 
+
+The more usual is the error message that contains the answer but which is masked by verbiage.  The one sent frquently to me for diagnosis is the the 'ssh' error:
+----------------------------------------------------------------
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ WARNING: REMOTE HOST IDENTIFICATION HAS CHANGED! @
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+IT IS POSSIBLE THAT SOMEONE IS DOING SOMETHING NASTY!
+Someone could be eavesdropping on you right now (man-in-the-middle attack)!
+It is also possible that the RSA host key has just been changed.
+The fingerprint for the RSA key sent by the remote host is
+5c:9b:4a:56:a6:dc:22:10:a3:cd:1b:2a:91:cd:e5:1c.
+Please contact your system administrator.
+Add correct host key in /home/<user>/.ssh/known_hosts to get rid of this message.
+Offending key in /home/<user>/.ssh/known_hosts:24
+RSA host key for <host>.uci.edu has changed and you have requested strict checking.
+Host key verification failed.
+----------------------------------------------------------------
+
+It's a pretty exciting error and explicitly tells you to *contact your system administrator*. However, it also tells you 
+
+----------------------------------------------------------------
+Add correct host key in /home/<user>/.ssh/known_hosts to get rid of this message.
+Offending key in /home/<user>/.ssh/known_hosts:24
+----------------------------------------------------------------
+
+What it doesn't tell you is that all you need to do is to delete line 24 in 
+your '/home/<user>/.ssh/known_hosts' to remove the error message and continue with your life.  While it could be a 'man-in-the-middle' attack, it's much more likely that a machine rebooted after a configuration change which caused the key mismatch. Since 'ssh' is the most popular terminal protocol, the error message 'should' link to a discussion of this point.  Since it doesn't, the alternative is to paste the most alarming part of it into a search bar, which provides a http://lmgtfy.com/?q=WARNING%3A+REMOTE+HOST+IDENTIFICATION+HAS+CHANGED![page of relevant explanations]
+
+Much more often is the type of error message: 
+----------------------------------------------------------------
+Error type 4637 occurred. Could not continue.
+----------------------------------------------------------------
+
+but even though the error message seems to be intentionally (and malignantly) obscure, there's a very high probability that someone has run into the same problem enough times that they've blogged it or entered it into a public ticketing system, or has consulted a public BBS about it and someone has figured it out (a million chimps typing on a million keyboards).  In these cases, if the answer has been found it's just up to you to find it.
+
+The easiest way is to just paste the error message verbatim into a Google search panel. Remember to remove any information that is situation-specific - it will decrease the accuracy of the search.  For example, if the eror message was:
+
+----------------------------------------------------------------
+Authorization Error: Hostname 'your.host.name.edu' was unable to contact server.
+----------------------------------------------------------------
+
+You'd want to query with 'your.host.name.edu' removed from the query string.
+
+It also helps if you give the query some relevant context: the OS & version, the application & version.  In the overwhelming number of cases, that's enough to get the answer.
+
+Should this NOT result in your finding the answer, engage in your own quest to find the answer.  In doing so, you'll get much better response if you http://www.chiark.greenend.org.uk/~sgtatham/bugs.html[phrase the question usefully].
+
+
+
+Release information & Latest version
+------------------------------------
+This document is released under the http://www.gnu.org/licenses/fdl.txt[GNU Free Documentation License].  The latest version of this document should always be available http://moo.nac.uci.edu/%7ehjm/FixITYourselfWithGoogle.html[here].  
+
+
+
+
+

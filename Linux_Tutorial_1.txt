@@ -1,0 +1,977 @@
+Linux Tutorial - 1 - Beginner
+=============================
+by Harry Mangalam <harry.mangalam@uci.edu>
+v1.12 - Oct 7th, 2013
+:icons:
+
+
+// fileroot="/home/hjm/nacs/Linux_Tutorial_1"; asciidoc -a icons -a toc2 -b html5 -a numbered ${fileroot}.txt; scp ${fileroot}.html ${fileroot}.txt  moo:~/public_html/biolinux;  ssh -t moo 'scp ~/public_html/biolinux/Linux_Tutorial_1.[ht]* hmangala@hpc.oit.uci.edu:/data/hpc/www/biolinux/'
+
+
+// # have to copy from moo to hpc
+
+//
+
+
+
+== Introduction
+This is presented as a continuous document rather than slides since you're going to be going thru it serially and it's often easier to find things and move around with an HTML doc.
+
+.Mouseable commands
+[NOTE]
+====================================================================
+The commands presented in the lightly shaded boxes are meant to be 'moused' into the bash shell to be executed verbatim.  If they don't work, it's most likely that you've skipped a bit and/or haven't cd'ed to the right place.
+http://moo.nac.uci.edu/~hjm/FixITYourselfWithGoogle.html[Try to figure out why the error occurred], but don't spend more than a couple minutes on it.  Wave one of us down to help.
+====================================================================
+
+== Logging In
+=== ssh
+We have to connect to HPC with ssh or some version of it so let's try the basic ssh.  If you're on a Mac laptop, open the Terminal App (or the better, free http://iterm.sourceforge.net/[iTerm] (and type:
+
+------------------------------------------------------------------------------
+ssh -Y YourUCINETID@hpc.oit.uci.edu
+# enter YourUCINETID password in response to the prompt.
+
+------------------------------------------------------------------------------
+
+If you're using Windows and putty, type 'hpc.oit.uci.edu' into the *Host Name (or IP Address)* pane.  Once you connect, you can save the configuration and click it the next time.
+
+=== x2go
+You should have installed the http://wiki.x2go.org/doku.php/download:start[x2goclient software].  If you haven't, please try to install it now, using this screenshot as a guide, replacing 'hmangala' with your UCINETID.
+
+image:x2goclient.png[x2go client]
+
+If you have added your public ssh key to your HPC account http://hpc.oit.uci.edu/HPC_USER_HOWTO.html#HowtoPasswordlessSsh[as described here], you can click the line:
+------------------------------------------------------------------------------
+[x] Try auto login (ssh-agent or default ssh key)
+------------------------------------------------------------------------------
+If you haven't set up passwordless ssh, *UNclick* it and use your UCINETID password in the password challenge box that comes up when you click 'OK'.
+
+Change the 'Session type' to that shown: 'Single Application' with the terminal application *gnome-terminal* ('/usr/bin/gnome-terminal').  When you configure it like this, only a terminal will pop up and then you can use it as a terminal as well as to launch graphical applications from it. (Previously, I suggested using 'terminator'; DON'T use 'terminator' - it doesn't handle line-editing well.)
+
+NB:  If your arrow, [Home], [End], [Del] keys don't work properly, try pasting the following command into the terminal:
+------------------------------------------------------------------------------
+setxkbmap -model evdev -layout us
+#(it has to be entered at each terminal startup, not as part of your ~/.bashrc)
+------------------------------------------------------------------------------
+
+We no longer allow full Desktops on the HPC login node since they quickly take up too many resources.
+
+
+You can start other specific applications (such as SAS or SPSS) by changing the session configuration.
+
+.x2go for Mac requires XQuartz.
+[NOTE]
+===========================================================================
+Recent OSX releases do not include X11 compatibility software, now called http://xquartz.macosforge.org/landing/[XQuartz] (still free). If you have not done so already, please download and install it.  The x2go software will not work without it.  We have had problems with the 4.0 x2go release; please use the *3.99.2.1* release linked above.  To get it working correctly with XQuartz, please start XQuartz first, THEN start x2go.
+===========================================================================
+
+== Make your prompt useful
+The bash shell prompt is, as almost everything in Linux, endlessly customizable.  At the very least, it should tell you what time it is, what host you've logged into, and which dir  you're in.
+
+Just paste this into a shell window.  (This should work via highlighting the text and using the usual 'Copy/Paste' commands, but depending on which platform you're using, it may take some effort to get the right key combinations.
+------------------------------------------------------------------------------
+PS1="\n\t \u@\h:\w\n\! \$ "
+
+# if you want to get really fancy, you can try this for a multicolored
+# one that also shows the load on the system:
+
+PS1="\n\[\033[01;34m\]\d \t \[\033[00;33m\][\$(cat /proc/loadavg | cut -f1,2,3 -d' ')] \
+  \[\033[01;32m\]\u@\[\033[01;31m\]\h:\[\033[01;35m\]\w\n\! \$ \[\033[00m\]"
+
+# that one will show up OK on most background, but on some light colored ones might wash out.
+------------------------------------------------------------------------------
+There is a reason for this.  When you report a bug or problem to us, it's helpful to know when you submitted the command, how busy the system was, and where you were when you submitted it.  Including the prompt lets us know this info (most of the time).
+
+OK - let's do something.
+
+
+== Getting  files from the web
+=== wget
+'wget' will retrieve 'ftp' or 'http' URLs with a minimum of fuss, continuing a failed retrieval, creating a new name if a file already exists, and supporting a huge number of other options.
+---------------------------------------------------------------------------
+wget http://hpc.oit.uci.edu/biolinux/nco/nco-4.2.5.tar.gz
+
+# now get it again.
+
+wget http://hpc.oit.uci.edu/biolinux/nco/nco-4.2.5.tar.gz
+
+# what happened?
+---------------------------------------------------------------------------
+
+
+Then uncompress it with gunzip.
+
+=== gzip/gunzip, pigz
+The gzip family is probably the most popular de/compression utility on Linux. It will reduce the size of a sequence file to about 30% of the original.
+---------------------------------------------------------------------------
+gzip somefile  # will result in only the compressed file - somefile.gz
+gunzip nco-4.2.5.tar.gz   # to DEcompress the file
+# or could use pigz for parallel de/compression on multi-core machines
+pigz -d nco-4.2.5.tar.gz  # alternative mechanism for DEccompressing a file
+# time for this relatively small file won't make much difference, but for large multiGB files it will.
+---------------------------------------------------------------------------
+
+=== bunzip2
+The other major de/compression tool on Linux is called bunzip2 and is slightly more efficient, and slightly slower than gzip.
+There are lots of compression utilities.  Use Google to find the most appropriate one.
+
+
+
+
+=== curl does everything...
+
+Do everything in one line with curl.  Curl downloads the given URL and by default spits the whole thing to STDOUT, so this is a case where 'pipes' (|) are meant to be used.
+
+---------------------------------------------------------------------------
+curl http://hpc.oit.uci.edu/biolinux/nco/nco-4.2.5.tar.gz | tar -xzf -
+
+# tar's '-f' option means 'the following', and '-' typically means either STDOUT or STDIN,
+depending on context. So  'tar -xzf - ' means perform the tar magic on STDIN.
+
+# if we wanted to know WHAT was being extracted, we could use the 'v' option like this:
+curl http://hpc.oit.uci.edu/biolinux/nco/nco-4.2.5.tar.gz | tar -xzvf -
+#                                                                  ^
+---------------------------------------------------------------------------
+
+== File Archives - tar and zip
+
+=== tar
+tar is (still) the default archive type for Linux/Unix.  It creates a single file that contains everything that it's pointed to, which provides some packing efficiency, and especially when it is explicitly compressed, a tar file will take only 30-50% of the original storage.
+
+--------------------------------------------------------------------------------
+tar -czvf tarfile.gz files2archive   # create a compressed 'tarball'
+tar -tzvf tarfile.gz                 # list the files in a compressed 'tarball'
+tar -xzvf tarfile.gz                 # extract a compressed 'tarball'
+tar -xzvf tarfile.gz  included/file  # extract a specific 'included/file' from the archive.
+
+# Also, archivemount to manipulate files while still in an archive
+--------------------------------------------------------------------------------
+
+There are also a number of good GUI file transfer apps such as http://winscp.net/[WinScp] and  http://cyberduck.ch/[CyberDuck] that allow drag'n'drop file transfer between panes of the application.
+
+=== zip
+Zip comes from the PC world's pkzip.  The format is now standardized and files zipped on PCs and Macs can be handled by the Linux zip/unzip.  Because Windows users and utilities are more used to 'zip' archives, they are often used to punt data back and forth to Windows.
+
+--------------------------------------------------------------------------------
+zip zipfilename files2archive        # zip the 'files2archive' into the 'zipfilename'
+unzip -l zipfilename.zip             # list the files that are in zipfilename.zip without unzipping them
+unzip  zipfilename.zip               # unzip the 'zipfilename.zip' archive into the current dir.
+--------------------------------------------------------------------------------
+
+
+Let's try to zip that nco directory with zip
+---------------------------------------------------------------------------
+cd
+zip nco_src nco-4.2.5
+
+# how big is it?
+# how big is the gzipped version?
+# how do you tell?
+---------------------------------------------------------------------------
+
+
+
+== Getting files from specific accounts
+
+=== commandline scp (Mac, Linux)
+
+From your own laptop try to copy a file to HPC
+-----------------------------------------------------------------
+scp TheFile You@hpc.oit.uci.edu:~
+-----------------------------------------------------------------
+
+Did it appear to transfer?  Where is it?  Is it the right size? How do you tell?
+-----------------------------------------------------------------
+wc     file  # tells you how many characters, words, and lines a file has.  Useful for text.
+ls -l  file  # tells you how many bytes are in a file
+ls -lh file  # tells you how big a file is in human-readable terms.
+md5sum file  # tells you the md5 hash of a file (tests if the file you have is EXACTLY like another file).
+diff   file1 file2  # tells you which lines differ and where (also meld, kompare)
+-----------------------------------------------------------------
+
+
+=== commandline rsync (Mac, Linux)
+Again, rsync is one of the most useful, efficient utilities for moving data that you'll find.  There are GUI versions for all platforms, and every MacOSX and Linux distro comes with the commandline version.
+
+Let's copy the entire 'AnalysisDir' from your laptop to HPC (where 'AnalysisDir' is some dir that you choose).
+-----------------------------------------------------------------
+rsync -av AnalysisDir You@hpc.oit.uci.edu:~
+-----------------------------------------------------------------
+
+Now create a file in your LOCAL (laptop) 'AnalysisDir'
+-----------------------------------------------------------------
+ls -lat > AnalysisDir/listing
+-----------------------------------------------------------------
+
+Now re-rsync
+-----------------------------------------------------------------
+rsync AnalysisDir You@hpc.oit.uci.edu:~
+-----------------------------------------------------------------
+See what happens?
+
+
+
+=== GUI versions (CyberDuck, WinSCP, Filezilla, etc)
+If you want, do the same thing with one of these GUI apps.
+
+=== sshfs
+-----------------------------------------------------------------
+# from your laptop
+cd
+mkdir hpc
+sshfs you@hpc.oit.uci.edu:/data/users/you ~/hpc
+
+# enter password if prompted.  Let us know if it doesn't work. Then...
+
+ls hpc
+
+# don't for get to UNmount it WHEN YOU'RE DONE with the session.
+fusermount -u ~/hpc
+-----------------------------------------------------------------
+
+Once you've sshfs-mounted your HPC dir on your laptop, you can copy files back and forth, or edit them with your Mac editors (BUT ONLY IN TEXT FORMAT) to HPC as if it was on your laptop.
+
+You can also mount it the other way (mount your laptop to HPC) but often your laptop will have a DHCP address, so it may be trickier.
+
+If you want to try this, it's described in http://hpc.oit.uci.edu/HPC_USER_HOWTO.html#sshfs[more detail here]
+
+Or use the 'fish://' prefix for Dolphin, rekonq on Linux.
+
+
+== Simple Commands
+
+=== Commandline Editing
+
+*Remember:*
+
+- '&uarr;' and '&darr;' arrows scroll thru your bash history
+- '&larr;' and '&rarr;' cursor thru the current command
+- the 'Home, End, Insert', and 'Delete' keys should work as expected.
+- 'PgUp' and 'PgDn' often /don't/ work in the shell.
+- as you get comfortable with the commandline, some ppl like to keep their fingers on the keypad, so
+- '^' means 'Ctrl'
+- '^a' = Home (start of line)
+- '^e' = End (end of line)
+- '^u' = deletes from cursor to the start
+- '^k' = deletes from cursor to end of line
+- the '\^' key 'amplifies' some editing functions in the bash shell, so that '\^  &larr;' and '^ &rarr;' will move the cursor by a 'word' instead of by a 'char'.
+- as noted above, sometimes your terminal keymaps are set wrong.  Entering
+-----------------------------------------------------------------
+setxkbmap -model evdev -layout us
+-----------------------------------------------------------------
+into the terminal will often fix the mappings.
+
+
+=== Where am I? and what's here?
+--------------------------------------------------------------------------------
+pwd   # where am I?
+
+# ASIDE: help yourself:  do the following:
+# (it makes your prompt useful and tells you where you are)
+echo "PS1='\n\t \u@\h:\w\n\! \$ '" >> ~/.bashrc
+. ~/.bashrc
+
+ls    # what files are here?  (tab completion)
+ls -l
+ls -lt
+ls -lthS
+
+alias nu="ls -lt |head -20"  # this is a good alias to have
+
+cd       # cd to $HOME
+cd -     # cd to dir you were in last (flip/flop cd)
+cd ..    # cd up 1 level
+cd ../.. # cd up 2 levels
+cd dir   # also with tab completion
+
+tree     # view the dir structure pseudo graphically - try it
+tree | less  # from your $HOME dir
+tree /usr/local |less
+
+mc       # Midnight Commander - pseudo graphical file browser, w/ mouse control
+
+du       # disk usage
+du -shc  *
+
+df -h      # disk usage (how soon will I run out of disk)
+--------------------------------------------------------------------------------
+
+==== DirB and bookmarks.
+DirB is a way to bookmark directories around the filesystem so you can 'cd' to them without all the typing.
+
+It's [described here] in more detail and requires minimal setup, but after it's done you can do this:
+--------------------------------------------------------------------------------
+
+hmangala@hpc:~  # makes this horrible dir tree
+512 $ mkdir -p obnoxiously/long/path/deep/in/the/guts/of/the/file/system
+
+hmangala@hpc:~
+513 $ cd !$     # cd's to the last string in the previous command
+cd obnoxiously/long/path/deep/in/the/guts/of/the/file/system
+
+hmangala@hpc:~/obnoxiously/long/path/deep/in/the/guts/of/the/file/system
+514 $ s jj      # sets the bookmark to this dir as 'jj'
+
+hmangala@hpc:~/obnoxiously/long/path/deep/in/the/guts/of/the/file/system
+515 $ cd        # takes me home
+
+hmangala@hpc:~
+516 $ g jj      # go to the bookmark
+
+hmangala@hpc:~/obnoxiously/long/path/deep/in/the/guts/of/the/file/system
+517 $           # ta daaaaa
+--------------------------------------------------------------------------------
+
+
+.Don't forget about setting aliases.
+[NOTE]
+===========================================================================
+
+Once you find yourself typing a longish command for the 20th time, you might want a shorter version of it.  Remember 'aliases'?
+
+ alias nu="ls -lt | head -22"  # 'nu' list the 22 newest files in this dir
+
+===========================================================================
+
+
+
+=== Making and deleting & moving around directories
+-----------------------------------------------------------------
+
+mkdir newdir
+cd newdir
+touch instafile
+ls -l
+
+# how big is that instafile?
+
+cd  # go back to your $HOME dir
+ls nco-4.2.5  # you can list files by pointing at their parent
+cd nco-4.2.5
+ls            # see?  no difference
+
+file *        # what are all these files?
+du -sh *      # how big are all these files and directories?
+
+ls -lh *      # what different information do 'ls -lh' and 'du -sh' give you?
+
+less I<tab>  # read the INSTALL file ('q' to quit, spacebar scrolls down, 'b' scrolls up, '/' searches)
+-----------------------------------------------------------------
+
+
+=== Permissions: chmod & chown
+Linux has a Unix heritage so everything has an owner and a set of permissions. When you ask for an 'ls -l' listing, the 1st column of data lists the following:
+
+--------------------------------------------------------------------------------
+$ ls -l |head
+total 14112
+-rw-r--r-- 1 hjm hjm   59381 Jun  9  2010 a64-001-5-167.06-08.all.subset
+-rw-r--r-- 1 hjm hjm   73054 Jun  9  2010 a64-001-5-167.06-08.np.out
+-rw-r--r-- 1 hjm hjm     647 Apr  3  2009 add_bduc_user.sh
+-rw-r--r-- 1 hjm hjm    1342 Oct 18  2011 add_new_claw_node
+drwxr-xr-x 2 hjm hjm    4096 Jun 11  2010 afterfix/
+|-+--+--+-
+| |  |	|
+| |  |  +-- other permissions
+| |  +----- group permissions
+| +-------- user permissions
++---------- directory bit
+
+drwxr-xr-x 2 hjm hjm    4096 Jun 11  2010 afterfix/
+| |  |  +-- other can r,x
+| |  +----- group can r,x
+| +-------- user can r,w,x the dir
++---------- it's a directory
+
+# now change the 'mode' of that dir using 'chmod':
+chmod -R o-rwx afterfix
+         ||-+-
+         || |
+         || +-- change all attributes
+         |+---- (minus) remove the attribute characteristic
+         |      can also add (+) attributes, or set them (=)
+         +----- other (everyone other than user and explicit group)
+
+$ ls -ld  afterfix
+drwxr-x--- 2 hjm hjm 4096 Jun 11  2010 afterfix/
+
+# Play around with the chmod command on a test dir until you understand how it works
+--------------------------------------------------------------------------------
+
+'chown' (change ownership) is more direct; you specifically set the ownership to what
+you want, altho on HPC, you'll have limited ability to do this since 'you can only change
+your group to to another group of which you're a member'.  You can't change ownership of
+a file to someone else, unless you're root.
+--------------------------------------------------------------------------------
+$ ls -l gromacs_4.5.5.tar.gz
+-rw-r--r-- 1 hmangala staff 58449920 Mar 19 15:09 gromacs_4.5.5.tar.gz
+                      ^^^^^
+$ chown hmangala.stata  gromacs_4.5.5.tar.gz
+
+$ ls -l gromacs_4.5.5.tar.gz
+-rw-r--r-- 1 hmangala stata 58449920 Mar 19 15:09 gromacs_4.5.5.tar.gz
+                      ^^^^^
+--------------------------------------------------------------------------------
+
+=== Moving, Editing, Deleting files
+
+These are utilities that create and destroy files and dirs. *Deletion on Linux is not warm and fuzzy*.  It is quick, destructive, and irreversible.  It can also be recursive.
+
+
+.Warning: Don't joke with a Spartan
+[WARNING]
+==================================================================================
+Remember the movie '300' about Spartan warriors?  Think of Linux utilities like Spartans.  Don't joke around.  They don't have a great sense of humor and they're trained to obey without question. A Linux system will commit suicide if you ask it to.
+==================================================================================
+
+--------------------------------------------------------------------------------
+rm  my/thesis            # instantly deletes my/thesis
+alias rm="rm -i"         # Please God, don't let me delete my thesis.
+
+# alias logout="echo 'fooled ya'"    can alias the name of an existing utility for anything.
+# unalias is the anti-alias.
+
+mkdir dirname            # for creating dirname
+rmdir dirname            # for destroying dirname if empty
+
+cp from/here  to/there   # COPIES from/here  to/there
+mv  from/here  to/there  # MOVES  from/here  to/there (from/here is deleted!)
+
+file this/file           # what kind of file is this/file?
+
+nano/joe/vi/vim/emacs    # terminal text editors
+gedit/nedit/jedit/xemacs # GUI editors
+--------------------------------------------------------------------------------
+
+
+
+
+== STDOUT, STDIN, STDERR, and Pipes
+
+These are the input/output channels that Linux provides for communicating among your input, and program input and output
+
+- *STDIN*, usually attached to the keyboard.  You type, it goes thru STDIN and shows up on STDOUT
+- *STDOUT*, usually attached to the terminal screen.  Shows both your STDIN stream and the program's STDOUT stream as well as ...
+- *STDERR*, also usually connected to the terminal screen, which as you might guess, sometimes causes problems when both STDOUT and STDERR are both writing to the screen.
+
+
+BUT these input & output channels can  be changed to make data dance in useful ways.
+
+There are several IO redirection commands:
+
+- < reads STDIN from file
+- > writes STDOUT to a file
+- >> appends STDOUT to a file
+- | pipes the STDOUT of one program to the STDIN of another program
+- 'tee' taps the STDOUT and sends one of the outputs to a file.  The other output continues as STDOUT.
+
+For example:
+'ls' prints its output on STDOUT.  'less' can read either a file or STDIN.  So..
+
+--------------------------------------------------------------------
+# '|' is a pipe, connects the STDOUT of 'ls' to the STDIN of 'less'
+ls -lt *.txt | less
+
+# if we wanted to capture that output to a file as well..
+ls -lt *.txt | tee alltxtfiles |less
+--------------------------------------------------------------------
+
+
+=== How to use pipes with programs
+
+Here's a simple example:
+--------------------------------------------------------------------
+# What is the average size of the files in this directory?
+
+# remember
+# ls -lR will recursively list the long file listing, which contains the size in bytes
+# so
+
+ls -lR |scut -F=4 | stats  # will tell you.
+
+--------------------------------------------------------------------
+
+Here's a last one from the lecture.  Break it up into individual commands and pipe each one into 'less' to see what it produces, then insert the next command to see what it does
+
+--------------------------------------------------------------------
+w |cut -f1 -d ' ' | sort | egrep -v "(^$|USER)" | uniq -c | wc
+
+w | less
+w |cut -f1 -d ' ' | less
+w |cut -f1 -d ' ' | sort | less
+w |cut -f1 -d ' ' | sort | egrep -v "(^$|USER)" | less
+w |cut -f1 -d ' ' | sort | egrep -v "(^$|USER)" | uniq -c | less
+
+--------------------------------------------------------------------
+
+Pipes allow you to mix and match output and input in various useful ways.  Remember STDOUT/STDIN when you're designing your own programs so you can format the output and read the input in useful ways down the road.
+
+== Text files and how to modify them
+=== Most of the files you will be dealing with are text files.  Remember the output of the 'file' command:
+--------------------------------------------------------------------
+Sat Mar 09 11:09:15 [1.13 1.43 1.53]  hmangala@hpc:~/nco-4.2.5
+566 $ file *
+acinclude.m4: ASCII M4 macro language pre-processor text
+aclocal.m4:   Ruby module source text
+autobld:      directory
+autogen.sh:   POSIX shell script text executable
+bin:          directory
+bld:          directory
+bm:           directory
+config.h.in:  ASCII C program text
+configure:    POSIX shell script text executable
+configure.eg: ASCII English text, with very long lines
+configure.in: ASCII English text, with very long lines
+COPYING:      ASCII English text
+data:         directory
+doc:          directory
+files2go.txt: ASCII English text, with CRLF line terminators  <<<<
+INSTALL:      ASCII English text
+m4:           directory
+Makefile.am:  ASCII English text
+Makefile.in:  ASCII English text
+man:          directory
+obj:          directory
+qt:           directory
+src:          directory
+--------------------------------------------------------------------
+
+Anything in that listing above that has 'ASCII' in it is text, also 'POSIX shell script text executable' is also a text file.  Actually everything in it that isn't 'directory' is a text file of some kind, so you can read them with 'less' and they will all look like text.
+
+.DOS EOLs
+[NOTE]
+===========================================================================
+If the file description includes the term 'with CRLF line terminators' (see <<<< above), it has DOS http://en.wikipedia.org/wiki/Newline[newline] characters.  You should convert these to Linux newlines with http://linuxcommand.org/man_pages/dos2unix1.html[dos2unix] before using them in analysis.  Otherwise the analysis program will often be unable to recognize the end of a line. Sometimes even filenames can be tagged with DOS newlines, leading to very bizarre error messages.
+===========================================================================
+
+Text files are the default way of dealing with information on Linux.  There are binary files (like '.bam' files or anything compressed (which a bam file is), or often, database files, and specialty data files such as netCDF or HDF5.
+
+You can create a text file easily by capturing the STDOUT of a command.
+
+In the example above, you could have captured the STDOUT at any stage by redirecting it to a file
+--------------------------------------------------------------------
+ls -lR |scut -F=4 | stats
+
+# could have been structured (less efficiently) like this:
+
+ls -lR > ls.out
+scut -F=4 < ls.out > only.numbers
+cat only.numbers | stats
+
+# note that '<' takes the STDOUT of the file to the right and directs it to
+# the STDIN of the program to the left.
+#  '>' redirects the STDOUT of the app to the left to the file on the right
+# while '|' pipes the STDOUT of the program on the left to the program on the right.
+
+
+# what's the diff between this line?
+
+cat only.numbers > stats
+
+# and this line:
+
+cat only.numbers | stats
+
+# Hmmmmm?
+
+--------------------------------------------------------------------
+
+.Files vs Pipes
+[NOTE]
+===========================================================================
+When you create a 'file', a great many operations have to be done to support creating that file.  When you use a 'pipe', you use fewer operations as well as not taking up any intermediate disk space.  All 'pipe' operations take place in memory, so are 1000s of times faster than writing a file.  A 'pipe' does not leave any trace of an intermediate step tho, so if you need that intermediate data, you'll have to write to a file or 'tap the pipe' with a http://linuxcommand.org/man_pages/tee1.html[tee].
+===========================================================================
+
+
+
+=== Viewing & Slicing Data
+==== Pagers, head & tail
+'less' & 'more'  are pagers, used to view text files.  In my opinion, 'less' is better than 'more', but both will do the trick.
+
+--------------------------------------------------------------------------------
+less somefile  # try it
+
+alias less='less -NS' # is a good setup (number lines, scroll for wide lines)
+
+
+head -###  file2view  # head views the top ### lines of a file, tail views the bottom
+tail -###  file2view  # tail views the ### bottom lines of a file
+tail -f    file2view  # keeps dumping the end of the file if it's being written to.
+---------------------------------------------------------------------------------
+
+==== Concatenating files
+Sometimes you need to concatenate / aggregate files;  for this, 'cat' is the cat's meow.
+--------------------------------------------------------------------------------
+cat file2view                    # dumps it to STDOUT
+cat file1 file2 file3 > file123  # or concatenates multiple files to STDOUT, captured by '>' into file123
+--------------------------------------------------------------------------------
+
+==== Slicing out columns, rectangular selections
+'cut' and http://moo.nac.uci.edu/~hjm/scut_cols_HOWTO.html[scut] allow you to slice out columns of data by acting on the 'tokens' by which they're separated.  A 'token' is just the delimiter between the columns, typically a space or <tab>, but it could be anything, even a regex.  'cut' only allows single characters as tokens, 'scut' allows any regex as a token.
+
+--------------------------------------------------------------------------------
+cut -f# -d[delim char]                 # cuts out the fth field (counts from 1)
+scut -f='2 8 5 2 6 2'  -d='pcre delim' # cuts out whatever fields you want;
+#  allows renumbering, repeating, with a 'perl compatible regular expression' delimiter
+--------------------------------------------------------------------------------
+
+Use http://moo.nac.uci.edu/~hjm/scut_cols_HOWTO.html#_the_cols_utility[cols] to view data aligned to columns.
+--------------------------------------------------------------------------------
+cols < MS21_Native.txt | less   # aligns the top lines of a file to view in columns
+#  compare with
+less  MS21_Native.txt
+--------------------------------------------------------------------------------
+
+Many editors allow columnar selections and for small selections this may be the best approach
+Linux editors that support rectangular selection
+[options="header"]
+|========================================================================================
+|Editor   |Rectangular Select Activation
+|nedit    |Ctrl+Lmouse = column select
+|jedit    |Ctrl+Lmouse = column select
+|kate     |Shift+Ctrl+B = block mode, have to repeat to leave block mode.
+|emacs    |dunno - emacs is more a lifestyle than an editor but it can be done.
+|vim      |Ctrl+v puts you into visual selection mode.
+|========================================================================================
+
+==== Finding file differences and verifying identity
+Quite often you're interested the differences between 2 related files or verifying that the file you sent is the same one as arrived.  'diff' and especially the GUI wrappers (diffuse, kompare) can tell you instantly.
+--------------------------------------------------------------------------------
+diff file1 file1a          # shows differences between file1 and file2
+diff hlef.seq hlefa.seq      # on hpc
+
+
+md5sum files           # lists MD5 hashes for the files
+# md5sum is generally used to verify that files are identical after a transfer.
+# md5 on MacOSX, <http://goo.gl/yCIzR> for Windows.
+
+--------------------------------------------------------------------------------
+
+
+=== The grep family
+Sounds like something blobby and unpleasant and sort of is, but it's VERY powerful.
+http://en.wikipedia.org/wiki/Regex[Regular Expressions] are formalized patterns.  As such they are not exactly easy to read at first, but it gets easier with time.
+
+The simplest form is called http://en.wikipedia.org/wiki/Glob_(programming)[globbing] and is used within bash to select files that match a particular pattern
+--------------------------------------------------------------------------------
+ls -l *.pl    # all files that end in '.pl'
+ls -l b*.     # all files that start with 'b' & end in '.pl'
+ls -l b*p*.*l  # all files that start with 'b' & have a 'p' & end in 'l'
+--------------------------------------------------------------------------------
+Looking at nucleic acids, can we encode this into a regex?:
+
+ gyrttnnnnnnngctww = g[ct][ag]tt[acgt]{7}gct[at][at]
+
+--------------------------------------------------------------------------------
+grep regex files   # look for a regular expression in these files.
+grep -rin regex  *  # recursively look for this case-INsensitive regex in all files and
+                    # dirs from here down to the end and number the lines.
+grep -v regex files # invert search (everything EXCEPT this regex)
+egrep "thisregex|thatregex" files  # search for 'thisregex' OR 'thatregex' in these files
+
+egrep "AGGCATCG|GGTTTGTA" hlef.seq
+
+# gnome-terminal allows searching in output, but not as well as 'konsole'
+--------------------------------------------------------------------------------
+
+http://www.regular-expressions.info/quickstart.html[This is a pretty good quickstart resource for learning more about regexes].
+
+
+
+=== Info About (& Controlling) your jobs
+--------------------------------------------------------------------------------
+top      # lists which are the top CPU-consuming jobs on the node
+
+ps       # lists all the jobs which match the options
+ps aux   # all jobs
+ps aux | grep hmangala  # all jobs owned by hmangala
+
+alias psg="ps aux | grep"
+
+kill -9 JobPID#   # kill off your job by PID
+--------------------------------------------------------------------------------
+
+=== Your terminal sessions
+You may be spending a lot of time in the terminal session and sometimes the terminal just screws up.  If so, you can try typing 'clear' or 'reset' which should reset it.
+
+You will often find yourself wanting multiple terminals to hpc. You can usually open multiple tabs on your terminal but you can also use the 'byobu' app to multiplex your terminal 'inside of one terminal window'. https://help.ubuntu.com/community/Byobu[Good help page on byobu here.]
+
+The added advantage of using 'byobu' is that the terminal sessions that you open will stay active after you 'detach' from them (usually by hitting 'F6').  This allows you to maintain sessions across logins, such as when you have to sleep your laptop to go home.  When you start 'byobu' again at HPC, your sessions will be exactly as you left them.
+
+.A 'byobu' shell in not quite the same as using a direct terminal connection
+[NOTE]
+==========================================================================================
+Because 'byobu' invokes some deep magic to set up the multiple screens, X11 graphics invoked from a
+'byobu'-mediated window will 'sometimes' not work, depending on how many levels of shell you've descended.  Similarly, 'byobu' traps mouse actions so things that might work in a direct connection (mouse control of 'mc') will not work in a 'byobu' shell. Also some line characters will not format properly. Always tradeoffs...
+==========================================================================================
+
+=== Background and Forground
+
+Your jobs can run in the 'foreground' attached to your terminal, or detached in the 'background', or simply 'stopped'.
+
+Deep breath.....
+
+- a job runs in the 'foreground' unless sent to the 'background' with '&' when started.
+- a 'foreground' job can be 'stopped' with 'Ctrl+z' (think zap or zombie)
+- a 'stopped' job can be started again with 'fg'
+- a 'stopped' job can be sent to the 'background' with 'bg'
+- a 'background' job can be brought to the foregound with 'fg'
+
+If you were going to run a job that takes a long time to run, you could run it in the background with this command.
+
+--------------------------------------------------------------------------------
+tar -czf gluster-sw.tar.gz gluster-sw  &   # This would run the job in the background immediately
+...
+[1]+  Done                    tar -czvf gluster-sw.tar.gz gluster-sw
+
+tar -czvf gluster-sw.tar.gz gluster-sw &  #  Why would this command be sub-optimal?
+       ^  .. hint
+--------------------------------------------------------------------------------
+
+HOWEVER, for most long-running jobs, you will be submitting the jobs to the scheduler to run in 'batch mode'.  See link:#qsub[here for how to set up a qsub run].
+
+
+
+=== Finding files with 'find' and 'locate'
+Even the most organized among you will occasionally lose track of where your files are.  You can generally find them on HPC by using the 'find' command:
+--------------------------------------------------------------------------------
+# choose the nearest dir you remember the file might be and then direct find to use that starting point
+find [startingpoint] -name filename_pattern
+
+# ie:  (you can use globs but they have to be 'escaped' with a '\'
+find gluster-sw/src -name config\*
+gluster-sw/src/glusterfs-3.3.0/argp-standalone/config.h
+gluster-sw/src/glusterfs-3.3.0/argp-standalone/config.h.in
+gluster-sw/src/glusterfs-3.3.0/argp-standalone/config.log
+gluster-sw/src/glusterfs-3.3.0/argp-standalone/config.status
+gluster-sw/src/glusterfs-3.3.0/argp-standalone/configure
+gluster-sw/src/glusterfs-3.3.0/argp-standalone/configure.ac
+gluster-sw/src/glusterfs-3.3.0/xlators/features/marker/utils/syncdaemon/configinterface.py
+
+
+# 'locate' will work on system files, but not on user files. Useful for looking for libraries,
+# but probably not in the module files
+
+locate libxml2 |head   # try this
+
+# Also useful for searching for libs is 'ldconfig -v', which searches thru the LD_LIBRARY_PATH
+
+ldconfig -v |grep libxml2
+
+--------------------------------------------------------------------------------
+
+=== Modules
+'Modules' are how we maintain lots of different applications with mutiple versions without (much) confusion.  In order to load a particular module, you have to call it up with the specific version if you don't want the latest one.
+
+Note that the latest one may not be the numerically largest one.  Many packages (including Linux) number their packages such that '2.6.16' is newer than '2.6.3' (but older than '2.6.30').
+--------------------------------------------------------------------------------
+module load app          # load the module
+module load app/version  # load the module with that specific version
+module whatis app        # what does it do?
+module list              # list all currently loaded modules
+module rm app            # remove this module (doesn't delete the module, just removes the paths to it)
+module purge             # removes ALL modules loaded (provides you with a pristine environment)
+--------------------------------------------------------------------------------
+
+
+
+
+
+
+
+== bash variables
+The bash shell is also a programming environment.  As such, it supports variables and all kinds of logic.
+A bash variable is essentially just a string assigned to a variable name:
+--------------------------------------------------------------------
+MYNAME="type your name here"
+# verify that assignment by using 'echo'
+echo MYNAME
+
+# oops.  Not what we want.  The problem is that variables are assigned using their plain names
+# but are referenced with their '$' name
+
+echo $MYNAME
+
+# better. Sometimes because of the logic or embedding in a string, variables need to be 'super-quoted'
+# in this case, use this construct: ${VARNAME} or $(VARNAME).
+
+echo "MY name is: [${MYNAME}]"
+
+# it's often useful to place brackets around variables when printing them to detect
+# leading or lagging whitespace which may lead to oddities later.
+# This is useful for all languages.
+
+--------------------------------------------------------------------
+
+A lot of sophisticated logic is exquisitely awful in bash (use Perl or Python), but the simple stuff can be VERY useful.  For example...
+
+A sequence that you'll probably repeat is to iterate over all files that have a common pattern in their names.
+
+--------------------------------------------------------------------
+for THISFILE in May_4*.txt; do
+   grep ERR $THISFILE >> May.ERRs
+done
+
+# note output is not May_4.ERRs - what would happen if it was?
+# also, note that the command capturing the STDOUT was '>>'. What would happen if it was '>'?
+--------------------------------------------------------------------
+
+=== Iteration in bash
+
+Or if you have a series of files of results files that are 'something_Jan_1_2013' thru 'something_Jan_22_2013' and you wanted to process only 01-14..
+
+--------------------------------------------------------------------
+for NMBR in $(seq 01 14); do
+   echo "Processing: something_Jan_${NMBR}_2013"
+done
+
+# What about if it the file format was 'something_Jan_01_2013'
+# (ie the '01' was always 2 chars wide)
+# 'seq' can tke a format specifier to pad numbers
+
+for NMBR in $(seq -f "%02g" 1 14); do
+   echo "Processing something_Jan_${NMBR}_2013"
+done
+
+# play around with the formatting to see what you can do.
+--------------------------------------------------------------------
+
+.bash variables can be made of just about any command output
+[NOTE]
+===========================================================================
+In the above example, a bash variable was created out of the output of a command:
+
+--------------------------------------------------------------------
+$(seq -f "%02g" 1 14)
+--------------------------------------------------------------------
+
+paste this;
+--------------------------------------------------------------------
+ seq -f "%02g" 1 14
+--------------------------------------------------------------------
+into a shell to see the result
+
+This is one of the advantages of bash - you can 'embed' the output of any command in a single bash variable and then process it as a list.  Careful of what you wish for tho...
+===========================================================================
+
+--------------------------------------------------------------------
+# You can also do the above in one line, inserting ';' between commands if nec
+for ITER in $(seq -f "%03g" 1 14); do echo A64HOST=a64-${ITER}; done
+#                                ^                            ^     ^
+
+# Typically don't need ';' at end of lines.  The EOL indicates the end of a
+# statement. Sometimes you DO need to continue a long line over multiple lines.
+# You do this with a '\' which has to be the last character on the line (no
+# following spaces or tabs)
+
+for NMBR in $(seq -f "%02g" 1 14); do
+   echo "This is a long line demonstrating that sometimes loquacious \
+   documentation requires continuation on a longer line to note that \
+   we're processing something_Jan_${NMBR}_2013"
+done
+--------------------------------------------------------------------
+
+== Regular Expressions and grep
+A http://en.wikipedia.org/wiki/Regular_expression[regular expression] if simply a formal way of expressing a pattern.  Since a lot of you may be searching for patterns in proteins and nucleic acids, it's certainly worth your time to learn a bit about regexs.
+
+When we were talking about globbing, "\*" meant 'and anything'. In a regex, it usually has the same meaning as well. So 'cat\*' would match 'cat', 'catastrophe', 'catabolism', 'catmandu', etc.
+
+The most frequently used regex operators (used in grep) are:
+
+- * means  'and anything'
+- . means 'any single character'
+- [abcd] means 'any of [a or b or c or d]; [^abcd] matches any character NOT 'a,b,c or d'
+- [abcd]{3,5} means means 'any of [a or b or c or d] , but 3-5 times (abdda), but not (abdeda)
+- [a-e] means all the chars between a and e inclusive (abcde)
+- '(this|that)' means the regex has to match 'this' or 'that'
+- ^ means the beginning of a line
+- $ means the end of a line
+- \s+ means whitespace (any combination of spaces & tabs)
+- some characters (most of the non-alphanumerics) need to be escaped (preceded with a backslash) to be found as a literal.  If you're searching for a literal asterix (\*), it needs to be searched for as "\*"
+
+
+So let's search for some regexes in sequences.
+
+First get some generic sequence.
+--------------------------------------------------------------------
+wget http://hpc.oit.uci.edu/biolinux/hlef.seq
+
+less hlef.seq   # to see what it is.  OK, it's a simple fasta format; all sequence in CAPS
+
+# now search for all instances of aacgtcggatcg
+
+grep -i  aacgtc hlef.seq  # use grep for straight patterns, egrep for 'extended regexes'
+
+egrep -i  'a{2,3}[ga][ac]a{4,7}[at]{3,6}'  hlef.seq  # need the quotes.
+#     ^^ to tell it to ignore case
+
+read the grep man page for the entire set.
+--------------------------------------------------------------------
+
+.There is an app called 'tacg' that does this much better for nucleic acids.
+[NOTE]
+=====================================================================
+module load tacg/4.6.0 +
+'tacg -h' +
+ or +
+'man tacg' +
+to find out more about it.
+
+=====================================================================
+
+== Programs
+
+On HPC, programs (as opposed to utilities) are usually found in the module system, where they're stored in various versions, separated roughly into categories.  Utilities (ls, cd, rm, mv, etc) are usually found within the system itself.
+
+To look for a program, you can type:
+--------------------------------------------------------------------
+module avail  # will spill all the apps and versions available
+--------------------------------------------------------------------
+
+If you know which one you want, you can load it with:
+
+--------------------------------------------------------------------
+module load app/version
+--------------------------------------------------------------------
+or if you're not sure about whether it's the right program, try:
+
+--------------------------------------------------------------------
+module whatis app  # spills a short description of what it does (hopefully)
+--------------------------------------------------------------------
+
+
+
+== Resources
+
+=== General Introduction
+
+- http://moo.nac.uci.edu/~hjm/FixITYourselfWithGoogle.html[Fix IT yourself with Google]
+- The http://hpc.oit.uci.edu/HPC_USER_HOWTO.html[An Introduction to the HPC Computing Facility] aka 'The HPC User's HOWTO'.
+- The 'BioLinux - a gentle introduction to Bioinformatics on Linux' class slides:
+  * http://moo.nac.uci.edu/~hjm/biolinux/Intro_to_BioLinux_Linux.pdf[The Linux part]
+  * http://moo.nac.uci.edu/~hjm/biolinux/Intro_to_BioLinux_BioInformatics.pdf[The Bioinformatics part]
+- http://moo.nac.uci.edu/~hjm/HOWTO_move_data.html[How to Move data]
+- http://moo.nac.uci.edu/~hjm/ManipulatingDataOnLinux.html[Manipulating Data on Linux]
+- http://software-carpentry.org/[The Software Carpentry site]
+- http://showmedo.com[Showmedo videos]
+- Instructors:
+  * Jenny Wu <jiew5@uci.edu>
+  * Harry Mangalam <harry.mangalam@uciedu>
+
+=== Introduction to R
+
+- http://moo.nac.uci.edu/~hjm/AnRCheatsheet.html[An R cheatsheet]
+- http://moo.nac.uci.edu/~hjm/R_BioC_example.html[A Typical Annoying Example of using R/BioConductor]
+
+
+== Distribution & Release Conditions
+
+If this Document has been sent to you as a file instead of as a link, some of the content may be lost.  http://moo.nac.uci.edu/~hjm/biolinux/Linux_Tutorial_1.html[The original page is here.]  The AsciiDoc http://moo.nac.uci.edu/~hjm/biolinux/Linux_Tutorial_1.txt[source is here], which has embedded comments that show how to convert the source to the HTML.    http://www.methods.co.nz/asciidoc/index.html[AsciiDoc] is a simple and simply fantastic documentation language - thanks to Stuart Rackham for developing it.
+
+
+image:http://i.creativecommons.org/l/by-sa/3.0/88x31.png[Creative Commons License] +
+This work is licensed under a http://creativecommons.org/licenses/by-sa/3.0/deed.en_US[Creative Commons Attribution-ShareAlike 3.0 Unported License].
+
+
+

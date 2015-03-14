@@ -1,0 +1,138 @@
+SSHouting with ssh
+==================
+by Harry Mangalam <harry.mangalam@uci.edu>
+v1.04, June 19th, 2012
+
+//Run and create html : 
+// export fileroot="/home/hjm/nacs/SSHoutingWithSsh"; asciidoc -a icons -a toc2 -b html5 -a numbered ${fileroot}.txt; scp ${fileroot}.[ht]* moo:~/public_html; 
+
+// scp ${fileroot}.txt  hmangala@claw1:~/bduc/trunk/sge; ssh hmangala@bduc-login 'cd ~/bduc/trunk/sge; svn update; svn commit -m "new mods to SSHoutingWithSsh"'
+
+// and push it to Wordpress:
+// blogpost.py  update  -c HowTos ${fileroot}.txt
+
+// don't forget that the HTML equiv of '~' = '%7e'
+// asciidoc cheatsheet: http://powerman.name/doc/asciidoc
+// asciidoc user guide: http://www.methods.co.nz/asciidoc/userguide.html
+
+Summary
+-------
+With a little setup, you can send commands to your machines with ssh without logging in ('sshouting').
+
+-------------------------------------------------------------
+# upgrade that remote server from your machine with a one liner:
+$ sudo ssh -t server 'apt-get update && apt-get upgrade'
+-------------------------------------------------------------
+
+Introduction
+------------
+A frequent requirement for sysadmin is to fix or inquire about the state of something on a remote system (or many remote systems).  The default approach is to serially log in to the remote system with http://en.wikipedia.org/wiki/Secure_Shell[ssh], type the command (often as root or via http://en.wikipedia.org/wiki/Sudo[sudo]), extract the info, logout and go off to the next one.
+
+There are a few ways to improve this approach.  Hopefully this advice is unneeded but one of the ancillary advantages of ssh besides the encryption is its support of http://en.wikipedia.org/wiki/Pre-shared_key[pre-shared] http://en.wikipedia.org/wiki/Public-key_cryptography[public keys].  That is, the use of a private key (a secret key NOT to be shared) and public key (that is meant to be shared) that are exchanged in the communication setup and that guarantee that:
+
+- both the remote and local machines are who they say they are and
+- that the messages exchanged are encrypted so that only the endpoints can decrypt the messages
+
+Pre-shared keys as implemented by ssh also allow you to log in to the remote system without entering a password (using an empty passphrase - the keys are encrypted with a random seed instead of a human-generated passphrase.
+
+It's very easy to set up shared keys.  This is multiply described all over the Intertubes, so I'll just reference http://moo.nac.uci.edu/~hjm/bduc/BDUC_USER_HOWTO.html#HowtoPasswordlessSsh[one I wrote] and the http://www.debian-administration.org/articles/152[Debian HOWTO].  If you need more information there is http://tinyurl.com/yemm7zo[Google].
+
+Note that when you do this from your own account, only that account is authorized to connect to the specific remote account that you specified.  In order to connect to the root account on the remote machine, needed to read or write rootish information, you'll need some additional things.
+
+First thing required is the permission on the remote machine to do this.  You will need root or sudo permission to do this.  I assume you're already the admin so this will not be a problem.  The next decision is whether to allow root logins directly 'at all'.  Allowing remote root logins has a http://tinyurl.com/36sqxhj[variety of security implications] that I will not discuss furher here.  Suffice to say, this is a nontrivial decision and root logins may be banned by your organization.  SHould that be the case, there are other ways to approximate the same convenience (see link:#interactive[below]).
+
+This requires editing the '/etc/ssh/sshd_config' file on the remote system and setting the 'PermitRootLogin' to 'yes':
+-------------------------------------------------------------
+# /etc/ssh/sshd_config
+ ...
+PermitRootLogin yes
+ ...
+-------------------------------------------------------------
+
+Assuming you decide to do so, and you change the configuration of the '/etc/ssh/sshd_config' appropriately, and finally restart the sshd server ('sudo /etc/init.d/ssh restart'), you can then arrange the ssh key exchange from root to root accounts from your machine to the remote machine.  You can also arrange to exchange ssh keys from your regular account to the root account of the remote machine but that allows 'too little friction' between thought and typing IMHO.  A root action should require a password to be typed somewhere in the process to make you think twice about what you're about to do.
+
+
+Your root public key (generated when you initialized the keys) should be in the '/root/.ssh' dir named either 'id_dsa.pub' or 'id_rsa.pub', depending on which key you chose during the key generation process.  The contents of that file (a single line) has to be entered into the file '/root/.ssh/authorized_keys' also in a single line.
+
+Once that is done, the root account on your local machine can passwordlessly log into the root account of the remote machine.  Now the fun begins.
+
+
+SSHouting
+---------
+
+Non-interactive sshouting
+~~~~~~~~~~~~~~~~~~~~~~~~~
+ssh can not only be used as a terminal application but also to transmit commands directly to the remote machine simply by appending them (appropriately quoted) to the ssh command.  By default, the STDOUT will be returned to the issuing terminal.
+
+In the following example, ssh keys of 'hjm' are shared between bongo and claw (claw is defined in my '/etc/hosts' file so can be referred to by its short name).
+
+-------------------------------------------------------------
+# NB: inserted comments are prefixed with '#'
+
+Wed Nov 24 09:11:20 [2.00 1.55 1.17]  hjm@bongo:~    #  my prompt
+# the remote command to hjm@claw is 'ls av*' 
+$ ssh claw 'ls av*' 
+# the output from claw follows as if it were local  
+average
+average.m
+average_main.c
+average_mcc_component_data.c
+average.prj
+-------------------------------------------------------------
+
+The above example did not require any further interaction with the remote machine, so it would be useful to do things that were completable with the single command.  Examples are commands such as the previous 'ls', checking disk usage with 'du', copying or deleting a file as long as it did not require any further interaction (non-interactive mode).  If the command required interaction, you'll require the '-t' flag which invokes a pseudo-tty (see immediately below).
+
+STDIN & STDOUT through ssh
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+ssh also provides the same STDIN/STDOUT pipes that many other *nix utilities do.  You can take advantage of this characteristic by piping STDIN from one machine into ssh to have it appear in the STDOUT on the remote side:
+
+The following 1 liner copies your local public ssh key to the remote host.  For this particular case, you'll have to 
+provide the password, but folloowing connections will not require a password.
+-------------------------------------------------------------
+# duplicate the ssh-copyid functionality for machines that don't supply it
+cat ~/.ssh/id_rsa.pub | ssh  hjm@moo "cat >> ~/.ssh/authorized_keys"
+-------------------------------------------------------------
+(Thanks to Adam Brenner for this hint.)
+
+[[interactive]]
+Interactive sshouting
+~~~~~~~~~~~~~~~~~~~~~
+
+The pseudo-tty option
+^^^^^^^^^^^^^^^^^^^^^
+http://en.wikipedia.org/wiki/Pseudo_terminal[Wikipedia defines a pseudo-tty] as what it sounds like - a fake terminal.  When you request a pseudo-tty (pty) with the '-t' flag, it allocates a pty to listen to the terminal commands now being sent back to the issuing ssh and handles them as if it were an actual terminal connection.  In this way, you can answer queries from the remote machine, even edit a file without having logged into the remote machine.
+
+This is most useful for short commands or interactions - if you were planning on spending the day doing admin,  you'd want to actually be logged into the machine.
+
+However, it's very useful to do things such as upgrading when you might need to answer prompts about overwriting existing configuration files, doing interactive commands ('rm -i', 'cp -i', etc), or even brief editing sessions.
+
+Use of the '-t' option can also let you bypass the need for allowing 'root ssh logins'.  By using a regular 'ssh -t' session and prefixing the remote command with 'sudo', you can request that the remote machine prompt you for your password to elevate the command to sudo privs.  Because of the pty connection, the password challenge will be handled appropriately, allowing (and requiring) you to enter the appropriate password.
+
+Aliasing
+^^^^^^^^
+This is also very useful for doing semi-regular, semi-complicated routines where you really only need to do one thing, but there may be some interaction needed.  For example, we often have to add users to our cluster.  We run a shell script which does a fair bit of customized setup and testing, and if there's an exception, it requests input.  To do this, I have an bash 'alias' that incorporates the whole thing into a 4 letter acronym (auos = 'add user on sched') that depends on 'ssh -t':
+
+-------------------------------------------------------------
+alias auos='sudo ssh -t bduc-sched.nacs.uci.edu '\''/home/hmangala/bduc/trunk/sge/add_bduc_user.sh'\'''
+
+# executed on my laptop which as:
+
+$ auos new_user_name
+
+# requires my password to sudo, then uses shared ssh keys to execute the task
+-------------------------------------------------------------
+
+
+Single vs multiple machines
+---------------------------
+This approach is useful for administration on single machines or one-off jobs on multiple machines for which you're set up for shared keys, but what about for dealing with lots of machines?
+
+For that, I (and others) have written more elaborate wrappers around ssh.  I wrote one called http://moo.nac.uci.edu/%7ehjm/clusterfork/index.html[clusterfork] which has some interesting and (for me) useful features.  I http://moo.nac.uci.edu/%7ehjm/clusterfork/index.html#alternatives[reference and provide links to a number of others] that do somewhat similar tasks in the same doc.  All are free. 
+
+As with any root command, *be careful what you ask for*.
+
+
+
+
+
+
