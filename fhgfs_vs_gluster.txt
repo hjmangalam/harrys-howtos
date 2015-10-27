@@ -1,7 +1,7 @@
 Distributed Filesystems: Fraunhofer vs Gluster
 ==============================================
 by Harry Mangalam <harry.mangalam@uci.edu>
-v1,05 June 28th, 2014
+v1.06 Oct 2th, 2015
 
 // last linkchecked  May 28th, 2013
 
@@ -78,7 +78,7 @@ which make the case much stronger for FhGFS.
  making it almost unusable for interactive operations on large filesytems.
  There are some workarounds.  FhGFS is 5-60x faster than Glfs for these
  operations, often faster than a native filesystem or NFS.  The RobinHood
- Policy Engine is a very useful tool for both thes
+ Policy Engine is a very useful tool for both these filesystems.
 - FhGFS has a good GUI for first time installation and monitoring, but GUI
  modification of that installation is difficult and manual modification of
  it is also tricky unless you know what you're doing.  Use the manual
@@ -95,7 +95,19 @@ which make the case much stronger for FhGFS.
  a minimum size that will stripe.
 - Both filesystems benefit from good underlying hardware.  We tested both on
  the LSI Nytro SSD-backed SAS controllers and the improvement in
- performance was dramatic vs an older 3ware 9750 SAS controller.
+ performance was dramatic vs an older 3ware 9750 SAS controller.  
+ - *NOTE*: However recently, we have had 3 catastrophic failures with these
+controllers and  therefore cannot recommend them (academic, since they aren't
+made anymore).  If you have one of these controllers, you might look into
+replacing them with a non-Nytro equivalent.  In the process of attempting
+recover from these failures, we noted several bugs in LSI's recovery process and
+software and would recommend extreme caution in using their hardware controllers
+at all.  They are great when they work, but they leave a gut-wrenching mess when
+they don't.  We are moving to ZFS-based storage with very simple pass-thru
+controllers that can be replaced with other vendor products (ie LSI <->
+Supermicro).
+
+
 
 
 == Introduction

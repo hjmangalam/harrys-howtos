@@ -1,9 +1,9 @@
 Manipulating Data on Linux
 ==========================
 Harry Mangalam <harry.mangalam@uci.edu>
-v1.24, Sept 27, 2012
+v1.25, Nov 15, 2014
 :icons:
-// export fileroot="/home/hjm/nacs/ManipulatingDataOnLinux"; asciidoc -a icons -a toc2 -b html5 -a numbered ${fileroot}.txt; scp ${fileroot}.[ht]* moo:~/public_html
+// export fileroot="/home/hjm/nacs/ManipulatingDataOnLinux-2"; asciidoc -a icons -a toc2 -b html5 -a numbered ${fileroot}.txt; scp ${fileroot}.[ht]* moo:~/public_html
 
 // update svn from BDUC
 // scp ${fileroot}.[ht]*  hmangala@claw1:~/bduc/trunk/sge; ssh hmangala@bduc-login 'cd ~/bduc/trunk/sge; svn update; svn commit -m "new mods to ManipulatingData.."'
@@ -18,19 +18,40 @@ v1.24, Sept 27, 2012
 
 Introduction
 ------------
-If you're coming from Windows, the world of the Linux command line can be perplexing - you have to know what you want before you can do anything - there's nothing to click, no wizards, few hints.  So let me supply a few...
+If you're coming from Windows, the world of the Linux command line can be perplexing - you have to know what you want before you can do
+anything - there's nothing to click, no wizards, few hints.  So let me supply a few...
 
-I assume you've been forced to the Linux shell prompt somewhat against your will and you have no burning desire to learn the cryptic and agonizing commands that form the basis of http://xkcd.org[xkcd] and other insider jokes.  You want get your work done and you want to get it done fast.
+I assume you've been forced to the Linux shell prompt somewhat against your will and you have no
+burning desire to learn the cryptic and agonizing commands that form the basis of
+http://xkcd.org[xkcd] and other insider jokes.  You want get your work done and you want to get it
+done fast.
 
-However, there are some very good reasons for using the commandline for doing your data processing.  With more instruments providing digital output and new technologies providing terabytes of digital data, trying to handle this data with Excel is *just not going to work*.  And 'Comma Separated Value' (CSV) files are probably not going to be much help either in a bit.  But we can deal with all of these on Linux using some fairly simple, free utilities (the overwhelming majority of Linux tools are free, another reason to use it).
+However, there are some very good reasons for using the commandline for doing your data processing. 
+With more instruments providing digital output and new technologies providing terabytes of digital
+data, trying to handle this data with Excel is *just not going to work*.  And 'Comma Separated
+Value' (CSV) files are probably not going to be much help either in a bit.  But we can deal with all
+of these on Linux using some fairly simple, free utilities (the overwhelming majority of Linux tools
+are free, another reason to use it).
 
-There are also some good proprietary tools that have been ported to Linux ('MATLAB, Mathematica, SAS', etc), but I'm going to mostly ignore these for now.  This is also not to say that you can't do much of this on Windows, using native utilities and applications, but it's second nature on Linux and it works better as well.  The additional point is that it will ALWAYS work like this on Linux.  No learning a new interface every 6 months because 'Microsoft' or 'Apple' need to bump their profit by releasing yet another pointless upgrade that you have to pay for in time and money.
+There are also some good proprietary tools that have been ported to Linux ('MATLAB, Mathematica,
+SAS', etc), but I'm going to mostly ignore these for now.  This is also not to say that you can't do
+much of this on Windows, using native utilities and applications, but it's second nature on Linux
+and it works better as well.  The additional point is that it will ALWAYS work like this on Linux. 
+No learning a new interface every 6 months because 'Microsoft' or 'Apple' need to bump their profit
+by releasing yet another pointless upgrade that you have to pay for in time and money.
 
 Note that 'most' of the applications noted exist for MacOSX and 'many' exist for Windows.  See link:#FlossOnMacWin[below]
 
-There is a great, free, self-paced tutorial called http://swc.scipy.org[Software Carpentry] that examines much of what I'll be zooming thru in better detail.  The title refers to the general approach of Unix and Linux: use of simple, well-designed tools that tend to do one job very well (think 'saw' or 'hammer').  Unlike the physical tools, tho, the output of one can be piped into the input of another to form a suprisingly effective (if simple) workflow for many needs.
+There is a great, free, self-paced tutorial called http://swc.scipy.org[Software Carpentry] that
+examines much of what I'll be zooming thru in better detail.  The title refers to the general
+approach of Unix and Linux: use of simple, well-designed tools that tend to do one job very well
+(think 'saw' or 'hammer').  Unlike the physical tools, tho, the output of one can be piped into the
+input of another to form a suprisingly effective (if simple) workflow for many needs.
 
-http://www.showmedo.com[Showmedo] is another very useful website, sort of like *YouTube for Computer tools*.  It has tutorial videos covering Linux, Python, Perl, Ruby, the 'bash' shell, Web tools, etc.  And especially for beginners, it has a section related specifically to the above-referenced http://www.showmedo.com/videos/series?name=pQZLHo5Df[Software Carpentry series]
+http://www.showmedo.com[Showmedo] is another very useful website, sort of like *YouTube for Computer
+tools*.  It has tutorial videos covering Linux, Python, Perl, Ruby, the 'bash' shell, Web tools,
+etc.  And especially for beginners, it has a section related specifically to the above-referenced
+http://www.showmedo.com/videos/series?name=pQZLHo5Df[Software Carpentry series]
 
 
 OK, let's start. 
@@ -38,9 +59,18 @@ OK, let's start.
 
 Getting your data to and from the Linux host.
 ---------------------------------------------
-This has been covered in many such tutorials, and the short version is to use http://www.winscp.com[WinSCP] on Windows and http://cyberduck.ch/[Cyberduck] on the Mac.  I've written more on this, so go and take a look if you want the http://moo.nac.uci.edu/%7ehjm/BDUC_USER_HOWTO.html#filestoandfrom[short and sweet version] or the http://moo.nac.uci.edu/%7ehjm/HOWTO_move_data.html[longer, more sophisticated version].  Also, see the MacOSX note above - you can do all of this on the Mac as well, altho there are some Linux-specific details that I'll try to mention.
+This has been covered in many such tutorials, and the short version is to use
+http://www.winscp.com[WinSCP] on Windows and http://cyberduck.ch/[Cyberduck] on the Mac.  I've
+written more on this, so go and take a look if you want the
+http://moo.nac.uci.edu/%7ehjm/BDUC_USER_HOWTO.html#filestoandfrom[short and sweet version] or the
+http://moo.nac.uci.edu/%7ehjm/HOWTO_move_data.html[longer, more sophisticated version].  Also, see
+the MacOSX note above - you can do all of this on the Mac as well, altho there are some
+Linux-specific details that I'll try to mention.
 
-'sshfs': The other very convenient approach, if the server kernel allows it, is to use http://en.wikipedia.org/wiki/SSHFS[sshfs] to semi-permanently connect your Desktop file system to your '$HOME' directory on the server.  The process is http://moo.nac.uci.edu/~hjm/BDUC_USER_HOWTO.html#_sshfs[described here.]
+'sshfs': The other very convenient approach, if the server kernel allows it, is to use
+http://en.wikipedia.org/wiki/SSHFS[sshfs] to semi-permanently connect your Desktop file system to
+your '$HOME' directory on the server.  The process is
+http://moo.nac.uci.edu/~hjm/BDUC_USER_HOWTO.html#_sshfs[described here.]
 
 OK, you've got your data to the Linux host... Now what..?  
 
@@ -60,7 +90,12 @@ To figure out how to use a command beyond the simple examples below, try the lin
 [[file]]
 What kind of file is it?
 ~~~~~~~~~~~~~~~~~~~~~~~~
-First, even tho you might have generated the data in your lab, you might not know what kind of data it is.  While it's not foolproof, a tool that may help is called *file*.  It tries to answer the question: "What kind of file is it?"  Unlike the Windows approach that maps file name endings to a particular type (filename.typ), 'file' actually peeks inside the file to see if there are any diagnostic characteristics, so especially if the file has been renamed or name-mangled in translation, it can be very helpful.
+First, even tho you might have generated the data in your lab, you might not know what kind of data
+it is.  While it's not foolproof, a tool that may help is called *file*.  It tries to answer the
+question: "What kind of file is it?"  Unlike the Windows approach that maps file name endings to a
+particular type (filename.typ), 'file' actually peeks inside the file to see if there are any
+diagnostic characteristics, so especially if the file has been renamed or name-mangled in
+translation, it can be very helpful.
 
 ie
 --------------------------------------------------------------------------
@@ -94,16 +129,19 @@ Shell commands are prefixed by *bash >* and can be  moused into your own shell
 to test including the embedded comments (prefixed by '#'; they will be ignored.)
 Do not, of course include the *bash >* prefix.
 
-Also, all the utilities described here will be available on the interactive http://moo.nac.uci.edu/%7ehjm/BDUC_USER_HOWTO.html[BDUC 
-cluster] nodes at UC Irvine.  Unless otherwise stated, they are also freely available for any 
-distribution of Linux.
+Also, all the utilities described here will be available on the interactive
+http://moo.nac.uci.edu/%7ehjm/BDUC_USER_HOWTO.html[BDUC  cluster] nodes at UC Irvine.  Unless
+otherwise stated, they are also freely available for any  distribution of Linux.
 =====================================================================
 
 
 How big is the file?
 ~~~~~~~~~~~~~~~~~~~~
 
-We're going to use a 25MB tab-delimited data file called http://moo.nac.uci.edu/%7ehjm/red+blue_all.txt.gz[red+blue_all.txt.gz].  Download it (in Firefox) by right-clicking on the link and select 'Save Link As..'.  Save it to the $DDIR directory you've created for this excercise, then decompress it with 'gunzip red+blue_all.txt.gz'.  
+We're going to use a 25MB tab-delimited data file called
+http://moo.nac.uci.edu/%7ehjm/red+blue_all.txt.gz[red+blue_all.txt.gz].  Download it (in Firefox) by
+right-clicking on the link and select 'Save Link As..'.  Save it to the $DDIR directory you've
+created for this excercise, then decompress it with 'gunzip red+blue_all.txt.gz'.  
 
 [[ls]]
 We can get the total bytes with 'ls'
@@ -140,26 +178,37 @@ bash >  wc red+blue_all.txt
 Native Spreadsheet programs for Linux
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-In some cases, you'll want to use a spreadsheet application to review a spreadsheet.  
-(For the few of you who don't know how to use spreadsheets for data analysis (as opposed to just looking at columns of data), there is a http://swc.scipy.org/lec/spreadsheets.html[Linux-oriented tutorial] at the oft-referenced Software Carpentry site.)
+In some cases, you'll want to use a spreadsheet application to review a spreadsheet.   (For the few
+of you who don't know how to use spreadsheets for data analysis (as opposed to just looking at
+columns of data), there is a http://swc.scipy.org/lec/spreadsheets.html[Linux-oriented tutorial] at
+the oft-referenced Software Carpentry site.)
 
-While Excel is the acknowledged leader in this application area, there are some very good native free spreadsheets available on Linux that behave very similarly to Excel.
-There's a good exposition on spreadsheet history as well as links to free and commercial spreadsheets for Linux http://www.cbbrowne.com/info/spreadsheets.html[here] and a http://en.wikipedia.org/wiki/Comparison_of_spreadsheets[good comparison of various spreadsheets].
+While Excel is the acknowledged leader in this application area, there are some very good native
+free spreadsheets available on Linux that behave very similarly to Excel. There's a good exposition
+on spreadsheet history as well as links to free and commercial spreadsheets for Linux
+http://www.cbbrowne.com/info/spreadsheets.html[here] and a
+http://en.wikipedia.org/wiki/Comparison_of_spreadsheets[good comparison of various spreadsheets].
 
 For normal use, I'd suggest one of:
 
 [[openoffice]]
- * http://en.wikipedia.org/wiki/OpenOffice.org_Calc[OpenOffice calc] (type 'oocalc' to start)
+
+* http://en.wikipedia.org/wiki/OpenOffice.org_Calc[OpenOffice calc] (type 'oocalc' to start)
  
- [[libreoffice]]
- * http://www.libreoffice.org/features/calc/[LibreOffice calc] (type 'libreoffice' to start)
+[[libreoffice]]
+* http://www.libreoffice.org/features/calc/[LibreOffice calc] (type 'libreoffice' to start)
  
 [[gnumeric]]
- * http://en.wikipedia.org/wiki/Gnumeric[Gnumeric] (type 'gnumeric' to start).  
+
+* http://en.wikipedia.org/wiki/Gnumeric[Gnumeric] (type 'gnumeric' to start).  
  
- NB: 'LibreOffice' is the latest fork of 'OpenOffice'. Due to IP entanglements, development of 'OpenOffice' has stopped but development of 'LibreOffice' continues actively. If both are available, 'LibreOffice' is a better choice.
+NB: 'LibreOffice' is the latest fork of 'OpenOffice'. Due to IP entanglements, development of
+'OpenOffice' has stopped but development of 'LibreOffice' continues actively. If both are available,
+'LibreOffice' is a better choice.
  
-The links will give you more information on them and the spreadsheet modules in each will let you view and edit most Excel spreadsheets.   In addition, there are 2 Mac-native version of OpenOffice: one a port from the OpenOffice group called:
+The links will give you more information on them and the spreadsheet modules in each will let you
+view and edit most Excel spreadsheets.   In addition, there are 2 Mac-native version of OpenOffice:
+one a port from the OpenOffice group called:
 [[neooffice]]
  * http://porting.openoffice.org/mac/download/aqua.html[OpenOffice Aqua] the X11 port of OpenOffice 
  * http://www.neooffice.org[NeoOffice]  - a native fork of OpenOffice.
@@ -171,9 +220,12 @@ A NeoOffice-supplied http://neowiki.neooffice.org/index.php/NeoOffice_Feature_Co
 Extracting data from MS Excel and MS Word files files
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-While both OpenOffice and MS Office have bulked up considerably in their officially http://en.wikipedia.org/wiki/OpenOffice.org_Calc[stated capacity], often spreadsheets are not appropriate to the kind of data processing we want to do.   So how to extract the data?
+While both OpenOffice and MS Office have bulked up considerably in their officially
+http://en.wikipedia.org/wiki/OpenOffice.org_Calc[stated capacity], often spreadsheets are not
+appropriate to the kind of data processing we want to do.   So how to extract the data?
 
-The first way is the most direct and may in the end be the easiest - open the files (*oowriter* for Word files, *oocalc* for Excel files) and export the data as plain text 
+The first way is the most direct and may in the end be the easiest - open the files (*oowriter* for
+Word files, *oocalc* for Excel files) and export the data as plain text 
 
 For Word files: 
 -----------------------------------------------------------------------------------------
@@ -188,7 +240,8 @@ File Menu > Save As... > set Filter: to text CSV (.csv), specify directory and n
 
 Or use the much faster method below.
 
-The above method of extracting data from a binary MS file requires a fair amount of clicking and mousing.  The 'Linux Way' would be to use a commandline utility to do it in one line.  
+The above method of extracting data from a binary MS file requires a fair amount of clicking and
+mousing.  The 'Linux Way' would be to use a commandline utility to do it in one line.  
 
 [[antiword]]
 Converting a Word file to text
@@ -196,7 +249,8 @@ Converting a Word file to text
 
 For MS Word documents, there is a utility, appropriately called... *antiword*
 
-*antiword* does what the name implies; it takes a Word document and inverts it - turns it into a plain text document:
+*antiword* does what the name implies; it takes a Word document and inverts it - turns it into a
+plain text document:
 
 --------------------------------------------------------------------------
 bash > time antiword some_MS_Word.doc > some_MS_Word.txt
@@ -207,13 +261,18 @@ sys     0m0.000s
 
 # only took 0.004s!
 --------------------------------------------------------------------------
-(the '>' operator in the example above redirects the 'STDOUT' output from 'antiword' to a file instead of spewing it to the console. Try it without the '> some_MS_Word.txt'. See the link:#STDINOUTERR[note on STDIN, STDOUT, & STDERR].
+(the '>' operator in the example above redirects the 'STDOUT' output from 'antiword' to a file
+instead of spewing it to the console. Try it without the '> some_MS_Word.txt'. See the
+link:#STDINOUTERR[note on STDIN, STDOUT, & STDERR].
 
 
 [NOTE]
 .Timing your programs
 =====================================================================
-The 'time' prefix in the above example returns the amount of time that the command that followed it used.  There are actually 2 'time' commands usually available on Linux; the one demo'ed above is the internal 'bash' timer.  If you want more info, you can use the 'system' timer which is usually '/usr/bin/time' and has to be explicitly called:
+The 'time' prefix in the above example returns the amount of time that the command that followed it
+used.  There are actually 2 'time' commands usually available on Linux; the one demo'ed above is the
+internal 'bash' timer.  If you want more info, you can use the 'system' timer which is usually
+'/usr/bin/time' and has to be explicitly called:
 
 --------------------------------------------------------------------------
 bash > /usr/bin/time antiword some_MS_Word.doc > some_MS_Word.txt
@@ -259,28 +318,55 @@ free 'python-excelerator' package (on Ubuntu).  It works similarly to 'antiword'
 bash > py_xls2csv BodaciouslyHugeSpreadsheet.xls > BodaciouslyHugeSpreadsheet.csv
 -----------------------------------------------------------------------------
 
-'py_xls2csv' takes no options and saves output with commas as the only separator, which is generally what you want.
+'py_xls2csv' takes no options and saves output with commas as the only separator, which is generally
+what you want.
 
-If you want to do further data mangling in Python, the http://www.python-excel.org/[xlrd and xlwt modules] are very good Excel modules for reading and writing Excel files, but they're libs, not a standalone utility (tho there are https://secure.simplistix.co.uk/svn/xlwt/trunk/xlwt/examples/[lots of examples].
+If you want to do further data mangling in Python, the http://www.python-excel.org/[xlrd and xlwt
+modules] are very good Excel modules for reading and writing Excel files, but they're libs, not a
+standalone utility (tho there are https://secure.simplistix.co.uk/svn/xlwt/trunk/xlwt/examples/[lots
+of examples].
 
-If you are Perl-oriented and have many Excel spreadsheets to manipulate, extract, spindle and mutilate, the Perl Excel-handling modules are also very good.  http://www.ibm.com/developerworks/linux/library/l-pexcel/[Here is a good description] of how to do this.
+If you are Perl-oriented and have many Excel spreadsheets to manipulate, extract, spindle and
+mutilate, the Perl Excel-handling modules are also very good. 
+http://www.ibm.com/developerworks/linux/library/l-pexcel/[Here is a good description] of how to do
+this.
 
 Viewing and Manipulating the data
 ---------------------------------
 
-Whether the file has been saved to a text format, or whether it's still in a binary format, you will often want to examine it to determine the columnar layout if you haven't already. You can do this either with a commandline tool or via the native application, often a spreadsheet.  If the latter, the OpenOffice spreadsheet app *oocalc* is the most popular and arguably the most capable and compatible Linux spreadsheet application. It will allow you to view Excel data in native format so you can determine which cols are relevant to continued analysis.
+Whether the file has been saved to a text format, or whether it's still in a binary format, you will
+often want to examine it to determine the columnar layout if you haven't already. You can do this
+either with a commandline tool or via the native application, often a spreadsheet.  If the latter,
+the OpenOffice spreadsheet app *oocalc* is the most popular and arguably the most capable and
+compatible Linux spreadsheet application. It will allow you to view Excel data in native format so
+you can determine which cols are relevant to continued analysis.
 
-If the file is in text format or has been converted to it, it may be easier to use a text-mode utility to view the columns.  There are a few text-mode spreadsheet programs available, but they are overkill for simply viewing the layout.  Instead, consider using either a simple editor or the text mode utilities that can be used to view it.
+If the file is in text format or has been converted to it, it may be easier to use a text-mode
+utility to view the columns.  There are a few text-mode spreadsheet programs available, but they are
+overkill for simply viewing the layout.  Instead, consider using either a simple editor or the text
+mode utilities that can be used to view it.
 
 
-[[editors]]
-Editors for Data
-~~~~~~~~~~~~~~~~
-Common, free GUI editors that are a good choice for viewing such tabular data are http://www.nedit.org/[nedit], http://www.jedit.org[jedit], and http://kate-editor.org[kate].  All have unlimited horizontal scroll and rectangular copy and paste, which makes them useful for copying rectangular chunks of data.  'nedit' and 'jedit' are also easily scriptable and can record keystrokes to replay for repeated actions. 'nedit' has a 'backlighting' feature which can visually distinguish tabs and spaces, sometimes helpful in debugging a data file,.   'jeditj is written in Java so it's portable across platforms and has tremendous support in the form of various http://plugins.jedit.org/[plugins].
+[[editors]] 
+Editors for Data 
+~~~~~~~~~~~~~~~~ 
+Common, free GUI editors that are a good choice for
+viewing such tabular data are http://www.nedit.org/[nedit], http://www.jedit.org[jedit], and
+http://kate-editor.org[kate].  All have unlimited horizontal scroll and rectangular copy and paste,
+which makes them useful for copying rectangular chunks of data.  'nedit' and 'jedit' are also easily
+scriptable and can record keystrokes to replay for repeated actions. 'nedit' has a 'backlighting'
+feature which can visually distinguish tabs and spaces, sometimes helpful in debugging a data
+file,.   'jeditj is written in Java so it's portable across platforms and has tremendous support in
+the form of various http://plugins.jedit.org/[plugins].
 
-All these editors run on the server and export their windows to your workstation if it can http://moo.nac.uci.edu/~hjm/bduc/BDUC_USER_HOWTO.html#graphics[display X11 graphics].
+All these editors run on the server and export their windows to your workstation if it can
+http://moo.nac.uci.edu/~hjm/bduc/BDUC_USER_HOWTO.html#graphics[display X11 graphics].
 
-Also, while it is despised and adored in equal measure, the http://www.xemacs.org/[xemacs] editor can also do just about anything you want to do, if you learn enough about it.  There is an optional (free, of course) add-in for statistics call http://ess.r-project.org/[ESS] (for the SPlus/R languages, as well as SAS and Stata). Emacs in all its forms is as much a lifestyle choice as an editor.
+Also, while it is despised and adored in equal measure, the http://www.xemacs.org/[xemacs] editor
+can also do just about anything you want to do, if you learn enough about it.  There is an optional
+(free, of course) add-in for statistics call http://ess.r-project.org/[ESS] (for the SPlus/R
+languages, as well as SAS and Stata). Emacs in all its forms is as much a lifestyle choice as an
+editor.
 
 Text-mode data manipulation utilities
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -288,17 +374,30 @@ Text-mode data manipulation utilities
 [NOTE]
 .STDIN, STDOUT, STDERR
 =====================================================================
-Automatically available to your programs in Linux and all Unix work-alikes (including MacOSX
-are the 3 channels noted above: Standard IN (STDIN, normally the keyboard), Standard OUT (STDOUT, normally the terminal screen), and Standard Error (STDERR, also normally the terminal screen).
-These channels can be intercepted, redirected, and piped in a variety of ways to further process, separate, aggregate, or terminate the processes that use them.  This is a whole topic by itself and is covered well in http://swc.scipy.org/lec/shell02.html[this Software Carpentry tutorial].
+Automatically available to your programs in Linux and all Unix work-alikes (including MacOSX are the
+3 channels noted above: Standard IN (STDIN, normally the keyboard), Standard OUT (STDOUT, normally
+the terminal screen), and Standard Error (STDERR, also normally the terminal screen). These channels
+can be intercepted, redirected, and piped in a variety of ways to further process, separate,
+aggregate, or terminate the processes that use them.  This is a whole topic by itself and is covered
+well in http://swc.scipy.org/lec/shell02.html[this Software Carpentry tutorial].
 =====================================================================
 
 [[grep]]
 The grep family
 ^^^^^^^^^^^^^^^
-Possibly the most used utilities in the Unix/Linux world.  These elegant utilities are used to search files for patterns of text called http://en.wikipedia.org/wiki/Regular_expression[regular expressions] (aka regex) and can select or omit a line based on the matching of the regex.  The most popular of these is the basic grep and it, along with some of its bretheren are http://en.wikipedia.org/wiki/Grep[described well in Wikipedia].  Another variant which behaves similarly but with one big difference is http://en.wikipedia.org/wiki/Agrep[agrep], or *approximate* grep which can search for patterns with variable numbers of errors, such as might be expected in a file resulting from an optical scan or typo's.  Baeza-Yates and Navarro's http://www.dcc.uchile.cl/~gnavarro/software/[nrgrep] is even faster, if not as flexible (or 'differently' flexible), as agrep.
+Possibly the most used utilities in the Unix/Linux world.  These elegant utilities are used to
+search files for patterns of text called http://en.wikipedia.org/wiki/Regular_expression[regular
+expressions] (aka regex) and can select or omit a line based on the matching of the regex.  The most
+popular of these is the basic grep and it, along with some of its bretheren are
+http://en.wikipedia.org/wiki/Grep[described well in Wikipedia].  Another variant which behaves
+similarly but with one big difference is http://en.wikipedia.org/wiki/Agrep[agrep], or *approximate*
+grep which can search for patterns with variable numbers of errors, such as might be expected in a
+file resulting from an optical scan or typo's.  Baeza-Yates and Navarro's
+http://www.dcc.uchile.cl/~gnavarro/software/[nrgrep] is even faster, if not as flexible (or
+'differently' flexible), as agrep.
 
-A grep variant would be used to extract all the lines from a file that had a particular phrase or pattern embedded in it.
+A grep variant would be used to extract all the lines from a file that had a particular phrase or
+pattern embedded in it.
 
 For example:
 --------------------------------------------------------------------------
@@ -327,7 +426,9 @@ b0090   murG    2.4.1.- 0.000239323     0.000247582
 [[cat]]
 cat
 ^^^
-*cat* (short for 'concatenate') is one of the simplest Linux text utilities.  It simply dumps the contents of the named file (or files) to STDOUT, normally the terminal screen.  However, because it 'dumps' the file(s) to STDOUT, it can also be used to concatenate multiple files into one.
+*cat* (short for 'concatenate') is one of the simplest Linux text utilities.  It simply dumps the
+contents of the named file (or files) to STDOUT, normally the terminal screen.  However, because it
+'dumps' the file(s) to STDOUT, it can also be used to concatenate multiple files into one.
 --------------------------------------------------------------------------
 bash > cat greens.txt
 turquoise
@@ -365,23 +466,48 @@ delta
 [[moreless]]
 more &  less
 ^^^^^^^^^^^^
-These critters are called 'pagers' - utilities that allow you to page thru text files in the terminal window.  'less is more than more' in my view, but your mileage may vary.  These pagers allow you to queue up a series of files to view, can scroll sideways, allow search by http://en.wikipedia.org/wiki/Regular_expression[regular expression], show progression thru a file, spawn editors, and many more things. http://www.showmedo.com/videos/video?name=940030&fromSeriesID=94[Video example]
+These critters are called 'pagers' - utilities that allow you to page thru text files in the
+terminal window.  'less is more than more' in my view, but your mileage may vary.  These pagers
+allow you to queue up a series of files to view, can scroll sideways, allow search by
+http://en.wikipedia.org/wiki/Regular_expression[regular expression], show progression thru a file,
+spawn editors, and many more things.
+http://www.showmedo.com/videos/video?name=940030&fromSeriesID=94[Video example]
 
  
 [[headtail]]
 head & tail
 ^^^^^^^^^^^
-These two utilities perform similar functions - they allow you view the beginning ('head') or end ('tail') of a file.  Both can be used to select contiguous ends of a file and pipe it to another file or pager.  'tail -f' can also be used to view the end of a file continuously (as when you have a program continuously generating output to a file and you want to watch the progress).  These are also described in more detail near the end of the http://www-128.ibm.com/developerworks/linux/library/l-textutils.html#12[IBM DeveloperWorks tutorial] .
+These two utilities perform similar functions - they allow you view the beginning ('head') or end
+('tail') of a file.  Both can be used to select contiguous ends of a file and pipe it to another
+file or pager.  'tail -f' can also be used to view the end of a file continuously (as when you have
+a program continuously generating output to a file and you want to watch the progress).  These are
+also described in more detail near the end of the
+http://www-128.ibm.com/developerworks/linux/library/l-textutils.html#12[IBM DeveloperWorks tutorial]
+.
 
 [[scut]]
 cut & scut
 ^^^^^^^^^^
-These are columnar slicing utilities, which allow you to slice vertical columns of characters or fields out of a file, based on character offset or column delimiters.  http://lowfatlinux.com/linux-columns-cut.html[cut] is on every Linux system and works very quickly, but is fairly primitive in its ability to select and separate data.  http://forums.nacs.uci.edu/BioBB/viewtopic.php?f=10&t=7[scut] is a Perl utility which trades some speed for much more flexibility, allowing you to select data not only by character column and single character delimiters, but also by data fields identified by any delimiter that a http://en.wikipedia.org/wiki/Regular_expression[regular expression] (aka regex) can define.  It can also re-order columns and sync fields to those of another file, much like the *join* utility link:#join[see below].  See http://moo.nac.uci.edu/~hjm/scut_cols_HOWTO.html[this link] for more info.
+These are columnar slicing utilities, which allow you to slice vertical columns of characters or
+fields out of a file, based on character offset or column delimiters. 
+http://lowfatlinux.com/linux-columns-cut.html[cut] is on every Linux system and works very quickly,
+but is fairly primitive in its ability to select and separate data. 
+http://forums.nacs.uci.edu/BioBB/viewtopic.php?f=10&t=7[scut] is a Perl utility which trades some
+speed for much more flexibility, allowing you to select data not only by character column and single
+character delimiters, but also by data fields identified by any delimiter that a
+http://en.wikipedia.org/wiki/Regular_expression[regular expression] (aka regex) can define.  It can
+also re-order columns and sync fields to those of another file, much like the *join* utility
+link:#join[see below].  See http://moo.nac.uci.edu/~hjm/scut_cols_HOWTO.html[this link] for more
+info.
  
 [[cols]]
 cols
 ^^^^
-'cols' is a very simple, but arguably useful utility that allows you to view the data of a file aligned according to fields.  Especially in conjunction with 'less', it's useful if you're manipulating a file that has 10s of columns especially if those columns are of disparate widths. http://moo.nac.uci.edu/~hjm/scut_cols_HOWTO.html[cols is explained fairly well here] and the http://moo.nac.uci.edu/%7ehjm/cols[cols code is available here].
+'cols' is a very simple, but arguably useful utility that allows you to view the data of a file
+aligned according to fields.  Especially in conjunction with 'less', it's useful if you're
+manipulating a file that has 10s of columns especially if those columns are of disparate widths.
+http://moo.nac.uci.edu/~hjm/scut_cols_HOWTO.html[cols is explained fairly well here] and the
+http://moo.nac.uci.edu/%7ehjm/cols[cols code is available here].
 
 
 [[paste]]
@@ -408,26 +534,46 @@ iii jjj kkk lll         777 888 999
 
 ----------------------------------------------------------------------------- 
  
-Note that 'paste' inserted a TAB character between the 2 files, each of which used spaces between each field.  See also the http://www-128.ibm.com/developerworks/linux/library/l-textutils.html#8[IBM DeveloperWorks tutorial]
+Note that 'paste' inserted a TAB character between the 2 files, each of which used spaces between
+each field.  See also the http://www-128.ibm.com/developerworks/linux/library/l-textutils.html#8[IBM
+DeveloperWorks tutorial]
 
 [[join]]
 join
 ^^^^
-'join' is a more powerful variant of 'paste' that acts as a simple relational 'join' based on common fields.  'join' needs identical field values to finish the join.  See that 'scut' link:#scut[described above] can also do this type of operation.  For much more powerful relational operations, http://www.sqlite.org[SQLite] is a fully featured relational database that can do this reasonably easily (link:#sqlite[see below]).  http://www-128.ibm.com/developerworks/linux/library/l-textutils.html#9[A good example of 'join' is here]
+'join' is a more powerful variant of 'paste' that acts as a simple relational 'join' based on common
+fields.  'join' needs identical field values to finish the join.  See that 'scut'
+link:#scut[described above] can also do this type of operation.  For much more powerful relational
+operations, http://www.sqlite.org[SQLite] is a fully featured relational database that can do this
+reasonably easily (link:#sqlite[see below]). 
+http://www-128.ibm.com/developerworks/linux/library/l-textutils.html#9[A good example of 'join' is
+here]
  
  
 pr
 ^^
-'pr' is actually a printing utility that is mentioned here because for some tasks especially related to presentation, it can join files together in formats that are impossible to do using any other utility.  For example if you want the width of the printing to expand to a nonstandard width or want to columnize the output in a particular way or modify the width of tab spacing, 'pr' may be able to do what you need.
+'pr' is actually a printing utility that is mentioned here because for some tasks especially related
+to presentation, it can join files together in formats that are impossible to do using any other
+utility.  For example if you want the width of the printing to expand to a nonstandard width or want
+to columnize the output in a particular way or modify the width of tab spacing, 'pr' may be able to
+do what you need.
 
 [[LAFF]]
 Large ASCII Flat Files
 ----------------------
-These are typically files containing self-generated data or (increasingly) http://en.wikipedia.org/wiki/High_throughput_sequencing[High Throughput Sequencing] (HTS) data in http://en.wikipedia.org/wiki/FASTA[FASTA] or http://en.wikipedia.org/wiki/FASTQ_format[FASTQ] format.  In the latter case, these sequence file should be kept compressed.  Almost all released tools for analyzing them can deal with the compressed form.
+These are typically files containing self-generated data or (increasingly)
+http://en.wikipedia.org/wiki/High_throughput_sequencing[High Throughput Sequencing] (HTS) data in
+http://en.wikipedia.org/wiki/FASTA[FASTA] or http://en.wikipedia.org/wiki/FASTQ_format[FASTQ]
+format.  In the latter case, these sequence file should be kept compressed.  Almost all released
+tools for analyzing them can deal with the compressed form.
 
-In the former case, take some care to design your output so that it's easily parseable and searchable.  If the data is entirely numeric, consider writing it as an HDF5 file or if it's fairly simple, in binary format (the float '23878.349875935' takes 15-30 bytes to represent in a text format; 8 bytes in double precision floating point).  Integers take even less.
+In the former case, take some care to design your output so that it's easily parseable and
+searchable.  If the data is entirely numeric, consider writing it as an HDF5 file or if it's fairly
+simple, in binary format (the float '23878.349875935' takes 15-30 bytes to represent in a text
+format; 8 bytes in double precision floating point).  Integers take even less.
 
-In the worst case, if you MUST use ASCII text, write your output in delimted tables rather than line by line:
+In the worst case, if you MUST use ASCII text, write your output in delimted tables rather than line
+by line:
 
 ------------------------------------------------------------------------
 # example of line by line (666 bytes of data)
@@ -486,7 +632,9 @@ If you need to view this data in aligned or titled format for verification, use 
 [[hdf5]]
 Complex Binary Data storage and tools
 -------------------------------------
-While much data is available in (or can be converted to) text format, some data is so large (typically, >1 GB) that it demands special handling.  Data sets from the following domains are typically packaged in these formats:
+While much data is available in (or can be converted to) text format, some data is so large
+(typically, >1 GB) that it demands special handling.  Data sets from the following domains are
+typically packaged in these formats:
 
  * Global Climate Modeling
  * Stock exchange transactions
@@ -494,40 +642,95 @@ While much data is available in (or can be converted to) text format, some data 
  * Satellite and other terrestrial scans
  * Microarray and other genomic data
  
-There are a number of specialized large-data formats, but I'll discuss a popular large-scale data format called http://en.wikipedia.org/wiki/Hierarchical_Data_Format[HDF5], which has now been merged with the http://en.wikipedia.org/wiki/NetCDF[netCDF] data format.  These can be thought of as numeric databases, tho they have significant functional overlap with relational databases. One advantage is that they have no requirement for a database server, an advantage they share with link:#sqlite[SQLite, below]. As the wiki pages describe in more detail, these Hierarchical Data Formats are self-describing, somewhat like XML files, which enable applications to determine the data structures without external references.  HDF5 and netCDF provide sophisticated, compact, and especially hierarchical data storage, allowing an internal structure much like a modern filesystem.  A single file can provide character data in various encodings (ASCII, UTF, etc), numeric data in various length integer, floating point, and complex representation, geographic coordinates, encoded data such as base+offsets for efficiency, etc.  These files and the protocols for reading them, assure that they can be read and written using common functions without regard to platform or network protocols, in a number of languages.
+There are a number of specialized large-data formats, but I'll discuss a popular large-scale data
+format called http://en.wikipedia.org/wiki/Hierarchical_Data_Format[HDF5], which has now been merged
+with the http://en.wikipedia.org/wiki/NetCDF[netCDF] data format.  These can be thought of as
+numeric databases, tho they have significant functional overlap with relational databases. One
+advantage is that they have no requirement for a database server, an advantage they share with
+link:#sqlite[SQLite, below]. As the wiki pages describe in more detail, these Hierarchical Data
+Formats are self-describing, somewhat like XML files, which enable applications to determine the
+data structures without external references.  HDF5 and netCDF provide sophisticated, compact, and
+especially hierarchical data storage, allowing an internal structure much like a modern filesystem. 
+A single file can provide character data in various encodings (ASCII, UTF, etc), numeric data in
+various length integer, floating point, and complex representation, geographic coordinates, encoded
+data such as base+offsets for efficiency, etc.  These files and the protocols for reading them,
+assure that they can be read and written using common functions without regard to platform or
+network protocols, in a number of languages.
 
-These files are also useful for very large data as they have parallel Input/Output (I/O) interfaces.  Using HDF5 or netCDF4, you can read and write these formats in parallel, increasing I/O dramatically on parallel filesystems such as http://en.wikipedia.org/wiki/Lustre_(file_system)[Lustre], http://www.pvfs.org[PVFS2], and http://en.wikipedia.org/wiki/Global_File_System[GFS].  Many analytical programs already have interfaces to the HDF5 and netCDF4 format, among them http://tinyurl.com/dyclf6[MATLAB], http://reference.wolfram.com/mathematica/ref/format/HDF5.html[Mathematica], http://cran.r-project.org/web/packages/hdf5/index.html[R], https://wci.llnl.gov/codes/visit/FAQ.html#28[VISIT], and http://www.hdfgroup.org/tools.html[others].
+These files are also useful for very large data as they have parallel Input/Output (I/O)
+interfaces.  Using HDF5 or netCDF4, you can read and write these formats in parallel, increasing I/O
+dramatically on parallel filesystems such as
+http://en.wikipedia.org/wiki/Lustre_(file_system)[Lustre], http://www.pvfs.org[PVFS2], and
+http://en.wikipedia.org/wiki/Global_File_System[GFS].  Many analytical programs already have
+interfaces to the HDF5 and netCDF4 format, among them http://tinyurl.com/dyclf6[MATLAB],
+http://reference.wolfram.com/mathematica/ref/format/HDF5.html[Mathematica],
+http://cran.r-project.org/web/packages/hdf5/index.html[R],
+https://wci.llnl.gov/codes/visit/FAQ.html#28[VISIT], and http://www.hdfgroup.org/tools.html[others].
 
 
 Tools for HDF and netCDF
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-As noted above, some applications can open such files directly, obviating the need to use external tools to extract or extend a data set in this format.  However, for those time when you have to subset, extend, or otherwise modify such a dataset, there are a couple of tools that can make that job much easier.  Since this document is aimed at the beginner rather than the expert, I'll keep this section brief, but realize that these extremely powerful tools are available (and free!).
- 
+As noted above, some applications can open such files directly, obviating the need to use external
+tools to extract or extend a data set in this format.  However, for those time when you have to
+subset, extend, or otherwise modify such a dataset, there are a couple of tools that can make that
+job much easier.  Since this document is aimed at the beginner rather than the expert, I'll keep
+this section brief, but realize that these extremely powerful tools are available (and free!).
+
 Some valuable tools for dealing with these formats: 
 
 [[nco]]
-* http://nco.sf.net[nco], a suite of tools written in C/C++ mainly by UCI's own http://www.ess.uci.edu/~zender[Charlie Zender]. they were originally written to manipulate netCDF 3.x files but have been updated to support netCDF4 (which uses HDF5 format).  They are http://nco.sourceforge.net/#Definition[described in detail here, with examples].  They are portable to all current Unix implementations and of course Linux.  They are extremely well-debugged and their development is ongoing.
+* http://nco.sf.net[nco], a suite of tools written in C/C++ mainly by UCI's own
+http://www.ess.uci.edu/~zender[Charlie Zender]. they were originally written to manipulate netCDF
+3.x files but have been updated to support netCDF4 (which uses HDF5 format).  They are
+http://nco.sourceforge.net/#Definition[described in detail here, with examples].  They are portable
+to all current Unix implementations and of course Linux.  They are extremely well-debugged and their
+development is ongoing.
 
 [[pytables]]
-* http://www.pytables.org/moin[PyTables] is another utility that is used to create, inspect, modify, and/or query HDF5 tables to extract data into other HDF or text files.  This project also have very good documentation and even has a couple video introductions on http://www.showmedo.com[ShowMeDo].  They can be reached http://www.pytables.org/moin/HowToUse#Videos[from here].  In addition, PyTables also has a companion graphical data browser called http://www.vitables.org[ViTables].
+* http://www.pytables.org/moin[PyTables] is another utility that is used to create, inspect, modify,
+and/or query HDF5 tables to extract data into other HDF or text files.  This project also have very
+good documentation and even has a couple video introductions on http://www.showmedo.com[ShowMeDo]. 
+They can be reached http://www.pytables.org/moin/HowToUse#Videos[from here].  In addition, PyTables
+also has a companion graphical data browser called http://www.vitables.org[ViTables].
 
 
 Databases
 ---------
 
-Databases (DBs) are data structures and the supporting code that allow you to store data in a particular way.  Some DBs are used to store only numbers (and if this is the case, it might be quicker and compact to store that data in an link:#hdf5[HDF5 file]). If you have lots of different kinds of data and you want to query that data on complex criteria (give me the names of all the people who lived in the 92655 area code and have spent more than $500 on toothpicks in the last 10 years), using a DB can be extremely useful and in fact using a DB may be the only way to extract the data you need in a timely manner.
+Databases (DBs) are data structures and the supporting code that allow you to store data in a
+particular way.  Some DBs are used to store only numbers (and if this is the case, it might be
+quicker and compact to store that data in an link:#hdf5[HDF5 file]). If you have lots of different
+kinds of data and you want to query that data on complex criteria (give me the names of all the
+people who lived in the 92655 area code and have spent more than $500 on toothpicks in the last 10
+years), using a DB can be extremely useful and in fact using a DB may be the only way to extract the
+data you need in a timely manner.
 
-As implied above, there are a number of different types of DBs, delineated not only by the way they store and retrieve data, but by the way the user interacts with the DB.  The software can be separated into Desktop DBs (which are meant to serve mostly local queries by one person - for example, a research DB that a scientist might use to store his own data) and DB Servers, which are meant to answer queries from a variety of clients via network socket.  
+As implied above, there are a number of different types of DBs, delineated not only by the way they
+store and retrieve data, but by the way the user interacts with the DB.  The software can be
+separated into Desktop DBs (which are meant to serve mostly local queries by one person - for
+example, a research DB that a scientist might use to store his own data) and DB Servers, which are
+meant to answer queries from a variety of clients via network socket.  
 
-The latter are typically much more complex and require much more configuration to protect their contents from network mischief.  Desktop DBs typically have much less security and are less concerned about answering queries from other users on other computers, tho they can typically do so.  Microsoft Access and SQLite are examples of Desktop DBs.
+The latter are typically much more complex and require much more configuration to protect their
+contents from network mischief.  Desktop DBs typically have much less security and are less
+concerned about answering queries from other users on other computers, tho they can typically do
+so.  Microsoft Access and SQLite are examples of Desktop DBs.
 
-Especially if you are using the names of flat files as the index of their contents ( such as 's=2.0_tr=48_N=1000.out', the use of an DB is strongly suggested.  In this way, you can append to a common DB such that you can rapisdly query the results over millions of entries (see http://moo.nac.uci.edu/~hjm/sb/index.html#toc34[here] for an example where this approach was used).
+Especially if you are using the names of flat files as the index of their contents ( such as
+'s=2.0_tr=48_N=1000.out', the use of an DB is strongly suggested.  In this way, you can append to a
+common DB such that you can rapisdly query the results over millions of entries (see
+http://moo.nac.uci.edu/~hjm/sb/index.html#toc34[here] for an example where this approach was used).
 
 Relational databases
 ~~~~~~~~~~~~~~~~~~~~
 
-Relational DBs are those that can 'relate' data from one table (or data structure) to another.  A relational DB is composed of tables which are internally related and can be joined or related to other tables with more distant information.  For example,  woodworker's DB might be composed of DB tables that describe PowerTools, Handtools, Plans, Glues, Fasteners, Finishes, Woods, and Injuries, with interconnecting relationships among the tables.  The 'Woods' table definition might look like this:
+Relational DBs are those that can 'relate' data from one table (or data structure) to another.  A
+relational DB is composed of tables which are internally related and can be joined or related to
+other tables with more distant information.  For example,  woodworker's DB might be composed of DB
+tables that describe PowerTools, Handtools, Plans, Glues, Fasteners, Finishes, Woods, and Injuries,
+with interconnecting relationships among the tables.  The 'Woods' table definition might look like
+this:
 
 ----------------------------------------------------------------------
 TABLE Woods (
@@ -556,10 +759,26 @@ Desktop
 ^^^^^^^
 
 [[sqlite]]
- * SQLite (http://www.sqlite.org[website], http://en.wikipedia.org/wiki/Sqlite[wikipedia]) is an amazingly powerful, http://en.wikipedia.org/wiki/ACID[ACID-compliant], astonishingly tiny DB engine (could fit on a floppy disk) that can do much of what much larger DB engines can do.  It is public domain, has a huge user base, has good documentation (including a http://www.amazon.com/Definitive-Guide-SQLite-Mike-Owens/dp/1590596730[book]) and is well suited to using for the transition from flat files to relational database.  It has support for almost every computer language, and several utilities (such as graphical browsers like http://sqlitebrowser.sourceforge.net/screenshots.html[sqlitebrowser] and http://www.knoda.org/[knoda] to ease its use.  The *sqlite3* program that provides the native commandline interface to the DB system is fairly flexible, allowing generic import of TAB-delimited data into SQLite tables.  Ditto the graphical *sqlitebrowser* programs.  Here is http://moo.nac.uci.edu/%7ehjm/recursive.filestats.sqlite_skel.pl[a well-documented example of how to use SQLite in a Perl script] (about 300 lines including comments).
+ * SQLite (http://www.sqlite.org[website], http://en.wikipedia.org/wiki/Sqlite[wikipedia]) is an
+amazingly powerful, http://en.wikipedia.org/wiki/ACID[ACID-compliant], astonishingly tiny DB engine
+(could fit on a floppy disk) that can do much of what much larger DB engines can do.  It is public
+domain, has a huge user base, has good documentation (including a
+http://www.amazon.com/Definitive-Guide-SQLite-Mike-Owens/dp/1590596730[book]) and is well suited to
+using for the transition from flat files to relational database.  It has support for almost every
+computer language, and several utilities (such as graphical browsers like
+http://sqlitebrowser.sourceforge.net/screenshots.html[sqlitebrowser] and
+http://www.knoda.org/[knoda] to ease its use.  The *sqlite3* program that provides the native
+commandline interface to the DB system is fairly flexible, allowing generic import of TAB-delimited
+data into SQLite tables.  Ditto the graphical *sqlitebrowser* programs.  Here is
+http://moo.nac.uci.edu/%7ehjm/recursive.filestats.sqlite_skel.pl[a well-documented example of how to
+use SQLite in a Perl script] (about 300 lines including comments).
  
 [[oobase]]
- * http://www.openoffice.org[OpenOffice] comes with it's http://hsqldb.org/[own DB] and http://dba.openoffice.org/[DB interaction tools], which are extremely powerful, tho they have not been well-documented in the past. The OpenOffice DB tools can be used not only with its own DB, but with many others including MySQL, PostgreSQL, SQLite, MS Access, and any DB that provides an http://en.wikipedia.org/wiki/Open_Database_Connectivity[ODBC interface]. 
+ * http://www.openoffice.org[OpenOffice] comes with it's http://hsqldb.org/[own DB] and
+http://dba.openoffice.org/[DB interaction tools], which are extremely powerful, tho they have not
+been well-documented in the past. The OpenOffice DB tools can be used not only with its own DB, but
+with many others including MySQL, PostgreSQL, SQLite, MS Access, and any DB that provides an
+http://en.wikipedia.org/wiki/Open_Database_Connectivity[ODBC interface]. 
 
  
  
@@ -567,15 +786,31 @@ Server-based
 ^^^^^^^^^^^^
 
 [[mysql]]
- * http://en.wikipedia.org/wiki/MySQL[MySQL] is a hugely popular, very fast DB server that provides much of the DB needs of the WWW, both commercial and non-profit.  Some of the largest, most popular web sites in the world use MySQL to keep track of the web intereactions, as well as their data.  The http://genome.ucsc.edu/index.html[UC Santa Cruz Genome DB] uses MySQL with a schema of >300 tables to keep one of the most popular Biology web sites in the world running.
+ * http://en.wikipedia.org/wiki/MySQL[MySQL] is a hugely popular, very fast DB server that provides
+much of the DB needs of the WWW, both commercial and non-profit.  Some of the largest, most popular
+web sites in the world use MySQL to keep track of the web intereactions, as well as their data.  The
+http://genome.ucsc.edu/index.html[UC Santa Cruz Genome DB] uses MySQL with a schema of >300 tables
+to keep one of the most popular Biology web sites in the world running.
 
 [[postgresql]]
- * http://en.wikipedia.org/wiki/PostgreSQL[PostgreSQL] is similarly popular and has a reputation for being even more robust and full-featured.  It also is formally an http://en.wikipedia.org/wiki/Object-relational_database_management_system[Object-Relational] database, so its internal storage can be used in a more object oriented way.  If your needs require storing Geographic Information, PostgreSQL has a parallel development called PostGIS, which is optimized for storing Geographical Information and has become a de facto standard for GIS DBs.  It supports the popular http://mapserver.osgeo.org/[Mapserver] software
+ * http://en.wikipedia.org/wiki/PostgreSQL[PostgreSQL] is similarly popular and has a reputation for
+being even more robust and full-featured.  It also is formally an
+http://en.wikipedia.org/wiki/Object-relational_database_management_system[Object-Relational]
+database, so its internal storage can be used in a more object oriented way.  If your needs require
+storing Geographic Information, PostgreSQL has a parallel development called PostGIS, which is
+optimized for storing Geographical Information and has become a de facto standard for GIS DBs.  It
+supports the popular http://mapserver.osgeo.org/[Mapserver] software
 
 [[firebird]]
- * http://en.wikipedia.org/wiki/Firebird_(database_server)[Firebird] is the Open Source version of a previously commercial DB called Interbase from Borland.  Since its release as OSS, it has undergone a dramatic upswing in popularity and support.
+ * http://en.wikipedia.org/wiki/Firebird_(database_server)[Firebird] is the Open Source version of a
+previously commercial DB called Interbase from Borland.  Since its release as OSS, it has undergone
+a dramatic upswing in popularity and support.
 
- * Others.  There are a huge number of very good relational DBs, many of them free or OSS.  http://en.wikipedia.org/wiki/Comparison_of_relational_database_management_systems[Wikipedia has a page] that names a number of them and briefly describes some differences, altho unless you are bound by some external constraint, you would be foolish not to choose one of SQLite, MySQL, or PostgreSQL due to the vast user-generated support and utilities.
+ * Others.  There are a huge number of very good relational DBs, many of them free or OSS. 
+http://en.wikipedia.org/wiki/Comparison_of_relational_database_management_systems[Wikipedia has a
+page] that names a number of them and briefly describes some differences, altho unless you are bound
+by some external constraint, you would be foolish not to choose one of SQLite, MySQL, or PostgreSQL
+due to the vast user-generated support and utilities.
 
 
 
@@ -583,40 +818,74 @@ Server-based
 Mathematical Modeling Systems
 -----------------------------
 
-There are a wide variety of mathematical packages available for Linux, ranging from the well-known proprietary ones such as MATLAB and Mathematica to a number of very well-implemented OSS ones.  For those looking for an OSS package with MATLAB-like language compatibility, Octave is a very good fit. For a symbolic package like Mathematica, well... there's Mathematica (which is available for Linux).  Note that there is much cross-over among the packages mentioned in this section and those mentioned in the Visualization section.  Many of the OSS Visualization packages are used to display the results of the Modeling packages and many of the Visualization packages actually have significant analytical muscle as well, especially link:#visit[VISIT] and link:#rprogram[R].
+There are a wide variety of mathematical packages available for Linux, ranging from the well-known
+proprietary ones such as MATLAB and Mathematica to a number of very well-implemented OSS ones.  For
+those looking for an OSS package with MATLAB-like language compatibility, Octave is a very good fit.
+For a symbolic package like Mathematica, well... there's Mathematica (which is available for
+Linux).  Note that there is much cross-over among the packages mentioned in this section and those
+mentioned in the Visualization section.  Many of the OSS Visualization packages are used to display
+the results of the Modeling packages and many of the Visualization packages actually have
+significant analytical muscle as well, especially link:#visit[VISIT] and link:#rprogram[R].
 
 However, there are a number of other OSS packages that can help you with manipulating your data.  Here are a few of the best ones.
 
 [[Octave]]
 Octave
 ~~~~~~
-http://www.gnu.org/software/octave/[Octave] is a http://www.gnu.org/software/octave/FAQ.html#MATLAB-compatibility[near-clone] of MATLAB in terms of functionality and is widely used and well-supported.  It does not have a native GUI, altho there are externally developed GUI's that provide some functionality to get you started.  While it is largely compatible with MATLAB code, it is also considerably slower than MATLAB, especially for iterative code (loops, tests, etc).  If you can vectorize your code, it approaches MATLAB speed.
+http://www.gnu.org/software/octave/[Octave] is a
+http://www.gnu.org/software/octave/FAQ.html#MATLAB-compatibility[near-clone] of MATLAB in terms of
+functionality and is widely used and well-supported.  It does not have a native GUI, altho there are
+externally developed GUI's that provide some functionality to get you started.  While it is largely
+compatible with MATLAB code, it is also considerably slower than MATLAB, especially for iterative
+code (loops, tests, etc).  If you can vectorize your code, it approaches MATLAB speed.
 
 [[Scilab]]
 SciLab
 ~~~~~~
-http://www.scilab.org[SciLab] is a large project founded by INRIA, supported by a consortium of ~18 academic and commercial companies.  It is similar to MATLAB, but is not language-compatible.  It does, however, come with a MATLAB to SciLab converter.  It supports Mac/Win/Lin in 32/64bits, has a full GUI, and like MATLAB, has a http://www.scilab.org/contrib/index_contrib.php?page=listdyn.php&order=date[very large number of toolboxes].  The older versions had a tcl/tk-based interface; the most recent version (5) now has a more modern GTK-based GUI with some output based on  http://www.scicos.org/[scicos] and http://www.jgraph.com/jgraph.html[JgraphX].  
+http://www.scilab.org[SciLab] is a large project founded by INRIA, supported by a consortium of ~18
+academic and commercial companies.  It is similar to MATLAB, but is not language-compatible.  It
+does, however, come with a MATLAB to SciLab converter.  It supports Mac/Win/Lin in 32/64bits, has a
+full GUI, and like MATLAB, has a
+http://www.scilab.org/contrib/index_contrib.php?page=listdyn.php&order=date[very large number of
+toolboxes].  The older versions had a tcl/tk-based interface; the most recent version (5) now has a
+more modern GTK-based GUI with some output based on  http://www.scicos.org/[scicos] and
+http://www.jgraph.com/jgraph.html[JgraphX].  
 
-For MATLAB users wanting to try or convert to SciLab, the current (5.3) version of SciLab has a built-in MATLAB to SciLab conversion tool. And there is an extensive PDF document that describes http://wiki.scilab.org/Tutorials?action=AttachFile&do=get&target=Scilab4Matlab.pdf[using SciLab from a MATLAB user's perspective].
+For MATLAB users wanting to try or convert to SciLab, the current (5.3) version of SciLab has a
+built-in MATLAB to SciLab conversion tool. And there is an extensive PDF document that describes
+http://wiki.scilab.org/Tutorials?action=AttachFile&do=get&target=Scilab4Matlab.pdf[using SciLab from
+a MATLAB user's perspective].
 
 
 .Python-based Mathematics systems
 [NOTE]
 ========================================================================
-There are a surprising number of good systems developed using Python. SAGE and Pylab are two of the better known. Both are commandline-only, but have good-to-excellent graphic output, including interactive plots.  Altho you don't type Python code directly in either, both systems are extensible using the underlying Python.  Both have good documentation and even introductory videos showing how to use the systems.  Both can be run on Mac/Win/Linux.
+There are a surprising number of good systems developed using Python. SAGE and Pylab are two of the
+better known. Both are commandline-only, but have good-to-excellent graphic output, including
+interactive plots.  Altho you don't type Python code directly in either, both systems are extensible
+using the underlying Python.  Both have good documentation and even introductory videos showing how
+to use the systems.  Both can be run on Mac/Win/Linux.
 ========================================================================
 
 [[Pylab]]
 PyLab
 ~~~~~
-http://www.scipy.org/PyLab[Pylab] uses the SciPy packages (http://www.scipy.org/[SciPy], http://numpy.scipy.org/[NumPy] (Numerical Python), & http://matplotlib.sourceforge.net/[matplotlib]) to create a very flexible programming system for Mathematics.  NumPy is one of the more heavily developed math libraries in the OSS world and PyLab benefits strongly from that development.
+http://www.scipy.org/PyLab[Pylab] uses the SciPy packages (http://www.scipy.org/[SciPy],
+http://numpy.scipy.org/[NumPy] (Numerical Python), & http://matplotlib.sourceforge.net/[matplotlib])
+to create a very flexible programming system for Mathematics.  NumPy is one of the more heavily
+developed math libraries in the OSS world and PyLab benefits strongly from that development.
 
 
 [[SAGE]]
 SAGE
 ~~~~
-http://www.sagemath.org/[SAGE] is a more formal system and is fairly well-funded to continue development. It too uses SciPy and NumPy for some of the underlying Math plumbing.  It can be used either as a self-contained commandline-driven system or as a client, connecting to a webserver, where your notebook is hosted.  This arrangement allows you to test-drive the system using http://www.sagenb.org/[SAGE's own web service].
-Another non-trivial feature is that it is distributed as a complete system; you can install it on a thumb drive and take the entire system, including your work, with you as you travel from place to place.
+http://www.sagemath.org/[SAGE] is a more formal system and is fairly well-funded to continue
+development. It too uses SciPy and NumPy for some of the underlying Math plumbing.  It can be used
+either as a self-contained commandline-driven system or as a client, connecting to a webserver,
+where your notebook is hosted.  This arrangement allows you to test-drive the system using
+http://www.sagenb.org/[SAGE's own web service]. Another non-trivial feature is that it is
+distributed as a complete system; you can install it on a thumb drive and take the entire system,
+including your work, with you as you travel from place to place.
 
 
 
@@ -625,7 +894,12 @@ Another non-trivial feature is that it is distributed as a complete system; you 
 Data visualization
 ------------------
 
-You almost always want to visualize your data.  It's one thing to page thru acres of spreadsheet or numeric data, but nothing can give you a better picture of your data than ... a picture.  This is an area where Linux shines, tho it's not without scrapes and scratches.  I'm going to break this into 2 arbitrary sections. The first is 'Simple' the second 'Complex'.  "Simple" alludes to that both the process and data are relatively simple; "Complex" implies that both the visualization process and data are more complex.
+You almost always want to visualize your data.  It's one thing to page thru acres of spreadsheet or
+numeric data, but nothing can give you a better picture of your data than ... a picture.  This is an
+area where Linux shines, tho it's not without scrapes and scratches.  I'm going to break this into 2
+arbitrary sections. The first is 'Simple' the second 'Complex'.  "Simple" alludes to that both the
+process and data are relatively simple; "Complex" implies that both the visualization process and
+data are more complex.
 
 Simple Data Visualization
 ~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -633,45 +907,84 @@ Simple Data Visualization
 [[qtiplot]]
 qtiplot
 ^^^^^^^
-http://soft.proindependent.com/qtiplot.html[qtiplot] is "a fully fledged plotting software similar to the OriginLab http://www.originlab.com[Origin] software".  It also is multiplatform, so it can run on Windows as well as MacOSX. This is probably what researchers coming from the Windows environment would expect to use when they want a quick look at their data.  It has a fully interactive GUI and while it takes some getting used to, it is fairly intuitive and has a number of useful descriptive statistics features as well. Highly recommended.
+http://soft.proindependent.com/qtiplot.html[qtiplot] is "a fully fledged plotting software similar
+to the OriginLab http://www.originlab.com[Origin] software".  It also is multiplatform, so it can
+run on Windows as well as MacOSX. This is probably what researchers coming from the Windows
+environment would expect to use when they want a quick look at their data.  It has a fully
+interactive GUI and while it takes some getting used to, it is fairly intuitive and has a number of
+useful descriptive statistics features as well. Highly recommended.
 
 
 [[gretl]]
 gretl
 ^^^^^
-http://en.wikipedia.org/wiki/Gretl[gretl] is not a plotting package 'per se' but a fully graphical statistical package that incorporates gnuplot and as such is worth knowing about.  It is quite intuitive and the statistical functions are an added bonus for when you want to start applying them to your data.  It was originally developed with its own statistics engine but can start and use R as well. Highly recommended.
+http://gretl.sourceforge.net/[gretl] is not a plotting package 'per se' but a fully graphical
+statistical package that incorporates gnuplot and as such is worth knowing about.  It is quite
+intuitive and the statistical functions are an added bonus for when you want to start applying them
+to your data.  It was originally developed with its own statistics engine but can start and use R as
+well. Highly recommended.
 
 
 [[quickplot]]
 quickplot
 ^^^^^^^^^
-http://quickplot.sourceforge.net/[quickplot] is a more primitive graphical plotting program but with a very large capacity if you want to plot large numbers of point (say 10s or 100s of thousands of points.)  It can also read data from a pipe so you can place it at the end of a data pipeline to show the result.
+http://quickplot.sourceforge.net/[quickplot] is a more primitive graphical plotting program but with
+a very large capacity if you want to plot large numbers of point (say 10s or 100s of thousands of
+points.)  It can also read data from a pipe so you can place it at the end of a data pipeline to
+show the result.
 
 
 [[gnuplot]]
 gnuplot
 ^^^^^^^
-http://www.gnuplot.info/[gnuplot] is one of the most popular plotting applications for Linux.  If you spend a few minutes with it, you'll wonder why.  If you persist and spend a few hours with it, you'll understand.  It's not a GUI program, altho *qgfe* provides a primitive GUI (but if you want a GUI, try *qtiplot* above.  gnuplot is really a scripting language for automatically plotting (and replotting) complex data sets.  To see this in action, you may first have to download the demo scripts and then have gnuplot execute all of them with *gnuplot /where/the/demo/data/is/all.dem*.  Pretty impressive (and useful, as all the demo examples ARE the gnuplot scripts)  It's an extremely powerful plotting package, but it's not for dilettantes. Highly recommended (if you're willing to spend the time).
+http://gnuplot.info/[gnuplot] is one of the most popular plotting applications for Linux.  If
+you spend a few minutes with it, you'll wonder why.  If you persist and spend a few hours with it,
+you'll understand.  It's not a GUI program, altho *qgfe* provides a primitive GUI (but if you want a
+GUI, try *qtiplot* above.  gnuplot is really a scripting language for automatically plotting (and
+replotting) complex data sets.  To see this in action, you may first have to download the demo
+scripts and then have gnuplot execute all of them with *gnuplot /where/the/demo/data/is/all.dem*. 
+Pretty impressive (and useful, as all the demo examples ARE the gnuplot scripts)  It's an extremely
+powerful plotting package, but it's not for dilettantes. Highly recommended (if you're willing to
+spend the time).
 
 
 [[pyxplot]]
 pyxplot
 ^^^^^^^
-http://www.pyxplot.org.uk[pyxplot] is a graphing package sort of like gnuplot in that it relies on an input script, but instead of the fairly crude output of gnuplot, the output is http://www.pyxplot.org.uk/examples/[truly publication quality] and the greater the complexity of the plot, the more useful it is.  Recommended if you need the quality or typesetting functionality.
+http://www.pyxplot.org.uk[pyxplot] is a graphing package sort of like gnuplot in that it relies on
+an input script, but instead of the fairly crude output of gnuplot, the output is
+http://www.pyxplot.org.uk/examples/[truly publication quality] and the greater the complexity of the
+plot, the more useful it is.  Recommended if you need the quality or typesetting functionality.
 
 
 [[matplotlib]]
 Matplotlib
 ^^^^^^^^^^
-http://matplotlib.sourceforge.net/[Matplotlib] is another Python Library that can be used to generate very Matlab-like plots (see http://matplotlib.sourceforge.net/gallery.html[the gallery of plots] to get an idea of the kind of versatility and quality that's available with this toolset.  Each plot comes with the Python code that generates it.
+http://matplotlib.sourceforge.net/[Matplotlib] is another Python Library that can be used to
+generate very Matlab-like plots (see http://matplotlib.sourceforge.net/gallery.html[the gallery of
+plots] to get an idea of the kind of versatility and quality that's available with this toolset. 
+Each plot comes with the Python code that generates it.
 
 
 [[rplot]]
 R's plot packages
 ^^^^^^^^^^^^^^^^^
-http://en.wikipedia.org/wiki/R_(programming_language)[The R statistical language] has some http://www.statmethods.net/advgraphs/index.html[very good plotting facilities] for both low and high dimensional data.  Like the Gretl program immediately above, R combines impressive statistical capabilities with graphics, although R is an interpreted language that uses commands to create the graphs which are then generated in graphics windows.  There are some R packages that are completely graphical and there are moves afoot to put more effort into making a completely graphical version of R, but for the most part, you'll be typing, not clicking.  That said, it's an amazingly powerful language and http://www.nytimes.com/2009/01/07/technology/business-computing/07program.html[one of the best statistical environments available], commercial or free.  
+http://en.wikipedia.org/wiki/R_(programming_language)[The R statistical language] has some
+http://www.statmethods.net/advgraphs/index.html[very good plotting facilities] for both low and high
+dimensional data.  Like the Gretl program immediately above, R combines impressive statistical
+capabilities with graphics, although R is an interpreted language that uses commands to create the
+graphs which are then generated in graphics windows.  There are some R packages that are completely
+graphical and there are moves afoot to put more effort into making a completely graphical version of
+R, but for the most part, you'll be typing, not clicking.  That said, it's an amazingly powerful
+language and http://www.nytimes.com/2009/01/07/technology/business-computing/07program.html[one of
+the best statistical environments available], commercial or free.  
 
-Notable is the http://had.co.nz/ggplot2/[ggplot2] package which produces elegant plots fairly simply by providing excellent defaults - highly recommended.  While software is free, and the internal documentation is fairly good, the author has written http://tinyurl.com/ggplot2-book[an entire book] on it.  While the entire book is not free, the introductory chapter http://had.co.nz/ggplot2/book/qplot.pdf[Getting started with qplot] is, along with http://had.co.nz/ggplot2/book/[all the code] mentioned in it.
+Notable is the http://had.co.nz/ggplot2/[ggplot2] package which produces elegant plots fairly simply
+by providing excellent defaults - highly recommended.  While software is free, and the internal
+documentation is fairly good, the author has written http://tinyurl.com/ggplot2-book[an entire book]
+on it.  While the entire book is not free, the introductory chapter
+http://had.co.nz/ggplot2/book/qplot.pdf[Getting started with qplot] is, along with
+http://had.co.nz/ggplot2/book/[all the code] mentioned in it.
  
 
 Visualization of Multivariate Data
@@ -680,22 +993,46 @@ Visualization of Multivariate Data
 [[ggobi]]
 ggobi
 ^^^^^
-http://www.ggobi.org[ggobi] is on the border of "simple" and "complex", but since it can be started and used relatively easily and has some very compelling abilities.  I have to admit to being a ggobi fan for many years - it has some features that I haven't seen anywhere else which, if your data is multivariate, really helps you to understand it. It can be run by itself, but its real power is obvious when you use it inside of R.  That interface also obviates the grotacious requirement to code all your data into XML (R does it for you automatically).  The ggobi has a http://www.ggobi.org[very good website] and documentation, and also has some very compelling demos and videos showing off its abilities.  For an extended example of how to use it and some output, please check out the ggobi part of http://moo.nac.uci.edu/%7ehjm/AnRCheatsheet.html#ggobi[An R Cheat Sheet] Highly recommended.
+http://www.ggobi.org[ggobi] is on the border of "simple" and "complex", but since it can be started
+and used relatively easily and has some very compelling abilities.  I have to admit to being a ggobi
+fan for many years - it has some features that I haven't seen anywhere else which, if your data is
+multivariate, really helps you to understand it. It can be run by itself, but its real power is
+obvious when you use it inside of R.  That interface also obviates the grotacious requirement to
+code all your data into XML (R does it for you automatically).  The ggobi has a
+http://www.ggobi.org[very good website] and documentation, and also has some very compelling demos
+and videos showing off its abilities.  For an extended example of how to use it and some output,
+please check out the ggobi part of http://moo.nac.uci.edu/%7ehjm/AnRCheatsheet.html#ggobi[An R Cheat
+Sheet] Highly recommended.
 
 [[ncview]]
-ncview
-^^^^^^
-http://meteora.ucsd.edu/~pierce/ncview_home_page.html[ncview] is a viewer for netCDF files.  Since such files are typically used to map variables onto a physical space, this application provides a quick visualization of the data in a netCDF file mapped to the geographical or time coordinates.
+ncview and HDFView
+^^^^^^^^^^^^^^^^^^
+http://meteora.ucsd.edu/~pierce/ncview_home_page.html[ncview] is a viewer for netCDF files.  
+http://www.hdfgroup.org/products/java/hdfview/[HDFView] is a rough
+equivalent for HDF5 files. Since
+such files are typically used to map variables onto a physical space, this application provides a
+quick visualization of the data in a netCDF file mapped to the geographical or time coordinates.
  
 [[idv]]
 idv
 ^^^
-http://www.unidata.ucar.edu/software/idv/[Integrated Data Viewer (IDV)] from Unidata is a Java(TM)-based software framework for analyzing and visualizing geoscience data. The IDV brings together the ability to display and work with satellite imagery, gridded data, surface observations, balloon soundings, NWS WSR-88D Level II and Level III radar data, and NOAA National Profiler Network data, all within a unified interface."  It supports a fantastically wide set of data and can even be run (slowly) without installing it via Java's Web Start.  It can also interactively query remote data servers to provide filtered data from much larger data sets.  It is strongly tailored to mapping geophysical data onto geographic maps, so is more of a GIS tool than a strictly multivariate visualizationj tool.
+http://www.unidata.ucar.edu/software/idv/[Integrated Data Viewer (IDV)] from Unidata is a
+Java(TM)-based software framework for analyzing and visualizing geoscience data. The IDV brings
+together the ability to display and work with satellite imagery, gridded data, surface observations,
+balloon soundings, NWS WSR-88D Level II and Level III radar data, and NOAA National Profiler Network
+data, all within a unified interface."  It supports a fantastically wide set of data and can even be
+run (slowly) without installing it via Java's Web Start.  It can also interactively query remote
+data servers to provide filtered data from much larger data sets.  It is strongly tailored to
+mapping geophysical data onto geographic maps, so is more of a GIS tool than a strictly multivariate
+visualizationj tool.
  
 [[ifrit]]
 ifrit
 ^^^^^
-http://sites.google.com/site/ifrithome/[ifrit], named for "Ionization FRont Interactive Tool" for that domain, has now become a much more general data visualization tool. It is used to visualize 4 main types of data:
+http://sites.google.com/site/ifrithome/[ifrit], named for "Ionization FRont Interactive Tool" for
+that domain, has now become a much more general data visualization tool. It is used to visualize 4
+main types of data:
+
  - Scalar data: several scalar variables in 3D space.
  - Vector field data: a 3D field of vectors.
  - Tensor field data: a symmetric 3x3 tensor in 3D space.
@@ -705,7 +1042,13 @@ In order to supply data to ifrit, you will probably have to do some editing of t
 [[visit]]
 VISIT
 ^^^^^
-https://wci.llnl.gov/codes/visit/[VISIT] is a very sophisticated fully graphical visualization (and analytical) tool that can provide plotting of just about every dataset that you can supply, and do so in very high quality (including making animations).  It supports the HDF and netCDF formats mentioned above as well https://wci.llnl.gov/codes/visit/FAQ.html#12[about 40 others]. To provide this visualization capability, it's interface is fairly complex as well, but if your data visualization needs are very sophisticated, this is the application for you. The web site includes a https://wci.llnl.gov/codes/visit/screens.html[gallery of visualizations] made with VISIT.
+https://wci.llnl.gov/simulation/computer-codes/visit/[VISIT] is a very sophisticated fully graphical visualization (and
+analytical) tool that can provide plotting of just about every dataset that you can supply, and do
+so in very high quality (including making animations).  It supports the HDF and netCDF formats
+mentioned above as well https://wci.llnl.gov/codes/visit/FAQ.html#12[about 40 others]. To provide
+this visualization capability, it's interface is fairly complex as well, but if your data
+visualization needs are very sophisticated, this is the application for you. The web site includes a
+https://wci.llnl.gov/codes/visit/screens.html[gallery of visualizations] made with VISIT.
 
 Genomic Visualization Tools
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -713,33 +1056,55 @@ Genomic Visualization Tools
 [[sva]]
 Sequence Variant Analyzer
 ^^^^^^^^^^^^^^^^^^^^^^^^^
-http://www.svaproject.org/[SVA] is "designed to annotate, visualize, and analyze the genetic variants identified through next-generation sequencing studies, including whole-genome sequencing (WGS) and exome sequencing studies."  It uses a fully Graphical Interface written in Java and therefore supposedly runs on any platform, but due to it's memory requirements, it's effectively limited to those machines which have more than ~10GB RAM available.
+http://www.omicsexpress.com/sva.php[SVA] is "designed to annotate, visualize, and analyze the genetic
+variants identified through next-generation sequencing studies, including whole-genome sequencing
+(WGS) and exome sequencing studies."  It uses a fully Graphical Interface written in Java and
+therefore supposedly runs on any platform, but due to it's memory requirements, it's effectively
+limited to those machines which have more than ~10GB RAM available.
 
 
 [[gephi]]
 Gephi
 ^^^^^
-"http://gephi.org/[Gephi] is an interactive visualization and exploration platform for all kinds of networks and complex systems, dynamic and hierarchical graphs." Written in Java and with a full Graphical User Interface, it runs on all platforms and can be used to cluster, analyze, and visualize complex network-like data.  Well worth a look for any kind of analysis of networks whether they be social, biological, internet, or chemical.
+"http://gephi.org/[Gephi] is an interactive visualization and exploration platform for all kinds of
+networks and complex systems, dynamic and hierarchical graphs." Written in Java and with a full
+Graphical User Interface, it runs on all platforms and can be used to cluster, analyze, and
+visualize complex network-like data.  Well worth a look for any kind of analysis of networks whether
+they be social, biological, internet, or chemical.
 
 
 [[circos]]
 Circos
 ^^^^^^
-http://mkweb.bcgsc.ca/circos/[Circos] produces many of those beautiful circular interaction maps that have decorated so many science and popular mags.  It can be used to generate multi-resolution maps to display things from database schemas to genomic maps.  While the output is static, the information density is startling.  The interface is strictly commandline and file-based tho, so you'll have to dig a bit to figure out how it works.  If your data is fairly simple, http://mkweb.bcgsc.ca/circos/tableviewer/[there is an online version] of it so you can submit your data for processing without investing too much effort.
+http://mkweb.bcgsc.ca/circos/[Circos] produces many of those beautiful circular interaction maps
+that have decorated so many science and popular mags.  It can be used to generate multi-resolution
+maps to display things from database schemas to genomic maps.  While the output is static, the
+information density is startling.  The interface is strictly commandline and file-based tho, so
+you'll have to dig a bit to figure out how it works.  If your data is fairly simple,
+http://mkweb.bcgsc.ca/circos/tableviewer/[there is an online version] of it so you can submit your
+data for processing without investing too much effort.
 
 
 
 Interactive Genomics Viewer
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
-http://www.broadinstitute.org/igv/[IGV]  "is a high-performance visualization tool for interactive exploration of large, integrated datasets. It supports a wide variety of data types including sequence alignments, microarrays, and genomic annotations."  Also a (multiplatform) interactive Java app for viewing high-density genomic information.  Can be run from your desktop or started remotely via Sun's Webstart technology.
+http://www.broadinstitute.org/igv/[IGV]  "is a high-performance visualization tool for interactive
+exploration of large, integrated datasets. It supports a wide variety of data types including
+sequence alignments, microarrays, and genomic annotations."  Also a (multiplatform) interactive Java
+app for viewing high-density genomic information.  Can be run from your desktop or started remotely
+via Sun's Webstart technology.
 
 Dasty2
 ^^^^^^
-http://www.ebi.ac.uk/dasty/[dasty2] "is a web client for visualizing protein sequence feature information."  It's sort of like the protein-only, Javascript/Web2 version of http://genome.ucsc.edu/[UCSC's Genome browser].
+http://www.ebi.ac.uk/dasty/[dasty2] "is a web client for visualizing protein sequence feature
+information."  It's sort of like the protein-only, Javascript/Web2 version of
+http://genome.ucsc.edu/[UCSC's Genome browser].
 
 Gaggle
 ^^^^^^
-http://gaggle.systemsbiology.net/docs/[Gaggle] is another Java application that can assemble (if not quite completely integrate) the inputs from a number of independent applications and/or databases, including:
+http://gaggle.systemsbiology.net/docs/[Gaggle] is another Java application that can assemble (if not
+quite completely integrate) the inputs from a number of independent applications and/or databases,
+including:
 
 * http://www.cytoscape.org/[Cytoscape]
 * the http://www.sysbio.org/research/bsi/bioanalytics/bioinformatics.stm[Bioinformatics Resource Manager]
@@ -755,57 +1120,128 @@ http://gaggle.systemsbiology.net/docs/[Gaggle] is another Java application that 
 Some Inspiration and Examples
 -----------------------------
 
-* http://manyeyes.alphaworks.ibm.com/manyeyes/[Many Eyes] is IBM's very cool site for tuning complex datasets into beautiful graphics.
+* http://manyeyes.alphaworks.ibm.com/manyeyes/[Many Eyes] is IBM's very cool site for tuning complex
+datasets into beautiful graphics.
 
-* http://flowingdata.com[The FlowingData] is a visualization blog and info clearing house for many visualization-related trends and software.  For example, http://goo.gl/wnic[this], which announces that Streamgraph code for 'Processing' is open source (link:#processing[see below]). particularly good example of this kind of active graphic at the http://www.nytimes.com/interactive/2008/02/23/movies/20080223_REVENUE_GRAPHIC.html[New York Times]
+* http://flowingdata.com[The FlowingData] is a visualization blog and info clearing house for many
+visualization-related trends and software.  For example, http://goo.gl/wnic[this], which announces
+that Streamgraph code for 'Processing' is open source (link:#processing[see below]). particularly
+good example of this kind of active graphic at the
+http://www.nytimes.com/interactive/2008/02/23/movies/20080223_REVENUE_GRAPHIC.html[New York Times]
 
 * <http://www.visualisingdata.com/> Another data viz blog
 
-* http://www.gapminder.org/[GapMinder], Hans Rosling's multivariate Javascript package, acquired by Google, turned into a public site.  Be sure to watch at least http://www.ted.com/talks/hans_rosling_shows_the_best_stats_you_ve_ever_seen.html[one of his TED talks]
+* http://www.gapminder.org/[GapMinder], Hans Rosling's multivariate Javascript package, acquired by
+Google, turned into a public site.  Be sure to watch at least
+http://www.ted.com/talks/hans_rosling_shows_the_best_stats_you_ve_ever_seen.html[one of his TED
+talks]
 
 
 Programmatic manipulation
 -------------------------
-Sometimes your data is of a complexity that you'll need to reduce or filter it before it can be used as input for statistical processing or visualization.  If this is the case, you may be headed into the realm of actual programming.  I refer you again to the excellent http://swc.scipy.org[Software Carpentry tutorials] and http://showmedo.com/videos/carpentry[related videos on ShowMeDo].
+Sometimes your data is of a complexity that you'll need to reduce or filter it before it can be used
+as input for statistical processing or visualization.  If this is the case, you may be headed into
+the realm of actual programming.  I refer you again to the excellent http://swc.scipy.org[Software
+Carpentry tutorials] and http://showmedo.com/videos/carpentry[related videos on ShowMeDo].
 
-For further data manipulation, I would suggest learning a scripting (or interpreted) language, such as Python, Perl, R, or Java for the following reasons.
+For further data manipulation, I would suggest learning a scripting (or interpreted) language, such
+as Python, Perl, R, or Java for the following reasons.
 
 [[python]]
 Python
 ~~~~~~
-http://en.wikipedia.org/wiki/Python_(programming_language)[Python], http://ipython.scipy.org/moin/[iPython] & http://numpy.scipy.org/[NumPy].  *Python* is a general purpose interpreted programming language and while not the most popular, it is quite suitable for research, especially when coupled with interactive iPython shell/debugger and the numerical module Numpy.  Like Java (and unlike Perl) it is strongly object-oriented, which can make it easier to understand and extend.  iPython is an interactive commandline debugger (there are also many free GUI debuggers such as http://eric-ide.python-projects.org/[eric]), which has a number of features that make it very easy and powerful.  The Numpy module is Python's scientific numeric package which makes it very easy to deal with multidimensional arrays and their manipulation as well as 'wrapping' libraries from other languages to include as Python modules - as an example, see http://moo.nac.uci.edu/%7ehjm/HOWTO_Pythonize_FORTRAN.html[HOWTO_Pythonize_FORTRAN.html].  I've written a http://moo.nac.uci.edu/%7ehjm/linebyline.py[simple skeleton example] in Python to show how Python does some useful things.
+http://en.wikipedia.org/wiki/Python_(programming_language)[Python],
+http://ipython.scipy.org/moin/[iPython] & http://numpy.scipy.org/[NumPy].  *Python* is a general
+purpose interpreted programming language and while not the most popular, it is quite suitable for
+research, especially when coupled with interactive iPython shell/debugger and the numerical module
+Numpy.  Like Java (and unlike Perl) it is strongly object-oriented, which can make it easier to
+understand and extend.  iPython is an interactive commandline debugger (there are also many free GUI
+debuggers such as http://eric-ide.python-projects.org/[eric]), which has a number of features that
+make it very easy and powerful.  The Numpy module is Python's scientific numeric package which makes
+it very easy to deal with multidimensional arrays and their manipulation as well as 'wrapping'
+libraries from other languages to include as Python modules - as an example, see
+http://moo.nac.uci.edu/%7ehjm/HOWTO_Pythonize_FORTRAN.html[HOWTO_Pythonize_FORTRAN.html].  I've
+written a http://moo.nac.uci.edu/%7ehjm/linebyline.py[simple skeleton example] in Python to show how
+Python does some useful things.
 
 [[perl]]
 Perl
 ~~~~
-http://en.wikipedia.org/wiki/Perl[Perl] & the http://pdl.perl.org/[Perl Data Language (PDL)].  *Perl* is also a powerful general purpose language, with probably the best integration of http://en.wikipedia.org/wiki/Regular_expression[regular expressions].  If parsing files, substituting strings, and manipulating text is your bag, then Perl is your sewing machine.  The *PDL* is an additional set of routines that provides much the same functionality as *Numpy* does for *Python*.  While both Perl and Python have their own set of self-updating and library-searching routines, Perl's http://www.cpan.org/[CPAN] is more mature and better debugged than Python's http://peak.telecommunity.com/DevCenter/EasyInstall[easy_install] system, altho both are very good.  Perl and Python are about equally well-supported when it comes to interacting with databases and network activity.
+http://en.wikipedia.org/wiki/Perl[Perl] & the http://pdl.perl.org/[Perl Data Language (PDL)]. 
+*Perl* is also a powerful general purpose language, with probably the best integration of
+http://en.wikipedia.org/wiki/Regular_expression[regular expressions].  If parsing files,
+substituting strings, and manipulating text is your bag, then Perl is your sewing machine.  The
+*PDL* is an additional set of routines that provides much the same functionality as *Numpy* does for
+*Python*.  While both Perl and Python have their own set of self-updating and library-searching
+routines, Perl's http://www.cpan.org/[CPAN] is more mature and better debugged than Python's
+http://peak.telecommunity.com/DevCenter/EasyInstall[easy_install] system, altho both are very good. 
+Perl and Python are about equally well-supported when it comes to interacting with databases and
+network activity.
 
 [[rprogram]]
 The R Statistical Language
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
-http://en.wikipedia.org/wiki/R_(programming_language)[R] as alluded to above is an interpreted language that is designed explicitly for data manipulation and analysis.  It has significant graphing and database capabilities built in and if you are a biologist, the R-based http://www.bioconductor.org[BioConductor suite] is a very powerful set of modules for analyses like microarray data, genomics data mining, and even sequence analysis.  It is not a general purpose programming language but for a researcher (not a web programmer), it would be a very good choice.
+http://en.wikipedia.org/wiki/R_(programming_language)[R] as alluded to above is an interpreted
+language that is designed explicitly for data manipulation and analysis.  It has significant
+graphing and database capabilities built in and if you are a biologist, the R-based
+http://www.bioconductor.org[BioConductor suite] is a very powerful set of modules for analyses like
+microarray data, genomics data mining, and even sequence analysis.  It is not a general purpose
+programming language but for a researcher (not a web programmer), it would be a very good choice.
 
 [[java]]
 Java
 ~~~~
-http://en.wikipedia.org/wiki/Java_(programming_language)[Java] is yet another interpreted, general purpose, object-oriented, programming language, but one which has great support in the area of web development and cross-platform programming.  Most browsers have Java plug-ins which enable them to run Java code, so your applications can 'run in a browser', which can sometimes be advantageous.  However, the language itself is not as intuitive or concise as Python or Perl and does not have the same strengths in numerical or scientific support, altho that could be my igorance showing.
+http://en.wikipedia.org/wiki/Java_(programming_language)[Java] is yet another interpreted, general
+purpose, object-oriented, programming language, but one which has great support in the area of web
+development and cross-platform programming.  Most browsers have Java plug-ins which enable them to
+run Java code, so your applications can 'run in a browser', which can sometimes be advantageous. 
+However, the language itself is not as intuitive or concise as Python or Perl and does not have the
+same strengths in numerical or scientific support, altho that could be my igorance showing.
 
 [[processing]]
 Processing.org
 ~~~~~~~~~~~~~~
-http://processing.org/[processing.org] is an odd and slightly misleading name of a very cool project to enable custom visualization using a simple programming language.  It is an OSS Java visualization toolkit that makes it quite easy to write code to manipulate data in 3D.  If you have a visualization need that is not met by any of the other tools, you may want to play with this toolkit to see if you can develop it yourself.  The language is quite simple and intuitive and the code examples given are well-documented and are executed in the provided programming environment.  There are some interesting and beautiful examples of what it can do http://www.openprocessing.org/[shown here].
+http://processing.org/[processing.org] is an odd and slightly misleading name of a very cool project
+to enable custom visualization using a simple programming language.  It is an OSS Java visualization
+toolkit that makes it quite easy to write code to manipulate data in 3D.  If you have a
+visualization need that is not met by any of the other tools, you may want to play with this toolkit
+to see if you can develop it yourself.  The language is quite simple and intuitive and the code
+examples given are well-documented and are executed in the provided programming environment.  There
+are some interesting and beautiful examples of what it can do http://www.openprocessing.org/[shown
+here].
 
 
 Version Control for Code and Documents 
 --------------------------------------
-This is a bit beyond the original scope of the document, but since I brought up writing your own code, http://en.wikipedia.org/wiki/Revision_control[version control] is something you should know about.  This http://www.swc.scipy.org/lec/version.html[Software Carpentry page] describes what it is and why it's important.  READ IT!!
+This is a bit beyond the original scope of the document, but since I brought up writing your own
+code, http://en.wikipedia.org/wiki/Revision_control[version control] is something you should know
+about.  This http://www.swc.scipy.org/lec/version.html[Software Carpentry page] describes what it is
+and why it's important.  READ IT!!
 
-Versioning tools can, unsurprisingly, help you keep track of file versions.  The two such OSS systems now in widespread and growing use are http://git-scm.com[git] and http://subversion.tigris.org[Subversion] (aka *svn*).  *git* was writ by a major software developer (Linus Torvalds, he of Linux fame and name) for a major software project (tracking the development of Linux itself).  As such, it is very fast, efficient, and was written to encourage branching and merging of versions by a widespread network of asynchronously online group of developers.  As such it is more like a peer-to-peer repository. *svn* was written with the same goals (developed by the team that previously wrote CVS, one of the most successful versioning systems before Subversion), but it is harder to branch and merge versions and has some different architectural features that lend it to a server implementation.
+Versioning tools can, unsurprisingly, help you keep track of file versions.  The two such OSS
+systems now in widespread and growing use are http://git-scm.com[git] and
+http://subversion.tigris.org[Subversion] (aka *svn*).  *git* was writ by a major software developer
+(Linus Torvalds, he of Linux fame and name) for a major software project (tracking the development
+of Linux itself).  As such, it is very fast, efficient, and was written to encourage branching and
+merging of versions by a widespread network of asynchronously online group of developers.  As such
+it is more like a peer-to-peer repository. *svn* was written with the same goals (developed by the
+team that previously wrote CVS, one of the most successful versioning systems before Subversion),
+but it is harder to branch and merge versions and has some different architectural features that
+lend it to a server implementation.
 
-Note that these repositories can be used not only for code but for anything based on text - notes, grants, small amounts of data, email, etc.  I know a few people who use subversion as their entire backup system.  One in particular who uses Linux and Open Source tools for everything (including writing papers in TeX) has very few binary format files to back up so everything goes into svn.
+Note that these repositories can be used not only for code but for anything based on text - notes,
+grants, small amounts of data, email, etc.  I know a few people who use subversion as their entire
+backup system.  One in particular who uses Linux and Open Source tools for everything (including
+writing papers in TeX) has very few binary format files to back up so everything goes into svn.
 
-Both the http://www.swc.scipy.org/lec/version.html[Software Carpentry] site and http://showmedo.com/videos/series?name=bfNi2X3Xg[Showmedo] have pages dedicated to version control but mostly *subversion*.  Setting up a subversion repository is not trivial, but learning how to use it can be tremendously valuable if you need or appreciate versioned files.
-Google Video has a couple of 'tech Talks' dedicated to *git*, http://www.youtube.com/watch?v=4XpnKHJAok8[one by Linus Torvalds] which is very entertaining but is not much of a 'HOWTO' and http://www.youtube.com/watch?v=8dhZ9BXQgc4[another by Randall Schwartz] which is more useful and describes more of what git can be used for.
+Both the http://www.swc.scipy.org/lec/version.html[Software Carpentry] site and
+http://showmedo.com/videos/series?name=bfNi2X3Xg[Showmedo] have pages dedicated to version control
+but mostly *subversion*.  Setting up a subversion repository is not trivial, but learning how to use
+it can be tremendously valuable if you need or appreciate versioned files. Google Video has a couple
+of 'tech Talks' dedicated to *git*, http://www.youtube.com/watch?v=4XpnKHJAok8[one by Linus
+Torvalds] which is very entertaining but is not much of a 'HOWTO' and
+http://www.youtube.com/watch?v=8dhZ9BXQgc4[another by Randall Schwartz] which is more useful and
+describes more of what git can be used for.
 
 
 Some Further Notes and Warnings
@@ -825,14 +1261,25 @@ tilted to Apple (how to make the Mac the best platform for OSS).  Both
 are very good. but you should choose one and stick to it as the packages
 they provide will eventually conflict.
 
-Despite Windows being the least open platform, many of the applications mentioned in this doc also exist it.  There are many other Open Source apps that are available for Windows as well. Some http://www.opensourcewindows.org/[popular applications are noted here], a http://osswin.sourceforge.net/[much larger list is here], as is http://osswin.sourceforge.net/#sciences[their list of Science-related OSS apps].
+Despite Windows being the least open platform, many of the applications mentioned in this doc also
+exist it.  There are many other Open Source apps that are available for Windows as well. Some
+http://www.opensourcewindows.org/[popular applications are noted here], a
+http://osswin.sourceforge.net/[much larger list is here], as is
+http://osswin.sourceforge.net/#sciences[their list of Science-related OSS apps].
 
 [[manpages]]
 The Unix Man Pages
 ~~~~~~~~~~~~~~~~~~
-Both Linux and MacOSX have internal manuals called http://en.wikipedia.org/wiki/Man_page[man pages] that document how to use all the features of a particular command.  Compared to a well-writ web page, they're pretty awful.  Compared to nothing, they're pretty good.  They are often written by the utility's author so they tend to be terse, technical, tedious, and worst of all, lack examples.  However, since they are reviewed by other Linux users, they do tend to be accurate.  To read them just prefix the name of the utility with the word 'man' (ie 'man join').
+Both Linux and MacOSX have internal manuals called http://en.wikipedia.org/wiki/Man_page[man pages]
+that document how to use all the features of a particular command.  Compared to a well-writ web
+page, they're pretty awful.  Compared to nothing, they're pretty good.  They are often written by
+the utility's author so they tend to be terse, technical, tedious, and worst of all, lack examples. 
+However, since they are reviewed by other Linux users, they do tend to be accurate.  To read them
+just prefix the name of the utility with the word 'man' (ie 'man join').
 
-On the other hand, there's Google, which has dramatically changed support issues in that once 'someone' has resolved an issue, 'everyone' can see how they did it (unless the hosting company benefits from keeping it secret - another benefit of Open Source Software vs Proprietary Software.
+On the other hand, there's Google, which has dramatically changed support issues in that once
+'someone' has resolved an issue, 'everyone' can see how they did it (unless the hosting company
+benefits from keeping it secret - another benefit of Open Source Software vs Proprietary Software.
 
 [[linuxfilenames]]
 Linux File names
@@ -848,7 +1295,8 @@ prefixing them with a '\'.  So when you are specifying a file, 'October
 Spectroscopy Data' will have to be typed 'October\ Spectroscopy\ Data'.  Just
 replace the spaces with an underscore ('_') and things will be easier.
 
-Similarly, including the forward slash (/) should be avoided, as it indicates a directory in Linux, so a file name like 'good/bad stuff at Target' should be named 'good_bad_stuff_at_Target'.  
+Similarly, including the forward slash (/) should be avoided, as it indicates a directory in Linux,
+so a file name like 'good/bad stuff at Target' should be named 'good_bad_stuff_at_Target'.  
 
 In general, only use the standard alphanumeric characters 'a-zA-Z0-9' in Linux file names.
 
@@ -860,7 +1308,8 @@ There are 2 kinds of tab completion, file name completion and executable tab com
 
 File name Tab Completion
 ^^^^^^^^^^^^^^^^^^^^^^^^
-Many shells will try to help you out via 'tab-completion', providing file name completion or suggesting file names if you've typed enough of a file to identify it uniquely:
+Many shells will try to help you out via 'tab-completion', providing file name completion or
+suggesting file names if you've typed enough of a file to identify it uniquely:
 
 The following renames  'October Spectroscopy Data' to 'October_Spectroscopy_Data'.
 If the file is the only one in the directory that begins with 'October',
@@ -886,7 +1335,8 @@ October Centrifuge Report   October Journal Club notes  October Spectroscopy Dat
 
 $ mv October\ 
 
-# and then waits for you to provide more of the name: (You type an 'S', then another <TAB>, which allows the shell to complete the rest of the now-unique name). 
+# and then waits for you to provide more of the name: (You type an 'S', then another <TAB>, which
+allows the shell to complete the rest of the now-unique name). 
 
 $ mv October\ S<TAB>
 
@@ -899,7 +1349,11 @@ $ mv October\ Spectroscopy\ Data October_Spectroscopy_Data
 Executable Tab Completion
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
-If you are at a bare prompt ($) and you hit the <TAB> key 2x, the 1st time you'll get an alert (a beep or a flash) and the second time you'll get the offer to show you all several thousand executables in your execution path.  Typically, the latter will not be useful, but if you enter the 1st few letters of the command followed by <TAB><TAB>, you'll get all the executables that begin with those letters:
+If you are at a bare prompt ($) and you hit the <TAB> key 2x, the 1st time you'll get an alert (a
+beep or a flash) and the second time you'll get the offer to show you all several thousand
+executables in your execution path.  Typically, the latter will not be useful, but if you enter the
+1st few letters of the command followed by <TAB><TAB>, you'll get all the executables that begin
+with those letters:
 ------------------------------------
 $ et<TAB><TAB>
 etags        etags.emacs  etex         etherape     ether-wake   ethtool
@@ -913,11 +1367,14 @@ If the above doesn't explain things, there's an http://en.wikipedia.org/wiki/Tab
 
 Further Reading
 ---------------
-[[ibmdevworks]]
-There is a similar, if less complete (but possibly more articulate) tutorial called http://www-128.ibm.com/developerworks/linux/library/l-textutils.html[Simplify data extraction using Linux text utilities] from the IBM DeveloperWorks series.
+[[ibmdevworks]] 
+There is a similar, if less complete (but possibly more articulate) tutorial called
+http://www-128.ibm.com/developerworks/linux/library/l-textutils.html[Simplify data extraction using
+Linux text utilities] from the IBM DeveloperWorks series.
 
-For a quick introduction to more sophisticated data analysis with R that builds on this document, please refer to 
-http://moo.nac.uci.edu/%7ehjm/AnRCheatsheet.html[An R Cheatsheet] and the references therein.
+For a quick introduction to more sophisticated data analysis with R that builds on this document,
+please refer to  http://moo.nac.uci.edu/%7ehjm/AnRCheatsheet.html[An R Cheatsheet] and the
+references therein.
 
 
 
@@ -928,10 +1385,13 @@ List of applications noted here:
 
  * link:#file[file] - what kind of file is this?
  * link:#ls[ls], link:#wc[wc] - how big is the file
- * link:#openoffice[OpenOffice.org] - native GUI MS Office work-alike Word Processor (oowriter), Spreadsheet (oocalc), Database Tools (part of oocalc), Drawing (oodraw), Presentation (ooimpress) apps
+ * link:#openoffice[OpenOffice.org] - native GUI MS Office work-alike Word Processor (oowriter),
+Spreadsheet (oocalc), Database Tools (part of oocalc), Drawing (oodraw), Presentation (ooimpress)
+apps
  * link:#gnumeric[Gnumeric] - native, GUI Spreadsheet
  * link:#neooffice[NeoOffice]  - native MacOSX fork of OpenOffice
- * link:#antiword[antiword], link:#py_xls2csv[py_xls2csv] - extract data from MS Word, Excel binary files.
+ * link:#antiword[antiword], link:#py_xls2csv[py_xls2csv] - extract data from MS Word, Excel binary
+files.
  * link:#editors[nedit, jedit, kate, xemacs] - GUI editors for data files
  * link:#cat[cat] - dump a file to STDOUT
  * link:#moreless[more, less] - text file pagers

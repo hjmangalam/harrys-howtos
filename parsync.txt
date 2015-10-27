@@ -1,0 +1,235 @@
+parsync - a parallel rsync wrapper for large data transfers
+===========================================================
+by Harry Mangalam <harry.mangalam@uci.edu>
+v1.3b
+Oct 17th, 2015
+
+//Harry Mangalam mailto:harry.mangalam@uci.edu[harry.mangalam@uci.edu]
+// Convert this file to HTML & move to it's final dest with the command:
+// export fileroot="/home/hjm/nacs/parsync"; asciidoc -a icons -a toc2 -b html5 -a numbered ${fileroot}.txt; scp ${fileroot}.[ht]* moo.nac.uci.edu:~/public_html/parsync
+
+== Download
+
+If you already know you want it, get it here: 
+http://moo.nac.uci.edu/~hjm/parsync/parsync+utils.tar.gz[parsync+utils.tar.gz]
+(contains 'parsync' plus the 'kdirstat-cache-writer', 'stats', and 'scut' utilities below)
+
+Extract it into a dir on your $PATH and after verifying the other dependencies below, 
+give it a shot.
+
+[[deps]]
+== Dependencies
+parsync requires the following utilities to work:
+
+* https://www.kernel.org/pub/software/network/ethtool/[ethtool] - std Linux tool 
+  for probing ethernet interfaces. 'Install from repositories.'
+* iwconfig - std Linux tool for probing wireless interfaces. 'Install from repositories.'
+* http://gael.roualland.free.fr/ifstat/[ifstat] - std Linux tool for extracting metrics from network interfaces. 'Install from repositories.'
+* http://moo.nac.uci.edu/~hjm/parsync/utils/stats[stats] - self-writ Perl utility for providing descriptive stats on 'STDIN'
+* http://moo.nac.uci.edu/~hjm/parsync/utils/scut[scut] - self-writ Perl utility like 'cut' that allows regex split tokens
+
+'parsync' needs to be installed only on the SOURCE end of the transfer and 
+uses whatever 'rsync' is available on the TARGET.  It uses a number of Linux-
+specific utilities so if you're transferring between Linux and a FreeBSD
+host, install parsync on the Linux side.
+
+== Overview
+
+http://rsync.samba.org[rsync] is a fabulous data mover.  Possibly more bytes have been moved
+(or have been prevented from being moved) by rsync than by any other application.
+
+So what's not to love?
+
+For transferring large, deep file trees, rsync will pause while it generates lists of files to process.
+Since Version 3, it does this pretty fast, but on sluggish filesystems, it can take hours or even days
+before it will start to actually exchange rsync data.
+
+Second, due to various bottlenecks, rsync will tend to use less than the
+available bandwidth on high speed networks.  Starting multiple instances of rsync
+can improve this significantly.  However, on such transfers, it is also easy to overload
+the available bandwidth, so it would be nice to both limit the bandwidth used if
+necessary and also to limit the load on the system.
+
+parsync tries to satisfy all these conditions and more by:
+
+* using the http://moo.nac.uci.edu/~hjm/parsync/utils/kdirstat-cache-writer[kdir-cache-writer] 
+utility from the beautiful http://kdirstat.sourceforge.net/[kdirstat] directory browser which 
+can produce lists of files very rapidly
+* allowing re-use of the cache files so generated.
+* doing crude loadbalancing of the number of active rsyncs, suspending and un-suspending
+the processes as necessary.
+* using rsync's own bandwidth limiter (--bwlimit) to throttle the total bandwidth.
+* using rsync's own vast option selection is available as a pass-thru (tho limited to
+those compatible with the '--files-from' option).
+
+As a warning, the main use case for parsync is really only very large data transfers thru
+fairly fast network connections (>1Gb/s).  Below this speed, rsync itself can saturate the connection,
+so there's little reason to use parsync and in fact the overhead of testing the existence of and starting
+more rsyncs tends to worsen its performance on small transfers to slightly less than rsync alone.
+
+Beyond this introduction, parsync's internal help is about all you'll need to
+figure out how to use it; below is what you'll see when you type 'parsync -h'.  
+At version 1.2x (beta), there are still edge cases where parsync will fail or behave oddly,
+especially with small data transfers, so I'd be happy to hear of such misbehavior or
+suggestions to improve it.
+
+Download the complete tarball of parsync, plus the required utilities (minus ifstat) here:
+
+http://moo.nac.uci.edu/~hjm/parsync/parsync+utils.tar.gz[parsync+utils.tar.gz]
+Unpack it, move the contents to a dir on your '$PATH', chmod it executable, and try it out.
+
+*NB:* parsync has a number of dependencies listed link:#deps[above].
+
+ parsync --help
+
+or just
+
+ parsync
+
+Below is what you should see:
+
+parsync help
+--------------
+
+-------------------------------------------------------------------------
+
+parsync version 1.2 (beta)
+04-14-2015
+by Harry Mangalam <hjmangalam@gmail.com> || <harry.mangalam@uci.edu>
+
+parsync is a Perl script that wraps Andrew Tridgells miraculous 'rsync' to
+provide some load balancing and parallel operation across network connections
+to increase the amount of bandwidth it can use.
+
+The only native rsync option that parsync uses is '-a (archive).  If you
+need more, then it's up to you to provide them via '--rsyncopts'.
+parsync checks to see if the current system load is too heavy and tries
+to throttle the rsyncs during the run by monitoring and suspending
+/ continuing them as needed.
+
+It uses the very efficient (also Perl-based) kdirstat-cache-writer
+from kdirstat to generate lists of files which are summed and then
+crudely divided into NP jobs by size.
+
+It appropriates rsync's bandwidth throttle mechanism, using '--maxbw'
+as a passthru to rsync's 'bwlimit' option, but divides it by NP so
+as to keep the total bw the same as the stated limit.  It monitors and
+shows network bandwidth, but can't change the bw allocation mid-job.
+It can only suspend rsyncs until the load decreases below the cutoff.
+If you suspend parsync (^Z), all rsync children will suspend as well,
+regardless of current state.
+
+Unless changed by '--interface', it assumes and monitors eth0.  The
+transfer will use whatever interface normal routing provides, normally
+set by the name of the target.  It can also be used for non-host-based
+transfers (between mounted filesystems) but the network bandwidth continues
+to be (pointlessly) shown.
+[[NB: Between mounted filesystems, parsync sometimes works very poorly for
+reasons still mysterious.  In such cases (monitor with 'ifstat'), use 'cp'
+for the initial data movement and a single rsync to finalize.  I believe
+the multiple rsync chatter is interfering with the transfer.]]
+
+It only works on dirs and files that originate from the current dir (or
+specified via "--rootdir").  You cannot include dirs and files from
+discontinuous or higher-level dirs.
+
+** the ~/.parsync files **
+The ~/.parsync dir contains the cache (*.gz), the chunk files (kds*), and the
+time-stamped log files. The cache files can be re-used with '--reusecache'
+(which will re-use ALL the cache and chunk files.  The log files are
+datestamped and are not NOT overwritten.
+
+** Odd characters in names **
+parsync will refuse to transfer some oddly named files.  Filenames with
+embedded newlines, DOS EOLs, and some other odd chars will be recorded in
+the log files in the ~/.parsync dir.
+
+OPTIONS
+=======
+[i] = integer number
+[f] = floating point number
+[s] = "quoted string"
+( ) = the default if any
+
+--NP [i] (sqrt(#CPUs)) ................  number of rsync processes to start
+    optimal NP depends on many vars.  Try the default and incr as needed
+--startdir [s] (`pwd`)  ................  the directory it works relative to
+--maxbw [i] (unlimited) ..........  in KB/s max bandwidth to use (--bwlimit
+       passthru to rsync).  maxbw is the total BW to be used, NOT per rsync.
+--maxload [f] (NP+2)  ........ max total system load - if sysload > maxload,
+                                               sleeps an rsync proc for 10s
+--rsyncopts [s]  ...  options passed to rsync as a quoted string (CAREFUL!)
+          this opt triggers a pause before executing to verify the command.
+--interface [s]  .............  network interface to /monitor/, not nec use.
+      default: `/sbin/route -n | grep "^0.0.0.0" | rev | cut -d' ' -f1 | rev`
+      above works on most simple hosts, but complex routes will confuse it.
+--reusecache  ..........  don't re-read the dirs; re-use the existing caches
+--email [s]  .....................  email address to send completion message
+                                      (requires working mail system on host)
+--barefiles   .....  set to allow rsync of individual files, as oppo to dirs
+--nowait  ................  for scripting, sleep for a few s instead of wait
+--version  .................................  dumps version string and exits
+--help  .........................................................  this help
+
+Examples
+========
+(Good example)
+% parsync  --maxload=5.5 --NP=4 --startdir='/home/hjm' dir1 dir2 dir3  
+hjm@remotehost:~/backups
+
+where
+  = "--startdir='/home/hjm'" sets the working dir of this operation to
+      '/home/hjm' and dir1 dir2 dir3 are subdirs from '/home/hjm'
+  = the target "hjm@remotehost:~/backups" is the same target rsync would use
+  = "--NP=4" forks 4 instances of rsync
+  = -"-maxload=5.5" will start suspending rsync instances when the 5m system
+      load gets to 5.5 and then unsuspending them when it goes below it.
+
+  It uses 4 instances to rsync dir1 dir2 dir3 to hjm@remotehost:~/backups
+
+(Good example)
+% parsync --rsyncopts="--ignore-existing" --reusecache  --NP=3 
+  --barefiles  *.txt   /mount/backups/txt
+
+where
+  =  "--rsyncopts='--ignore-existing'" is an option passed thru to rsync
+     telling it not to disturb any existing files in the target directory.
+  = "--reusecache" indicates that the filecache shouldn't be re-generated,
+    uses the previous filecache in ~/.parsync
+  = "--NP=3" for 3 copies of rsync (with no "--maxload", the default is 4)
+  = "--barefiles" indicates that it's OK to transfer barefiles instead of
+    recursing thru dirs.
+  = "/mount/backups/txt" is the target - a local disk mount instead of a network host.
+
+  It uses 3 instances to rsync *.txt from the current dir to "/mount/backups/txt".
+
+
+(Error Example)
+% pwd
+/home/hjm  # executing parsync from here
+
+% parsync --NP4  /usr/local  /media/backupdisk
+
+why this is an error:
+  = '--NP4' is not an option (parsync will say "Unknown option: np4"
+    It should be '--NP=4'
+  = if you were trying to rsync '/usr/local' to '/media/backupdisk', it will
+    fail since there is no /home/hjm/usr/local dir to use as a source.
+    This will be shown in the log files in ~/.parsync/rsync-logfile-<datestamp>_#
+    as a spew of "No such file or directory (2)" errors
+
+The correct version of the above command is:
+
+% parsync --NP=4  --startdir=/usr  local  /media/backupdisk
+-------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+

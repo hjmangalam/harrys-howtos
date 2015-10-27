@@ -1,11 +1,11 @@
 How to transfer large amounts of data via network.
 ==================================================
 by Harry Mangalam <harry.mangalam@uci.edu>
-v1.21, Oct 2nd, 2014
+v1.25 Aug 17, 2015
 
 // last linkchecked  May 16th, 2013
 
-//Harry Mangalam mailto:harry.mangalam@uci.edu[harry.mangalam@uci.edu]
+// Harry Mangalam mailto:harry.mangalam@uci.edu[harry.mangalam@uci.edu]
 // Convert this file to HTML & move to it's final dest with the command:
 // export fileroot="/home/hjm/nacs/HOWTO_move_data"; asciidoc -a icons -a toc2 -b html5 -a numbered ${fileroot}.txt; scp ${fileroot}.[ht]* moo.nac.uci.edu:~/public_html
 
@@ -14,7 +14,7 @@ v1.21, Oct 2nd, 2014
 :icons:
 
 // TODOs:
-// - mbuffer (netcat wbbcpork-alike:
+// - mbuffer (netcat work-alike:
 //   <http://www.maier-komor.de/mbuffer.html> & pigz
 // - bit about fpart & kdirstat for segmenting file trees
 // - parsync expansion
@@ -48,6 +48,8 @@ widely available alternative to bbcp.
 
 For first-time transfers of multi-GB directory trees containing 10,000s of files, 
 the use of link:#tarnetcat['tar' & netcat] seems to be the fastest way to move the data.
+http://moo.nac.uci.edu/~hjm/tnc[tnc] is a Perl wrapper (link:#tnc[see below])that 
+helps in this regard.
 
 If you use Windows, link:#fdt[fdt] is Java-based and will run there as well.
 
@@ -61,8 +63,11 @@ the link change info.)
 
 And everyone should know how to use link:#rsync[rsync], which is available on
 most *nix sytems and should be the default fallback for most data transfers. 
-A perl wrapper for it, http://moo.nac.uci.edu/~hjm/parsync/parsyncfp[parsyncfp] 
+A perl wrapper for it, http://moo.nac.uci.edu/~hjm/parsync/[parsync] 
 will load-balance and fork multiple instances of it to increase bandwidth utilization.
+
+(A next-gen version previously released as 'parsyncfp' has some as-yet 
+unresolved bugs and should not be used).
 
 
 == Big Bytes across the network
@@ -757,39 +762,73 @@ I've gotten 40-50MB/s between UCI and the Broad Institute depending on time of d
 [[netcat]]
 netcat
 ~~~~~~
-http://netcat.sourceforge.net/[netcat] (aka 'nc') is installed by default on most Linux and MacOSX systems.  It provides a way of opening TCP or UDP network connections between nodes, acting as an open pipe thru which you can send any data as fast as the connection will allow, imposing no additional protocol load on the transfer. Because of its widespread availability and it's speed, it can be used to transmit data between 2 points relatively quickly, especially if the data doesn't need to be encrypted or compressed (or if it already is).
+http://netcat.sourceforge.net/[netcat] (aka 'nc') is installed by default on most Linux 
+and MacOSX systems.  It provides a way of opening TCP or UDP network connections between 
+nodes, acting as an open pipe thru which you can send any data as fast as the connection 
+will allow, imposing no additional protocol load on the transfer. Because of its 
+widespread availability and it's speed, it can be used to transmit data between 2 
+points relatively quickly, especially if the data doesn't need to be encrypted or 
+compressed (or if it already is).
 
-However, to use netcat, you have to have login privs on both ends of the connection and you need to explicitly set up a 'listener' that waits for a connection request on a specific port from the receiver.  This is less convenient to do than simply initiating an 'scp' or 'rsync' connection from one end, but may be worth the effort if the size of the data transfer is very large. To monitor the transfer, you also have to use something like 'pv' (pipeviewer); netcat itself is quite laconic.
+However, to use netcat, you have to have login privs on both ends of the connection 
+and you need to explicitly set up a 'listener' that waits for a connection request 
+on a specific port from the receiver.  This is less convenient to do than simply 
+initiating an 'scp' or 'rsync' connection from one end, but may be worth the effort 
+if the size of the data transfer is very large. To monitor the transfer, you also 
+have to use something like 'pv' (pipeviewer); netcat itself is quite laconic.
 
 How it works: On one end (the sending end, in this case), you need to set up a listening port:
 -------------------------------------------------------------------------------
 [send_host]: $ pv -pet honkin.big.file | nc -q 1 -l 1234 <enter>
 -------------------------------------------------------------------------------
 
-This sends the 'honkin.big.file' thru 'pv -pet' which will display  progress, ETA, and time taken.  The command will hang, listening (-l) for a connection from the other end.  The '-q 1' option tells the sender to wait 1s after getting the EOF and then quit.
+This sends the 'honkin.big.file' thru 'pv -pet' which will display  progress, ETA, 
+and time taken.  The command will hang, listening (-l) for a connection from the 
+other end.  The '-q 1' option tells the sender to wait 1s after getting the EOF 
+and then quit.
 
 On the receiving end, you connect to the nc listener
 -------------------------------------------------------------------------------
 [receive_host] $ nc sender.net.uci.edu 1234 |pv -b > honkin.big.file <enter>
 -------------------------------------------------------------------------------
-(note: no '-p' to indicate port on the receiving side).  The '-b' option to 'pv' shows only bytes received.
+(note: no '-p' to indicate port on the receiving side).  The '-b' option to 'pv' 
+shows only bytes received.
 
-Once the receive_host command is inititated, the transfer starts, as can be seen by the pv output on the sending side and the bytecount on the receiving side.  When it finishes, both sides terminate the connection 1s after getting the EOF.
+Once the receive_host command is inititated, the transfer starts, as can be seen 
+by the pv output on the sending side and the bytecount on the receiving side.  
+When it finishes, both sides terminate the connection 1s after getting the EOF.
 
-This arrangement is slightly arcane, but supports the unix tools philosophy which allows you to chain various small tools together to perform a task.  While the above example shows the case for a single large file, it can also be modified only slightly to do recursive transfers, using tar, shown here recursively copying the local 'sge' directory to the remote host.
+This arrangement is slightly arcane, but supports the unix tools philosophy which 
+allows you to chain various small tools together to perform a task.  While the 
+above example shows the case for a single large file, it can also be modified only 
+slightly to do recursive transfers, using tar, shown here recursively copying the 
+local 'sge' directory to the remote host.
 
 [[tarnetcat]]
 tar and netcat
 ^^^^^^^^^^^^^^
-The combination of these 2 crusty relics from the stone age of Unix are remarkably effective for moving data if you don't need encryption.  Since they impose very little protocol overhead to the data, the transfer can run at close to wire speed for large files.  Compression can be added with the 'tar' options of '-z (gzip) or '-j (bzip2)'.
+The combination of these 2 crusty relics from the stone age of Unix are remarkably 
+effective for moving data if you don't need encryption.  Since they impose very 
+little protocol overhead to the data, the transfer can run at close to wire speed 
+for large files.  Compression can be added with the 'tar' options of '-z (gzip) 
+or '-j (bzip2)'.
 
-The setup is not as trivial as 'rsync, scp, or bbcp', since it requires commands to be issued at both ends of the connection, but for large transfers, the speed payoff is non-trivial.  For example, using a single rsync on a 10Gb private connection, we were getting only about 30MB/s, mostly because of many tiny files.  Using tar/netcat, the average speed went up to about 100MB/s.  And using multiple tar/netcat combinations to move specific subdirs, we were able to get an average of 500GB/hr, still not great (~14% of theoretical max), but about 5x better than rsync alone.
+The setup is not as trivial as 'rsync, scp, or bbcp', since it requires commands 
+to be issued at both ends of the connection, but for large transfers, the speed 
+payoff is non-trivial.  For example, using a single rsync on a 10Gb private 
+connection, we were getting only about 30MB/s, mostly because of many tiny files.  
+Using tar/netcat, the average speed went up to about 100MB/s.  And using multiple 
+tar/netcat combinations to move specific subdirs, we were able to get an average 
+of 500GB/hr, still not great (~14% of theoretical max), but about 5x better than 
+rsync alone.
 
-Note that you can set up the 'listener' on either side.  In this example, I've set the listener to the receiving side.
+Note that you can set up the 'listener' on either side.  In this example, I've 
+set the listener to the receiving side.
 
 In the following example, the receiver is 10.255.78.10; the sender is 10.255.78.2.
 
-First start the listener waiting on port '12378', which will accept the byte-stream and untar it, decompressing as it comes in.
+First start the listener waiting on port '12378', which will accept the byte-stream 
+and untar it, decompressing as it comes in.
 -------------------------------------------------------------------------------
 [receive_host] $ nc -l  -p  port_#  | tar -xzf -
 #eg
@@ -805,9 +844,140 @@ Then kick off the transfer on the sending side.
              $ tar -czvf - fmri_classic | nc -s  10.255.78.2  10.255.78.10  12378
 -------------------------------------------------------------------------------
 
-In this case, I've added the verbose flag (-v) to the tar command on the sender side so using 'pv' is redundant.  It also uses tar's built-in compression flag (-z) to compress as it transmits.  Depending on the bandwidth available to you and the CPUs of the hosts, this may actually 'slow' transmission. As noted above, it's most effective on bandwidth-limited channels.
+In this case, I've added the verbose flag (-v) to the tar command on the sender 
+side so using 'pv' is redundant.  It also uses tar's built-in compression flag 
+(-z) to compress as it transmits.  Depending on the bandwidth available to you 
+and the CPUs of the hosts, this may actually 'slow' transmission. As noted above, 
+it's most effective on bandwidth-limited channels.
 
-You could also bundle the 2 together in a script, using ssh to execute the remote command. etc, etc, etc, etc.
+You could also bundle the 2 together in a script, using ssh to execute the remote 
+command. And now, I have..
+
+[[tnc]]
+tnc
+~~~
+
+'tnc' is a useful tool to move a lot of data over a network if:
+
+- the data does not need to be encrypted.
+- you have ssh & shell access on both sides of the connection
+- you set up http://goo.gl/zpfrvu[passwordless shared ssh keys] (it will try to set them up if you don't have them)
+- you have a lot of files and or deep dir trees that need to be moved.
+- the data is not partially on the other side of the connection. ie first time
+data movement. If so, see link:#rsync[rsync]
+- you are moving data for backup (tnc will tar and transfer data (optionally compressing it)
+in one operation, leaving it as such on the other end.
+-
+
+If your use case meets these criteria, it works quite well on most distributions of Linux
+although there are some versions of some utilities that will cause hiccups. In particular,
+it will work about 2-10x as fast as scp, depending on network bandwidth, # of files, etc.
+
+
+
+
+that needs to be moved from one host to another if the 
+The following is the '--help' output from tnc, until I write up something better.
+http://moo.nac.uci.edu/~hjm/tnc[Get tnc here], 'chmod +x' it and off you go.
+*Note the warnings.*
+
+------------------------------------------------------------------------------
+tnc is a small Perl utility to simplify the use of netcat to transfer
+files  between hosts.  It automates a number of the setup commands that
+make this very efficient protocol so awful to set up.  The commandline
+is meant to ape 'scp', but it can be  much faster than scp, depending on
+the connection and types of files.  Typically it's 2x - 6x faster. 
+
+tnc WILL attempt to set up 2048bit RSA ssh keys for you if they don't
+exist on the  the local host which will require entering the remote login
+password 2x to set up  the keys.  If you want to avoid this, use the 
+'--askpass' option, which will not set up ssh-keys, but WILL use established 
+ssh keys if they already exist. tnc does not work reliably without shared ssh 
+keys.
+
+Unless you use the '--unpack' option, files to be transferred (even 1) are
+concatenated to a tar file which is sent and then left as a tar file on
+the other end of  the connection.  ie the endpoint for both push and pull
+data transfers will  be *tar files* (compressed with 'xz' if you use the
+'--compress' option.)
+
+It can be used to both push and pull data from a remote connection, using
+only the  static IP end. 
+
+WARNINGS:
+- tnc DOES NOT ENCRYPT, nor does it compress data without being asked, 
+so it's only meant for NON-SENSITIVE data that can be sent in the clear. 
+Remote  connections are initiated via ssh, so the actual connection setup
+is encrypted. Because it uses netcat's open ports it also performs SHA 
+checksums on the data exchanged to make sure that the data stream has not 
+been poisoned or corrupted.
+
+- There are at least 3 versions of netcat in use: nc6, nc.openbsd,
+and nc.traditional.  tnc uses the OpenBSD version, the default on recent 
+versions of Ubuntu, CentOS, MacOSX and others, but not on Debian.  On Debian, 
+you'll have to install it explicitly and symlink it to '/etc/alternatives/nc'.
+
+- tnc uses the piped subprocess function of bash (tee >(shasum)) to do 
+inline SHA hash checking, so if your system lacks a recent bash, it may fail.
+Note that identical SHA hashes only verify that the same bytes exist on both
+ends.  Premature failure can truncate data, so the SUMMARY now includes the 
+# of bytes that were sent over the network as well.
+
+It supports the following options
+--askpass(off) .. use passwords, not ssh keys; don't try to set up ssh keys. 
+                  If functional ssh keys DO exist, they will be used.
+--compress(off) . invokes the '-J' option to tar which uses the 'xz' compressor.
+                  Helps significantly on low bandwidth connections (wifi), but 
+                  generally doesn't help on GbE networks.  Depends on the 
+                  compressibility of the data on 100Mb connections, but generally 
+                  not. Endpoint names will be suffixed with '.xz' if this option 
+                  is used, so don't pre-suffix the name. If you do, 'name.xz' 
+                  will be changed to 'name.xz.xz'
+--port(12345) ... sets the local and remote PORTs to this #.
+--help .......... emits this text
+--unpack(off) ... unpacks the transferred files at their endpoint. You specify 
+                  the dir under which it's supposed to be unpacked as the 
+                  remote target. If there is a writable dir of that name, 
+                  the stream will be NOT be unpacked into it unless the 
+                  '--unpack' option is used.
+--quiet(off) .... tries to be very silent
+--debug(off) .... very verbose about what's going on.
+
+Simple usage:
+
+Pushing data TO a remote server:
+--------------------------------
+(sources can be a mixture of files and dirs)
+tnc dir1  file1  dir2 file2   user@remotehost:/path/to/remote.tar
+ or
+tnc --unpack file1 file2 file3  user@remotehost:/path/to/unpack/dir
+ or
+tnc --compress geo*.dat  user@remotehost:/path/to/remote.tar
+(which will leave the remote archive as '/path/to/remote.tar.xz')
+
+Pulling data FROM a remote server:
+----------------------------------
+tnc  user@remotehost:'~/dir1/  /path/to/file*  ~/dir2/'  /local/path/to/tarball
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Note the single quotes surrounding the remote file spec.  You can use this to 
+specify discontiguous files and dirs to pull (and you must use single quotes to 
+specify the data to pull).
+
+The dynamic display during a transfer is from 'pv' and shows:
+
+ MB    time     instant
+sent   elapsed  bandwidth
+------------------------------
+ 116MB 0:00:10 [11.3MB/s]
+
+NB: tnc requires a static (or at least identifiable) IP on only one end of the 
+connection.  If you are at home, connecting thru a wireless router, and obtaining 
+your IP address dynamically, tnc should work as well, since the work is initiated 
+from the remote (static) IP #.
+
+------------------------------------------------------------------------------
+
+
 
 [[aspera]]
 Aspera ascp

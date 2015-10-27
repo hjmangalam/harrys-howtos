@@ -1,0 +1,643 @@
+= Academic File Storage, Backup, and Sync Services
+by Harry Mangalam <harry.mangalam@uci.edu>
+v1.2 - April 30, 2015
+:icons:
+
+//http://goo.gl/Tm5fKl
+
+// fileroot="/home/hjm/nacs/CloudStorage/cloud-storage"; asciidoc -a icons -a toc2 -b html5 -a numbered ${fileroot}.txt; scp ${fileroot}.html ${fileroot}.txt moo:~/public_html/CloudServicesForAcademics; scp /home/hjm/nacs/CloudStorage/services.venn.png moo:~/public_html/CloudServicesForAcademics/;
+
+// don't forget that the HTML equiv of '~' = '%7e'
+// asciidoc cheatsheet: http://powerman.name/doc/asciidoc
+// asciidoc user guide: http://www.methods.co.nz/asciidoc/userguide.html
+
+
+== Executive Summary
+
+- Lots of choices in commercial services & many do approximately what academic 
+    users need.
+- A few choices as http://en.wikipedia.org/wiki/Open-source_software[Open Source 
+    Software (OSS)], notably http://owncloud.org/[OwnCloud] or https://pyd.io[Pydio]
+    that may be appropriate & cost-effective as a campus service. 
+- Bandwidth and latency will play larger roles as 
+    http://moo.nac.uci.edu:~hjm/BigData4Newbies.html#_how_big_is_bigdata[BigData] 
+    in research becomes more important.  Both are much better within a campus 
+    than to remote commercial
+    services.  Only academic sites have access to high-speed research networks and the
+    difference in transfer speeds are on the order of 10-100x.
+- Raw storage costs continue to halve every 14 mo.
+- Administrative and user requirements are often at cross purposes and the 
+    end decisions are often administrative.
+- Any choice will result in a long-term vectoring and lock-in of substantial 
+    campus resources.
+- The best choice may not be an 'either/or' but split use of both local and 
+    commercial services where one will keep the other honest and responsive.
+
+== Introduction
+Academic file services have changed considerably over the years and administrative 
+support for those services have not kept up.  In response, many resarchers have gone 
+to easy-to-use commerical services like DropBox and Google Drive to satisfy their requirements, but even these have their limitations, legal as well as technological.  Read http://tagide.com/blog/2015/02/lab-cloudet-it-at-lab-scale/[a very good overview of the problem and solution] that http://www.ics.uci.edu/~lopes/[Dr. Crista Lopes of ICS] has documented, albeit with much more resources and technology chops than most researchers have.
+
+The first 6 sections of this document outline the important parameters of what
+an academic file service should provide, some background information, and enough
+points of contention to stimulate discussion.  Please feel free to jump around
+using the ToC headers &larr;.  The remaining sections 
+are of interest probably only to geeks and 
+http://en.wikipedia.org/wiki/The_Time_Machine#Plot[system morlocks].
+
+I will skip the obligatory warning of the ongoing and increasing 
+data deluge except to say that academic research is especially susceptible 
+to this increase in BigData and that 
+a lot of it is http://en.wikipedia.org/wiki/Unstructured_data[unstructured] (not a database)
+or semi-structured (often very large uncompressed ASCII text files).  
+A PhD thesis in the field of Genomics these days can easily involve handling 100TB 
+of data.
+
+Like any other organization, academics and students have personal and research 
+files and these tend to be intermingled since academics typically mix their personal and 
+professional lives on their devices - a variant on the 
+http://en.wikipedia.org/wiki/Bring_your_own_device[Bring Your Own Device (BYOD)] problem.
+
+This document addresses this messy situation as a whole as much as 
+possible.  It addresses academic storage in particular, but unless 
+there is a significant departure between academic needs and those of the general 
+population, I won't make a distinction.
+
+=== Bandwidth and Latency
+Most of the Cloud services mentioned here
+use network paths to/thru the commodity Internet with the result that streaming bandwidth 
+to these services tops out at 1-2 MB/s, some considerably less.  Streaming transfers thru
+Academic networks (http://www.internet2.edu/[Internet2], http://www.cenic.org/[CENIC], 
+http://www.cenic.org/page_id=66/[CalREN], etc) can be considerably faster, especially with
+tuned and http://en.wikipedia.org/wiki/Globus_Toolkit[Grid-enabled] applications 
+(30-100MB/s, coast to coast), but none of the commercial 
+resources have access to these networks to my knowledge.
+When dealing with local-to-UCI machines, we can often get close to wire speeds for 
+bandwith (10MB/s on 100MbE, 100MB/s on GbE.  Similarly, the latency (the time for 
+a signal to get from here to there) is much 
+less for local services.  Hence remote services will always seem very slow compared to 
+local services.  Caching proxies and other tricks can make this somewhat easier to 
+live with, but this is a basic characteristic of networking.
+
+This is made worse with multiple 'small file operations' since each one requires
+some connection setup and teardown .  For example, extracting the Linux 
+kernel (626MB in ~60K files) from the distribution tarball takes about 11 sec on a local disk.  
+The same operation via NFS to UCLA's CASS storage resource takes about 77 min, 
+a difference of about 400X.  For networking speeds, local is better.
+
+Further, many Local Area Network (LAN) protocols are blocked over Wide Area Networks 
+(WANs).  For example, the UCLA/CASS storage (link:#uclacass[below]) can supply UCLA's 
+campus with http://en.wikipedia.org/wiki/Server_Message_Block[SMB/CIFS] file storage as 
+the protocol is allowed inside the campus network, but is blocked external to their
+network.  Hence UCI's Mac and Windows clients cannot use the UCLA/CASS storage as 
+a fileserver.  UCI would have to run a local resource to provide that service.
+
+[[rawstoragecosts]]
+=== Storage Costs 
+Raw disk costs continue their long-term characteristic of halving about every 14 mo.
+image:backblaze-disk-cost.png[Backblaze Raw Storage Costs] 
+
+This makes comparison of commercial services costs difficult except as snapshots, or over time
+to get normalized trends.  However it may be worthwhile to describe the current costs of raw
+and usable storage on a local basis. Due to the offerings of the 
+commercial services in chunks of 100GB, I'll normalize the costs of raw storage to 
+100GB as well.
+
+- The end-user costs for a NAS-quality 4TB disk is $170, equaling $4.25/100GB. All of
+    this storage is available to the end user as a USB drive.
+- a 250TB storage array chassis with 72x4TB disks is $35K (the loss of the raw capacity of
+    288TB is due to parity disks and hot spares).  This resolves to $14/100GB initially, 
+    but over the course of the lifetime of 4yrs, it reduces to $3.5/100GB/yr.
+- currently, the cheapest commercial services for active data charge about $24/100GB/yr, 
+    or about 7x the basic cost of the storage.
+
+
+== Requirements for File Services
+There are 5 rough and overlapping areas of storage functionality that I'll address.
+
+=== Interactive file storage
+This file storage is most often associated with LAN-based file servers 
+where a Windows, Mac, or Linux client remote-mounts a 
+http://en.wikipedia.org/wiki/Server_Message_Block[SMB/CIFS] or 
+NFS filesystem and interacts with it
+as if it was a local filesystem.  Current cloud services such as 
+http://goo.gl/5Wzsnv[Google Drive] or https://www.dropbox.com/[DropBox]
+allow this functionality when using their native clients with the added ability to sync
+and/or share those files as well.  This kind of interaction is particularly sensitive
+to network latency when the type of work involves moving large chunks of data such as
+nonlinear editing of multimedia files, slicing and dicing of satellite data, and querying
+relational databases.
+
+
+=== File Sharing 
+This functionality is chiefly for collaboration where one party wants to share files with
+others.  https://www.dropbox.com/[DropBox] is a front-runner here, chiefly for the ease of its interface, but 
+UCI has dabbled with this kind of service by providing the commercial 
+https://webfiles.uci.edu/xythoswfs/webui[Webfiles] 
+which provides a limited amount of storage via a creaky, cranky interface.
+Users can share files via the native application in most cases or via the web via 
+URLs to the files (like https://www.dropbox.com/[DropBox], http://goo.gl/5Wzsnv[Google Drive], https://www.box.com/[Box]). 
+Problems with both commercial and 
+local implementations involve limitations on space and opaque interfaces so that 
+it is difficult to intuit which users or groups can do what with files.
+
+=== File Syncing
+This area is somewhat fuzzy - it usually means that changes in one file are propagated
+to all files, with only the bit that have changed moving across the network.  
+However, it could mean that the changes are realtime (as would be critical when co-editing
+a document) or delayed until a timed service activates (as is the case when a backup
+job starts).  Different services interpret this to mean different things.  
+
+=== Short Term Backup 
+This area covers short term backup such as incremental backups or snapshots (like 
+Apple's Time Machine) and personal disaster recovery.  This often includes syncing files
+across devices and easy client-side-initiated recovery.  Examples of this kind 
+of service are the Open Source Software (OSS) packages 
+http://backuppc.sourceforge.net/[BackupPC] and http://www.zmanda.com/[Zmanda], 
+and the commercial services http://www.code42.com/crashplan/[CrashPlan] and 
+https://www.backblaze.com[BackBlaze].
+    
+=== Long Term Backup 
+This addresses long term file archiving.  Files go in, stay in until required for disaster
+recovery  and include services like Amazon http://aws.amazon.com/glacier/[Glacier], 
+https://www.backblaze.com[BackBlaze], and http://www.code42.com/crashplan/[CrashPlan].  
+Often, the cost for these types of plans 
+are very low but with the expectation (often codified in the Service Level Agreement (SLA)) 
+that there will be little file retrieval without incurring additional costs.  
+Especially in the case of Amazon http://aws.amazon.com/glacier/[Glacier], there are few 
+client-side applications available to interact with the service directly, partly 
+because it has no
+external interfaces - you currently have to go thru 
+http://aws.amazon.com/s3/[Amazon's S3] storage system 
+to access http://aws.amazon.com/glacier/[Glacier], so 
+it is essentially an API that you have to provide code to support.  There are 
+some applications that 
+provide Graphical User Interfaces to it, typically as part of S3-specific File 
+Transfer Managers like
+https://cyberduck.io/?l=en[CyberDuck], http://www.dragondisk.com/[Dragondisk], and the like.  It is unlikely that any self-hosted system 
+could match the cost of such commercial long term archival services.
+
+Wikipedia has a good 
+http://en.wikipedia.org/wiki/Comparison_of_online_backup_services[Comparison of 
+Cloud Backup Services] in terms of features.  Note that http://aws.amazon.com/glacier/[Glacier] is not mentioned
+since it is an API, not a client-side service currently.
+
+There is considerable overlap among these services - for example, http://goo.gl/5Wzsnv[Google Drive] 
+allows syncing, and file sharing as well as file storage and co-editing of documents, 
+as does Microsoft's http://products.office.com/en-us/sharepoint/collaboration[SharePoint], 
+which aims to be the 'file-everything' for all 
+things Microsoft.  https://www.druva.com[Druva] is another that claims to be 'all-devices Enterprise-ready' for 
+sharing, syncing, & backup.
+
+
+image:services.venn.png[Venn Diagram of Some Cloud Providers]
+
+.Rough Venn diagram of the 5 functional areas
+and how some of the services fit into it.  Small text in Blue indicates how users 
+might have performed such functions in the past. Large Blue text in the Venn 
+diagram indicates Open Source packages or services that can be run locally.
+(http://moo.nac.uci.edu/~hjm/CloudServicesForAcademics/fileservices.venn.odg[LibreOffice diagram file here])
+
+
+
+== Important features
+From several days of googling, and informal interviews with friends, family, and 
+co-workers, I've come up with some general guidelines for these services.
+
+- *Ability to scale greatly*.  Many users have started quite small and then 
+    increased their storage dramatically once they became comfortable with
+    the interface. What works for a few files may not work for thousands.
+- *Support for very large files*.  With BigData, the size of files that might be transferred 
+    has increased tremendously so that files of 100s of GB are not uncommon.  Most cloud services 
+    have maximum file sizes of 2-5 GB so they wouldn't be useful for sharing such large files.
+- *Ease of user interface*, informative, like a native filesystem.  Most heavy user of 
+    such services like the native filesystem interface, although some web interfaces 
+    such as http://goo.gl/5Wzsnv[Google Drive] manage to replicate the feel fairly well, with Drag-n-Drop operations
+    implemented in the web page.
+- *Watch edits and co-editing*.  This only works with tight integration with the 
+    applications, which few of the services provide (Google, Sharepoint).
+- *Easy to set/show permissions* who can read, write, edit & delete (want a difference between 
+  write/edit ability and deletion to prevent wholesale deletion of files).
+- *Pay only for what you use*. Most of the services are based on fairly large incremental 
+    tiers so that once you cross the initial limit, you're liable for paying for 10X the amount 
+    or larger.  Paying for Bytes used is attractive.
+- *Sync/autosync across lots of devices*.  Very attractive feature for some, but only if 
+    manageable. (eg: Don't want to autosync a 100GB file to your phone).
+- *Direct web-availability*.  The ability to share certain files or dirs to collaborators 
+    and/or the public (to ppl NOT using the service) is a must-have.
+- *File versioning* like Apple's TimeMachine  or ZFS snapshots.
+- *High bandwidth*.  Without high bandwidth, large file support is almost meaningless.
+    Most commercial services are not set up for this kind of use case.
+- *Highly reliable*.  The point of servers and backups is that they are reliable archives.
+    This shouldn't be a point of contention.
+- *Multiple protocols* (NFS, CIFS, HTTP/HTPPS, Globus, FTP/SFTP, etc).  If the 
+    service is running inside an institutional firewall, it can provide protocols that 
+    would be forbidden across a WAN such as SMB/CIFS or other LAN-based protocols.
+- *Mac/Win/Linux clients*.  99% of the users will be Windows or Macs, but a large proportion 
+    of the shared files may well be from Linux machines and that will be increasing
+    as BigData gets bigger.
+- *Logging* to show who has accessed files and how.
+- *Security* - for files being shared, users are not so much concerned about on-server encryption, 
+    but don't want others accessing it.  For a backup service, users don't want ANYONE reading 
+    it, including the administrators since because of intermingling, things like 
+    tax returns, financial documents, medical records, passwords, etc will be included in 
+    the backups  so over-the-wire and encrypted storage is an absolute must-have.
+- *Integrated Apps* is a major plus for documnet, picture, and web editing. 
+- *Stateless/Connectionless storage* (or as nearly so as possible), so that 
+    laptops and mobile devices can open and close files regardless of current network
+    connections.  This is highly application-specific, but protocols such as WebDAV can 
+    provide a lot of this functionality.
+
+== Comparing Prices among Commercial Providers
+
+Beyond the cost of the raw storage link:#rawstoragecosts[mentioned above], the prices service providers charge 
+vary widely.  Since the price of raw storage halves every ~14mo, cloud storage pricing changes 
+almost weekly, so we would need across-the-board contemporaneous checks to see what the 
+long-term trends are.  At the current time, file sharing services range from 
+$24/100GB (http://goo.gl/5Wzsnv[Google Drive], https://www.apple.com/icloud/[iCloud]) to about $60/100GB 
+(https://www.dropbox.com/[DropBox]).
+Backup services vary dramatically, based on the service and target market.
+From unlimited storage for $5/mo (https://www.backblaze.com[BackBlaze]) to $60/100GB/yr (https://www.box.com/[Box], others) to 
+$1.1/100GB ('Amazon http://aws.amazon.com/glacier/[Glacier]').
+
+
+== Reputation and Failure History
+There have been cloud failures among all the major service providers, including 
+Google's http://goo.gl/mVJ3tl[2013 Gmail failure], the 
+http://aws.amazon.com/message/65648/[widespread 2011 Amazon EC2 failures], 
+Microsoft's http://goo.gl/emHhAE[semi-continuous struggle]
+to be able to scale their technology beyond the desktop, and the 
+http://goo.gl/Ci1AJ[odd CrashPlan Crash]
+
+Most of these were able to recover within hours, but in some cases, the outages extended into 
+multiple days and in one spectacular case, Microsoft essentially let a large acquisition
+go out of business due to their inability to recover from a 
+http://en.wikipedia.org/wiki/2009_Sidekick_data_loss[massive backup failure].
+
+So whatever the hosting service, there will almost certainly be data losses.  
+'You picks your horses, you takes your chances.'
+
+
+== Local or Commercial Services
+
+There are strong advantages to both and it will require a close examination of what
+each offers and perhaps even a local survey of users to determine which is more appropriate.
+This can roughly be broken down into the pros and cons for Administrators and Users, 
+who often have conflicting requirements.
+
+
+=== Local Installation
+
+==== Administrators
+For administrators, there are a lot of costs involved in implementing a local service.
+
+*Pros* +
+
+- May be much cheaper in the long term, depending on uptake. This can possibly be 
+    done cheaply long term by using vanilla hardware, OSS systems, including 
+    already existing OSS cloud systems (http://owncloud.org/[OwnCloud]  Openstack)
+- OSS systems prevent vendor lock-in.
+- Can use use scalable storage (BeeGFS, GPFS), so can scale up as storage as we 
+    need it, much like HPC storage system, with rsync to another on-campus system 
+    or geo-replication to a peer system in the UC system.
+- snapshotable / time machine functionality, using ZFS, LVM or other technologies
+- have the freedom to bill by usage, bill to individuals, to Departments, to Schools, etc
+- We can implement the kind of Security we want and implement the restrictions we need
+    regarding HIPAA, FERPA, and other restricted data, can provide encryption, 
+    LDAP authentication, etc
+- Local control may reduce legal costs by keeping everything under UC control.
+- Very attractive to funding agencies and archive requirements.
+- Very useful for data collaboration if the local installation can immediately provide 
+    web access to arbitrary files on the server-side.
+    
+
+*Cons* +
+
+- This would be a non-trivial installation, even using OSS systems.
+- Do local personnel have the requisite expertise and understanding of large 
+    systems and the budget to support them to the correct level?
+- If not, would require more FTEs to support such a system.  Probably 1 to start, 
+    more depending on uptake and services supported thru it.
+- Extra effort, expense to go into extra reliability, failover, 'High-Availability'.
+    This would be a mission-critical system, so doing it on the cheap would
+    not be advised.
+- While we could buy good hardware cheaply, we would still not be able to buy it 
+    as cheaply as Google.
+- Would require separate, additional services for short & long-term backup as opposed to 
+    file sharing options. 
+- Underlying storage would have to grow at ~1-5 TB/day for a university-wide service.
+- Administrative recharge system would have to be developed, if not part of the 
+    infrastructure.
+- Commercial services might be able to offset their cost with advertising, and 
+    re-selling customer information, which would not be available to us.
+
+
+==== Users
+
+*Pros:* +
+
+- Choice of protocol support; since it's local, can make files available via NFS, CIFS, 
+    Globus, http, ftp, rsync, etc.
+- MUCH higher bandwidth available to the storage by 10-100 fold.  Local clients could 
+    probably get close to full GbE wire speeds; high enough to do things like video editing
+    directly from the service.
+- Recharge directly to grants or other administrative funds, so wouldn't have to go thru 
+    3rd parties.
+- Local control means local modifications.  With user feedback, we could change rules,
+    quotas, groups, etc to make it much more usable much more quickly than commercial services
+- Local Humans on the other end of a support call.
+
+
+*Cons:* +
+
+- Not many cons.
+- University might have to charge higher prices to cover extra FTE, hardware initially.
+
+
+
+=== Commercial Systems
+
+==== Administrators
+
+*Pros* +
+
+- Cheap in the short term but possibly expensive in the long term in aggregate. 
+- However, the Admin can offload legal exposure and liability to service provider
+- Little HR liability
+- No Data Center requirements.
+- Can offload most expense onto clients directly.
+- Typically very reliable (except that all major providers have suffered 
+    fairly large outages (cloudbursts) and some have been catastrophic.
+
+*Cons* +
+
+- May require networking upgrades to allow better connectivity
+- Wider perception that inability to provide such services indicates overall 
+    lack of ability. (What 'can' OIT do, beside push the 'outsource' button?)
+- Little control over types of files, legality, exposure, administration, etc.
+- Almost no enforceable legal recourse.
+
+
+==== Users
+
+*Pros* +
+
+- Can start using a well-debugged system immediately.
+- Much cheaper than a system they could put together themselves
+- In general, the best systems work quite well, atho they may be very expensive for 
+    large-scale data sharing.
+- Application support much better than with a local installation.
+
+
+*Cons* +
+
+- No human on the other end for technical support.
+- Limits on file sizes may inhibit utility.
+- Total storage costs may become very high for sharing large amounts of data.
+- Flex/Spike usage impossible - you tend to have to buy into the next highest tier.
+
+
+
+== Local Sharing Services
+
+There is a fairly long personal evaluation 
+of some of the following self-hosted cloud file services 
+http://blog.patshead.com/2014/09/self-hosted-cloud-storage-comparison-2014-edition.html[posted 
+recently (Sept 22, 2014) here].  It includes links to other evaluations and even a 
+long podcast or two.  The upshot for now is that while some of these services 
+would probably be a good fit for a research group or even department, none of
+them are stable enough or scale well enough for a UC campus.
+
+The most popular or 
+
+=== OwnCloud
+The most popular local sharing service is called http://owncloud.org/[OwnCloud] 
+and it is available as http://owncloud.org/install/[source code], as a 
+https://bitnami.com/stack/owncloud[Bitnami installation package], and as 
+an Amazon service. It has Windows, Mac, and Linux desktop clients, as well as
+iOS and Android clients.  It uses http://en.wikipedia.org/wiki/WebDAV[Web 
+Distributed Authoring and Versioning] (aka WebDAV)for most of the 
+file transport protocol, allowing connectionless access to files. This is a fairly low
+performance protocol, but since the service operates at near-LAN speeds, it 
+can still be quite useful.  Both network traffic and storage is encrypted. 
+The file-level encryption  is useful if you then share files outside of OwnCLoud - the files stay encrypted until the reader provides the decryption key.
+
+It also allows you to add storage from various cloud services (Dropbox, SWIFT, FTPs, Google Docs, S3), tho that seems a strange attraction for a service whose main feature is that it's locally based).
+
+OwnCloud is old enough that it has developed apps that make it possible to co-author (in RichText) documents with up to 5 authors, much like Google Docs.
+
+http://goo.gl/8R3rhZ[A recent trade rag article] (free reg req) and a 
+Linux-oriented podcast that 
+http://linuxluddites.com/media/LinuxLuddites024.mp3[spends a 
+good amount of time on it] (starts ~1m:36s into the podcast).
+
+
+=== Pydio
+https://pyd.io[Pydio] is very similar to OwnCloud with an arguably better user interface and reportedly better performance on large numbers of files. However, it lags OwnCloud in development time and therefore installations, and therefore up to date reviews.  We will be testing it as well as the ongoing OwnCloud.
+
+
+[[uclacass]]
+=== UCLA / CASS
+UCLA has developed a https://idre.ucla.edu/cass[large campus storage system] that 
+provides local interactive file storage via NFS and SMB/CIFS as well as a Globus 
+endpoint and a http://www.code42.com/crashplan/[CrashPlan] server (see link:#crashplanucla[below]) that requires 
+extra cost licenses to use it.  They require a minimum purchase of 1TB (large relative to 
+other services) for $171, which is cheap for the space ($17/100GB/yr), but it's 
+a lot of space.  UCLA is networkologically close to UCI and while we can attain very fast 
+streaming transfer (up to \~90MB/s via https://www.globus.org/globus-connect[Globus 
+Connect], ~55MB/s via NFS).  However, while Globus can be used by all clients, NFS is generally 
+used only by Linux/Unix clients.  The preferred connection protocol for Mac and Win 
+clients ('SMB/CIFS') is blocked across most Wide Area Networks and so UCI clients 
+can not currently use UCLA's storage for interactively used files.
+
+
+== Local Backup services
+I have written about 
+http://moo.nac.uci.edu/~hjm/UCI_OSS_Backup_Evaluation.html[using local backup 
+services at length here].  It's 5 years old, but all of the 
+services are still available (unlike many commercial products that old) and the 
+rationale is still valid.
+
+
+== Commercial Long Term Backup Services
+
+=== Amazon Glacier
+As noted above, http://aws.amazon.com/glacier/[Glacier] is not currently a client-facing service; it was developed 
+as the backup system for http://aws.amazon.com/s3/[Amazon's S3 storage system] and 
+therefore is usually accessed programmatically internal to the 
+http://aws.amazon.com/ec2[EC2 system]. 
+
+http://aws.amazon.com/glacier/[Glacier] is designed with the expectation that retrievals are infrequent, 
+that data will go into it and stay there. You can retrieve up to 5% 
+of your average monthly storage for free each month. More on the 
+http://aws.amazon.com/glacier/faqs/#How_much_data_can_I_retrieve_for_free[fee structureHere]. 
+
+The cost of http://aws.amazon.com/glacier/[Glacier] storage is almost infinitesimal for individual docs - for a 
+100GB home dir, only a $1.  However, altho you get free transfer to AWS in same region,
+retrieval costs are pro-rated and complex and while they can be reduced by 
+spreading them over time, retrieval will generally be on the order of $10s, not $100s.
+However, when compared to the loss of 100GB of personal data, this is dirt cheap, 
+if partially offset by the difficulty and time to retrieve it.
+
+==== Glacier Clients
+While Amazon has not released any http://aws.amazon.com/glacier/[Glacier] clients, others have used the API
+to create a http://www.cloudwards.net/best-backup-tools-amazon-glacier/[few 
+user-oriented clients], including 
+
+- https://cyberduck.io/?l=en[Cyberduck], which has an Amazon S3 client, which 
+    can push data into the http://aws.amazon.com/glacier/[Glacier] staging area.
+- http://fastglacier.com/[FastGlacier] (Windows only)
+- https://github.com/MoriTanosuke/glacieruploader/[GlacierUploader], a multi-platform
+    client
+- a variety of other, mostly single-author, aging clients.
+All the clients besides 'FastGlacier' and 'CyberDuck' are single-user projects and not well supported.
+
+While http://aws.amazon.com/glacier/[Glacier] is very cheap, it is not trivial to access and use, even with 
+http://goo.gl/TR0Q8n[Step-by-Step Instructions]. Therefore, its use may be beyond the ability 
+(and certainly the patience) of most faculty.
+
+
+== Commercial Short Term Backup Services
+These services are mostly for short term backups and many of them have explicit 
+language in the SLAs that if you do not continuously use their service, they will
+delete your data after (usually) a few months of inactivity.
+
+=== Backblaze
+https://www.backblaze.com[Backblaze] has an interesting business model - they build their own 
+infrastructure and are remarkably open about how they carry out their business. 
+They also bill on a statistical model which allows unlimited backup for $5/mo (currently)
+ and while they only support Macs and Windows, their client is very easy to 
+configure and use, with much clearer documentation than http://www.code42.com/crashplan/[CrashPlan].  The client 
+is very snappy and does not give misleading estimates of time to complete, 
+just what's been done.  https://www.backblaze.com[BackBlaze] also allows you to back up local USB disks and 
+(for extra $) will also ship your files back to you on a disk .
+
+=== CrashPlan
+
+The http://www.code42.com/crashplan/[CrashPlan] combined client/server is writ in Java and runs smoothly on all platforms. 
+It's easy to install, tho impossible to select the 'free for 30 day trial'; 
+like many such 'free trials' you have to have to 1st 'buy' the month-by-month plan.
+
+The GUI is somewhat confusing since when you select 'Backup', doesn't execute 
+directly but waits for idle time, configurable via settings but not clearly 
+explained.  The backup time to the http://www.code42.com/crashplan/[CrashPlan] cloud, was ~3hr for 14 K files (9.1GB).  
+http://www.code42.com/crashplan/[CrashPlan] tries to estimate how long a backup will take, but since it depends on 
+many variables, it's almost a random guess.  
+
+A notable point about the http://www.code42.com/crashplan/[CrashPlan] system is that the free client is also a server. 
+You can install the same software to your own server and back up multiple clients to
+that server simply by providing the invitation key, using the same interface that the 
+commercial service provides.  This allows you to use a local server, speeding up 
+backups by a factor of 10-20 fold. This in itself is a very useful feature for a 
+small to medium sized research group.
+
+[[crashplanucla]]
+==== CrashPlan UCLA
+UCLA is offering a Crashplan client that backs up to it's campus 
+storage system.  You have to https://idre.ucla.edu/cass[rent the storage space] for 
+$170/TB/yr + the http://www.code42.com/crashplan/[CrashPlan] license is an extra $36 for a total of $206/TB/yr (or 
+$21/yr/100GB - still very cheap - comparable to http://goo.gl/5Wzsnv[Google Drive] - but this service 
+offers only 'http://www.code42.com/crashplan/[CrashPlan]' and there are few additional features, unlike http://goo.gl/5Wzsnv[Google Drive].
+
+=== Mozy
+https://www.mozy.com[Mozy] (now owned by EMC), provides simple free, tiny account, 
+hoping that you upgrade to a more expensive one.  A basic personal plan costs 
+$100/100GB/yr).  It has a pretty good interface (Mac, Win, iOS, Android) for 
+de/selecting files and backup in progress.   Like a few others, Mozy lets you use 
+their interface to back up to local USB disks with the same interface.
+
+
+== Commercial File Sharing Systems
+
+=== DropBox
+https://www.dropbox.com[DropBox] puts the emphasis on Sharing rather than backups.  
+However it is possibly the best known, widest multi-platform interface and is in widespread 
+use at UCI and elsewhere due to both its business plan and the ease of use and 
+integration of its clients.  It also has gone further than most in integrating 
+with other large cloud platforms such as FaceBook and Twitter.
+
+=== SugarSync
+https://www.sugarsync.com[SugarSync] is also very easy to use, with the emphasis on 
+syncing rather than backups.  It has no restrictions 
+on directory structure (not necessary to put all the files you want to share in 
+one dir) which helps to differentiate it from most other services. 
+It has no maximum file size which is good for sharing large data files, but is 
+fairly expensive ($100/yr/100GB/person).  No Linux support.
+
+=== Google Drive
+http://goo.gl/5Wzsnv[Google Drive] provides Windows and Mac clients, but only 
+limited Linux utility via 2nd sources.  The native clients integrate fairly well with
+the native filesystem and allow you to use 'Drive' as an additional storage if the 
+files are small.  If using gmail, you can search across mail and uploaded files.
+Also available for chromebook access.  Has some included apps including spreadsheets, 
+WP, etc. ($24/100GB/yr)
+
+The Linux clients are commandline only: https://github.com/Grive/grive[grive] 
+(a commandline Github project last updated in 2013), and 
+https://github.com/rakyll/drive[drive].  The actual bandwidth to Google is extremely 
+Internet-dependent.  On the day I was using it, it could move data at ~160-500KB/s ; 
+downloads were much faster, but only up to about 1-2MB/s
+
+=== Druva
+http://www.druva.com/[Druva] is much more business-oriented than most such services, 
+with emphasis on encryption, multiple users, reliability, support for 
+business-oriented devices, and speed.  
+It uses in-line deduplication to speed backups and reduce their size.  These features 
+would have limited advantages for research data.
+
+=== Amazon Cloud Drive 
+https://www.amazon.com/clouddrive/home[Amazon Cloud Drive] is the consumer version 
+of their S3 Cloud storage with various 
+add-ons like auto-ripping CDs that you've bought from them (~$50/100GB/yr).
+And http://aws.amazon.com/zocalo/[Amazon Zocalo] is the business version 
+($30/100GB/yr).
+
+=== Apple iCloud 
+https://www.apple.com/icloud/[iCloud] is designed primarily for buyers of Apple's iDevices, so their offerings
+are less price-sensitive than others and emphasize integration with Apple iProducts 
+and social media sharing.  Their current pricing is \~$60/100GB/yr, almost 3X Google's cost.
+
+=== Box
+https://www.box.com[Box] is more business oriented, with plans including multiple user
+access ($60/100GB/yrw/ for 3-10 users, with 2GB maximum file size).  Regardless of plan, 
+it has a 5GB maximum file size.
+
+=== Copy.com
+http://www.copy.com[Copy.com] provides MacWinLin clients, sharing among multiple users, 
+with the cost starting at a normalized ~$40/100GB/yr
+
+== OneDrive (nee' SkyDrive)
+https://onedrive.live.com/about/en-us/[OneDrive] is Microsoft's attempt at taking on the
+Cloud space.  It is competitive with the cheapest other cloud systems (at $24/100GB/yr)
+and if you buy 1TB of space for a year, you get the dubious pleasure of Office 365
+for free.  OneDrive offers Windows clients of course as well as Mac, iOS, and Android
+support, but despite Microsoft's recently professed love for Linux, support for 
+the 'Linux Cancer' is missing.
+
+
+
+== Appendix
+
+=== A few current Backup & Sharing services
+http://en.wikipedia.org/wiki/Comparison_of_online_backup_services[An 
+overview of some Cloud Backup Services]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

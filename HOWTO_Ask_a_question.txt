@@ -1,0 +1,195 @@
+How to ask for help with the HPC cluster
+========================================
+by Harry Mangalam <harry.mangalam@uci.edu>
+v1.1 - June 23th, 2015
+:icons:
+
+
+//Harry Mangalam mailto:harry.mangalam@uci.edu[harry.mangalam@uci.edu]
+// this file is converted to the HTML via the command:
+
+// fileroot="/home/hjm/nacs/HOWTO_Ask_a_question"; asciidoc -a icons -a toc2 -b html5 -a numbered ${fileroot}.txt; scp ${fileroot}.html ${fileroot}.txt moo:~/public_html;
+// scp ${fileroot}.html ${fileroot}.txt root@ghtf-hpc.oit.uci.edu:/data/hpc/www
+
+//    or in-place
+// fileroot="/data/hpc/www/HOWTO_Ask_a_question"; asciidoc -a icons -a toc2 -a numbered -b html5
+${fileroot}.txt
+// on hpc, it takes about 6s to convert
+
+// don't forget that the HTML equiv of '~' = '%7e'
+// asciidoc cheatsheet: http://powerman.name/doc/asciidoc
+// asciidoc user guide: http://www.methods.co.nz/asciidoc/userguide.html
+
+
+[[whatswrong]]
+How to ask a question
+---------------------
+Since HPC is a research cluster, it is in perpetual flux as hardware, apps, libraries, and modules
+are added, updated, and/or modified so often a bug will creep in where none existed before.  When
+you find something missing or a behavior that seems odd, please let us know.  You can
+mailto:hpc-support@uci.edu?Subject=HPC:[email the HPC admins here].
+
+Note that it will help considerably if you tell us more than 'It doesn't work', or 'I can't log
+in'.  If you want quick resolution of the problem, please send us as much relevant info as
+possible, including a description of 'what triggered the misbehavior'.  For us to help you, *we have
+to be able to re-create the problem*, so include the commandline you used, including all the
+options, the input and output file paths and preferably the command prompt which should include the
+node from which it was issued, and the time.
+
+If the misbehavior involves an error message, doing a Google search on *that error message* 
+will often produce the answer. (see
+http://moo.nac.uci.edu/~hjm/FixITYourselfWithGoogle.html[Fix IT yourself with Google].
+
+While many of you are not programmers, you're dealing with programs, and if we are to have any hope
+of debugging the process that caused the failure, the more info the better (usually).  PLEASE READ
+http://www.chiark.greenend.org.uk/~sgtatham/bugs.html[How to Report Bugs Effectively] before you
+report a failure.  At least glance at it.
+
+If you're going to spend a lot of time with computers, you should also read Eric Raymond's
+encyclopedic http://www.catb.org/~esr/faqs/smart-questions.html[How To Ask Questions The Smart
+Way].   It will be of use thru your life, not only for computers, but in many other domains as well.
+
+[[offcampus]]
+== Access to HPC
+Access to HPC is blocked from off-campus for security reasons. From off-campus, 
+you have to use a 
+https://en.wikipedia.org/wiki/Virtual_private_network[Virtual Private Network] connection.
+See http://www.oit.uci.edu/vpn/[UCI's VPN Web page] for more information 
+and to download the required VPN client software.  Or you can first ssh to an unblocked
+machine that's on the UCI network, THEN connect to HPC.
+
+[[localsupport]]
+== Local Computer Support
+Note that many such login problems are due to your local hardware and software 
+configurations.  If you have a local computer support person, s/he may be able to 
+help you faster than we can.  
+http://www.oit.uci.edu/help/csc/[Here is a list of such Computer Support People].
+
+[[infoweneed]]
+== The minimum information we need
+
+=== If it's a login problem:
+
+- where are you trying to log in FROM (from campus? from UHills? from Kansas?). If from
+offcampus, link:#offcampus[see above].
+- what kind of computer and Operating System you're connecting from is often useful, 
+ especially for connection-related problems.
+- what software are you using to connect and which version?
+- what command did you use (*exactly*)?
+- what was the error message (*exactly*)?
+- what did you find when you searched https://www.google.com/[Google] with that error message?
+
+=== If the error occurred on HPC:
+Please include this information:
+
+- the directory in which you're working ('pwd', if it's not in your prompt (see 
+link:#usefulprompt[below]))
+- the *FULL PATH* of files that you reference.  HPC has a huge file search space, even
+for a single user.
+- the machine  or node you're working on ('hostname', if it's not in your prompt')
+- the modules you've loaded ('module list')
+- the version of the software can also be useful.
+- the command you used (*exactly*) or if it was caused by a script, the *full path* to the script.
+- Break long commands into readable length with the use of the continuation 
+character "\".  ie: instead of one continuous line which will cause line breaks randomly:
+--------------------------------------------------------------------------------
+ $ make_2d_plots.py -i wetdry_cr/beta_diveuclidean/beta_div_euclideancoords.txt -m wetdry_cr/mapping_files/merged_mapping_data.txt -b 'Elevation' -o wetdry_cr/2dplots/elevation
+--------------------------------------------------------------------------------
+
+- format it like this, which shows how the arguments are called, with the matching
+filenames:
+--------------------------------------------------------------------------------
+ $ make_2d_plots.py \
+   -i wetdry_cr/beta_diveuclidean/beta_div_euclideancoords.txt \
+   -m wetdry_cr/mapping_files/merged_mapping_data.txt \
+   -b 'Elevation' \
+   -o wetdry_cr/2dplots/elevation
+--------------------------------------------------------------------------------
+
+- include the error that it caused (*exactly*), including the full path to the error files  
+if they were generated. SGE will drop error files in your $HOME dir named '
+"<SGE_NAME>.e<JOBID>"'.  You might also examine the contents of those files 
+before you call for help.
+- If the error was more than a few lines, copy/paste them into http://pastebin.com/[pastebin] 
+(or an http://www.techtricksworld.com/what-is-pastebin-10-pastebin-alternatives/[alternative] 
+and include the link generated rather than the pages of output. (Obviously, don't include sensitive
+information in public 'pastes'.)
+- copy the 'TEXT of the command and output' if possible. DO NOT send us a 
+screenshot of the commands unless you're using a graphics program and the problem 
+is more succinctly described with a screenshot (reason: it's harder to copy text from a screenshot.
+- much of this info can be automatically generated by a decent prompt and it also helps YOU by
+letting YOU know where you are (on what machine, in what dir).  
+
+[[usefulprompt]]
+=== Make your  prompt useful
+If you add one of the following *PS1* lines to your '~/.bashrc', it will speed 
+things up because you can just copy your prompt to supply a lot of the needed info:
+
+----------------------------------------------------------
+# the colorless short version that creates a prompt like this:
+
+# Thu Mar 20 14:48:47 hjm@stunted:~/Downloads
+# 522 $
+
+PS1="\n\d \t \u@\h:\w\n \! \$ "
+
+# the colorful longer version that creates a prompt like this:
+
+# Thu Mar 20 12:08:38 [0.68 0.70 0.64]  hjm@stunted:~/nacs
+# 556 $
+
+PS1="\n\[\033[01;34m\]\d \t \[\033[00;33m\][\$(cat /proc/loadavg | cut -f1,2,3 -d' ')] \
+ \[\033[01;32m\]\u@\[\033[01;31m\]\h:\[\033[01;35m\]\w\n\! \$ \[\033[00m\]"
+----------------------------------------------------------
+The above looks like this on a black background:
+image:long-color-bash-prompt.png[long color bash prompt] +
+where the numbers in the brackets indicate the [1m, 5m, & 10m] system load average, which is also
+useful for debugging problems.
+
+== Make sure that ...
+
+- You're on the right machine.  This is why we want the information about which machine you're on.
+- the files you're using have not been corrupted during transfer.  This is frequently the problem
+when transferring files from Windows machines with applications that do not do 
+automatic https://en.wikipedia.org/wiki/Newline[newline] conversion.  Use the 'file' 
+command to check whether there are DOS newlines.
+
+== Frequent mistakes
+
+=== Wrong machine
+People new to HPC often confuse which machine they are working on, especially
+if they are using a Mac.  This is why we want the information about which 
+machine shows up in your prompt. link:#usefulprompt[See above].
+
+=== DOS newlines
+Check that your input files don't have https://en.wikipedia.org/wiki/Newline[DOS newlines].
+    Use the 'file' utility to examine the files.  
+----------------------------------------------------------
+$ file /path/to/suspect_file.txt 
+/path/to/suspect_file.txt : ASCII text, with CRLF line terminators
+
+# If output contains the phrase above:  ^^^^^^^^^^^^^^^^^^^^^^^^^^
+# then it needs to be converted to Linux newlines with 'dos2unix'
+
+$ dos2unix /path/to/suspect.txt
+$ file /path/to/suspect.txt
+/path/to/suspect.txt: ASCII text
+----------------------------------------------------------
+
+=== Forgetting 'module load'
+
+All applications in the 'module' system have to be set up by requesting 
+HPC's module system do so so. So if you wanted to run R, version 3.2.1, you would 
+have to enter the module command:
+
+*module load R/3.2.1*
+
+At that point the environment for that version of R is set up and you can start *R*
+in the usual way:
+
+*R*
+
+Note that omitting the version number will load the *numerically highest* version available
+which is often NOT the latest version since many versioning schemes use non-numerically 
+increasing series. It's safest to be explicit which version you want.
+

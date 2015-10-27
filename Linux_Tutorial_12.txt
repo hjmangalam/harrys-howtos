@@ -1,7 +1,7 @@
 A Linux Tutorial for HPC
 ========================
 by Harry Mangalam <harry.mangalam@uci.edu>
-v1.27 - Jan 20, 2015
+v1.30 - Oct 11, 2015
 :icons:
 
 //killing jobs on same node
@@ -200,6 +200,12 @@ OK - let's do something.
 setxkbmap -model evdev -layout us
 -----------------------------------------------------------------
 into the terminal will often fix the mappings.
+
+Also, it's not an editing command, but you might accidentally type it when you're 
+editing:
+
+- '^s' = means stop output from scolling to the terminal (locks the output)
+- '^q' = means restart output scolling to the terminal (unlocks the output)
 
 === Copy and Paste
 The 'copy' and 'paste' functions are different on different platforms (and even 
@@ -466,7 +472,15 @@ nano/joe/vi/vim/emacs    # terminal text editors
 gedit/nedit/jedit/xemacs # GUI editors
 --------------------------------------------------------------------------------
 
-
+=== The File Cache
+When you open a file to read it, the Linux kernel not only directs the data to 
+the analytical application, it also copies it to otherwise unused RAM, called
+the filecache.  This assures that the second time that file is read, the data 
+is already in RAM and almost instantly available.  The practical result of this 
+caching is that the SECOND operation (within a short time) that requests that 
+file will start MUCH faster than the first.  A benefit of this is that
+when you're debugging an analysis by repeating various commands, doing it multiple
+times will be very fast.
 
 [[ioredirection]]
 == STDOUT, STDIN, STDERR, and Pipes
@@ -474,9 +488,12 @@ gedit/nedit/jedit/xemacs # GUI editors
 These are the input/output channels that Linux provides for communicating among 
 your input, and program input and output
 
-- *STDIN*, usually attached to the keyboard.  You type, it goes thru STDIN and shows up on STDOUT
-- *STDOUT*, usually attached to the terminal screen.  Shows both your STDIN stream and the program's STDOUT stream as well as ...
-- *STDERR*, also usually connected to the terminal screen, which as you might guess, sometimes causes problems when both STDOUT and STDERR are both writing to the screen.
+- *STDIN*, usually attached to the keyboard.  You type, it goes thru STDIN and 
+shows up on STDOUT
+- *STDOUT*, usually attached to the terminal screen.  Shows both your STDIN stream 
+and the program's STDOUT stream as well as ...
+- *STDERR*, also usually connected to the terminal screen, which as you might 
+guess, sometimes causes problems when both STDOUT and STDERR are both writing to the screen.
 
 
 BUT these input & output channels can  be changed to make data dance in useful ways.
@@ -487,7 +504,8 @@ There are several IO redirection commands:
 - *>* writes STDOUT to a file
 - *>>* appends STDOUT to a file
 - *|* pipes the STDOUT of one program to the STDIN of another program
-- *tee* splits the STDOUT and sends one of the outputs to a file.  The other output continues as STDOUT.
+- *tee* splits the STDOUT and sends one of the outputs to a file.  The other 
+output continues as STDOUT.
 
 - *2>* redirects STDERR to file
 - *2>>* appends STDERR to file
@@ -543,6 +561,26 @@ Pipes allow you to mix and match output and input in various useful ways.
 Remember STDOUT/STDIN when you're designing your own programs so you can
 format the output and read the input in useful ways down the road.
 
+=== tee, subshells, and pipes.
+
+As alluded to above, 'tee' taps the STDOUT and sends one copy to a file (or set of files)
+and allows the other copy to continue to STDOUT.  This allows you to duplicate the 
+STDOUT to do all kinds of useful things to keep your data 'in flight'.
+
+'tee' is especially useful in conjunction with subshells - starting a new shell to process 
+one branch of the 'tee' while allowing the STDOUT to continue to other analyses. 
+The use of subshells is one way to allow arbitrary duplication of output as shown
+below:
+------------------------------------------------------------------------------
+tar -czf - nco  |  pv -trb | tee >(tee >(shasum > sha.file) | wc -c > wc.file)  > /dev/null
+
+# what does this do?  What is /dev/null? How would you figure it out?
+------------------------------------------------------------------------------
+
+so the format is *| tee >(some chain of operations)*, repeated as needed, including another 
+'tee'.  On the right side of the last ')' is the STDOUT and you can process it 
+in any way you'd normally process it.
+
 == Text files
 
 Most of the files you will be dealing with are text files.
@@ -592,11 +630,16 @@ You can create a text file easily by capturing the STDOUT of a command.
 
 In the example above, you could have captured the STDOUT at any stage by redirecting it to a file
 --------------------------------------------------------------------
-ls -lR |scut -F=4 | stats
+# We use '/usr/local/bin' as a target for ls because if you do it in
+# your own dir, the 1st command will change the file number of and size
+# and result in a sligtly different result for the second.  
+# '/usr/local/bin' is a stable dir that will not change due to this command.
+
+ls -lR /usr/local/bin |scut -F=4 | stats
 
 # could have been structured (less efficiently) like this:
 
-ls -lR > ls.out
+ls -lR /usr/local/bin > ls.out
 scut -F=4 < ls.out > only.numbers
 cat only.numbers | stats
 
@@ -728,7 +771,10 @@ Linux editors that support rectangular selection
 |========================================================================================
 
 === Finding file differences and verifying identity
-Quite often you're interested the differences between 2 related files or verifying that the file you sent is the same one as arrived.  'diff' and especially the GUI wrappers (diffuse, kompare) can tell you instantly.
+Quite often you're interested the differences between 2 related files or verifying 
+that the file you sent is the same one as arrived.  'diff' and especially the 
+GUI wrappers (diffuse, kompare) can tell you instantly.
+
 --------------------------------------------------------------------------------
 diff file1 file1a          # shows differences between file1 and file2
 diff hlef.seq hlefa.seq      # on hpc
@@ -737,6 +783,13 @@ diff hlef.seq hlefa.seq      # on hpc
 
 diff -r path/to/this/dir   path/to/that/dir > diff.out &
 
+# 'comm' takes SORTED files and can produce output that says which line
+# is in file 1, which is file 2 & which is in both.
+
+ie:
+comm  file1.sorted file2.sorted
+
+# md5sum generates md5-based checksums for file corruption checking.
 
 md5sum files           # lists MD5 hashes for the files
 # md5sum is generally used to verify that files are identical after a transfer.
@@ -840,7 +893,9 @@ Because 'byobu' invokes some deep magic to set up the multiple screens, X11 grap
 
 
 == Finding files with 'find' and 'locate'
-Even the most organized among you will occasionally lose track of where your files are.  You can generally find them on HPC by using the 'find' command:
+Even the most organized among you will occasionally lose track of where your files are.  
+You can generally find them on HPC by using the 'find' command.  'find' is a very fast and 
+flexible tool, but in complex use, it has some odd but common problems with the bash shell.
 --------------------------------------------------------------------------------
 # choose the nearest dir you remember the file might be and then direct find to use that starting point
 find [startingpoint] -name filename_pattern
@@ -855,8 +910,47 @@ gluster-sw/src/glusterfs-3.3.0/argp-standalone/configure
 gluster-sw/src/glusterfs-3.3.0/argp-standalone/configure.ac
 gluster-sw/src/glusterfs-3.3.0/xlators/features/marker/utils/syncdaemon/configinterface.py
 
+--------------------------------------------------------------------------------
 
-# 'locate' will work on system files, but not on user files. Useful for looking for libraries,
+You can also use find to do complex searches based on their names, age, etc.
+
+Below is the command that finds
+
+- zero sized files (any name, any age)
+- files that have the suffix '.fast[aq]', .'f[aq]', '.txt', '.sam', 'pileup', '.vcf'
+- but only if those named files are older than 90 days (using a bash variable to 
+pass in the '90')
+
+The '-o' acts as the 'OR' logic and the '-a' acts as the 'AND' logic.
+Note how the parens and brackets have to be *escaped* and the command is split over 
+multiple lines with the same backslash, but note that at the end of a line, it
+acts as a 'continuation' character, not an 'escape'.  Yes, this is confusing.
+
+[source,bash]
+------------------------------------------------------------
+DAYSOLD=90
+find .  -size 0c \
+	-o \( \
+	\( -name \*.fast\[aq\] \
+	-o -name \*.f\[aq\]  \
+	-o -name \*.txt  \
+	-o -name \*.sam  \
+	-o -name \*pileup \
+	-o -name \*.vcf \) \
+	-a -mtime +${DAYSOLD} \)
+------------------------------------------------------------
+
+'locate' is another very useful tool, but it requires a full indexing of the 
+filesystem (usually done automatically every night) and will only return 
+information based on the permission of the files it
+has indexed.  So you will not be able to use it to locate files you can't read.
+
+In addition, 'locate' will have limited utility on HPC because there are so many
+user files that it takes a lot of time and IO to do it.  It is probably most useful 
+on your own Linux machines.
+--------------------------------------------------------------------------------
+
+# 'locate' will work on most system files, but not on user files. Useful for looking for libraries,
 # but probably not in the module files
 
 locate libxml2 |head   # try this
@@ -969,6 +1063,17 @@ zip nco_src nco-4.2.5
 # how do you tell?
 ---------------------------------------------------------------------------
 
+
+== kdirstat
+http://kdirstat.sourceforge.net/[kdirstat] is a very good filesystem visualization tool that allows you view 
+and sort your files in a number of useful ways:
+
+image:http://moo.nac.uci.edu/~hjm/kdirstat/kds-options.png[kdirstat: interactive options]
+
+You can also use it to query 
+files for what they are and most importantly, archive them in the background.
+See http://moo.nac.uci.edu/~hjm/kdirstat/kdirstat-for-clusters.html[this 
+separate doc] for more information as to how to do this.
 
 
 == Getting files from specific accounts
@@ -1131,8 +1236,8 @@ can contain:
 
 - numeric values (156, 83773.34 3.5e12, -2533)
 - strings ("booger", "nutcase", "24.334", "and even this phrase")
-- lists or arrays ([12 25 64 98735 72], [238.45 672.6645 0.443 -51.002] or 
- ["if" "you" "have" "to" "ask" "then" "maybe" "..."].
+- lists or arrays like (12 25 64 98735 72), (238.45 672.6645 0.443 -51.002) or 
+ ("if" "you" "have" "to" "ask" "then" "maybe" "...").
 
 Note that in lists or arrays, the values  are of the same type (integers, floats, 
 strings, etc). Most languages also allow the use of more highly complex data 
@@ -1237,10 +1342,35 @@ For very simple actions and iterations, especially for apply a set of
 commands to a set of files, bash is very helpful.  For more complicated 
 programmatic actions, I strongly advise using Perl or Python.
 
+=== arrays in bash
+
+Arrays in bash are similar to other programming languages
+
+[source,bash]
+-------------------------------------------------------
+# they can be declared in list format - declare all the variables at once:
+arr=("if" "you" "have" "to" "ask" "then" "maybe" "?")
+# and then accessed in a similar way:
+echo ${arr[3]}
+
+# what happens if you echo an array element without the '{}'? ie:
+echo $arr[3]
+
+# or assigned in random order
+rarr[43]="2x45"
+echo ${rarr[43]}
+# was '90' echoed?  why not?
+# what happens if you try:
+echo ${rarr[42]}
+# why?
+
+# what does this do? why?  see why all the bits work together?
+for ii in {8..0}; do echo -n "element $ii =>  "; echo ${arr[$ii]}; done
+-------------------------------------------------------
 
 
 [[qsub]]
-== Simple 'qsub' scripts
+== qsub scripts
 For all jobs that take more than a few seconds to run, you'll be submitting them 
 to the Grid Engine Scheduler. In order to do that, you have to write a short 
 bash script that describes what resources your job will need, how you want your 
@@ -1267,6 +1397,8 @@ your favorite editor, checked for bad newlines, and then submitted to the schedu
 command.  Before you qsub the file, make sure that all the bash commands execute in your 
 shell as normal commands.
 If the commands  don't work in your shell, they won't work in the qsub script.
+
+=== A simple qsub script
 
 .A simple self-contained example qsub script
 [source,bash]
@@ -1313,6 +1445,8 @@ directories that refer to 'me'.  You may not be able to write to these
 directories, etc.  Please change the values to refer to YOUR permissions, etc.
 
 [[annotatedqsub]]
+=== A more complex annotated qsub script
+
 .Annotated qsub script
 [source,bash]
 -------------------------------------------------------
@@ -1342,20 +1476,34 @@ directories, etc.  Please change the values to refer to YOUR permissions, etc.
 #!! other files, depending on how the app was written.
 
 # You may use the following email notifications ONLY IF you're NOT using array jobs.  
-# If you're using array jobs !!ABSOLUTELY DO NOT!! USE email notification!!
+# If you're using array jobs !!ABSOLUTELY DO NOT USE email notification!!
 
 # mail me (hmangala@uci.edu)
 #$ -M hmangala@uci.edu
 # when the job (b)egins, (e)nds, (a)borts, 
 #$ -m bea
 
-#!! Now note that the commands are bash commands - no more hiding them behind '#$'
+###### END SGE PARAMETERS  ######
+
+###### BEGIN BASH CODE  ######
+
+#  no more hiding them behind '#$'
+
+# NOTE1: if a bash variable can /possibly/ be misinterpreted in a string,
+# use the 'braced' version of it: ${VAR} instead of $VAR
+
+# NOTE2: DOUBLE quotes ("") allow variable substitution
+#        SINGLE quotes ('') do not.
+# in the uncommented line below, "${USER}" would substituted for your username,
+# 'hjm' for example, but '$USER' or even '${USER}' would not - it would
+# be passed thru as a literal $USER or ${USER}
+ME="${USER}"
 
 # set a temporary output dir on the LOCAL /scratch filesystem (so data doesn't cross the network)
 # note - no spaces around the '='
 # the diff between TMP and TMPRUN is that TMP is where any TEMPORARY files are written and
 # TMPRUN is where the output files are left (which then have to be copied back to 'safe' storage.)
-TMP=/scratch/hmangala
+TMP=/scratch/${ME}
 # We'll name the job subdir the same as the jobname
 TMPRUN=${TMP}/${JOB_NAME}
 
@@ -1381,7 +1529,7 @@ module load guppy/2.3.44
 guppy --input=${INDIR}/input_file --outdir=${TMPRUN}  --scratchdir=${TMP} --topo=flat --tree --color=off --density=sparse
 
 # get a datestamp
-DATESTAMP=`date|tr /\ / /_/`
+DATESTAMP=`date +%Y-%m-%d:%H:%M:%S` # no spaces in case we need that format
 
 # generate md5 checksums of all output data to be able to
 # check for corruption if anything happens to the filesystem, god forbid.
@@ -1393,7 +1541,7 @@ md5deep -r $TMPRUN > ${MD5FILE}
 cp ${MD5FILE} ${TMPRUN}
 
 # mail the md5sums to yourself for safekeeping
-cat ${MD5FILE} | mail -s "${MD5FILE} from HPC"" hmangala@uci.edu
+cat ${MD5FILE} | mail -s "${MD5FILE} from HPC" hmangala@uci.edu
 
 # after it finishes, tar/gzip up all the data
 TARBALL=${TMP}/${JOBNAME}-${DATESTAMP}-guppy.tar.gz
