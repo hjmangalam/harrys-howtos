@@ -1,0 +1,22 @@
+An Introduction to the HPC Computing Facility
+=============================================
+by Harry Mangalam <harry.mangalam@uci.edu>
+v1.45 - Jan 20, 2015
+:icons:
+
+
+//Harry Mangalam mailto:harry.mangalam@uci.edu[harry.mangalam@uci.edu]
+// this file is converted to the HTML via the command:
+
+// fileroot="/home/hjm/nacs/HPC_USER_HOWTO"; asciidoc -a icons -a toc2 -b html5 -a numbered ${fileroot}.txt; scp ${fileroot}.html ${fileroot}.txt moo:~/public_html;
+// scp ${fileroot}.html ${fileroot}.txt root@ghtf-hpc.oit.uci.edu:/data/hpc/www
+
+//    or in-place
+// fileroot="/data/hpc/www/HPC_USER_HOWTO"; asciidoc -a icons -a toc2 -a numbered -b html5
+${fileroot}.txt
+// on hpc, it takes about 6s to convert
+
+// don't forget that the HTML equiv of '~' = '%7e'
+// asciidoc cheatsheet: http://powerman.name/doc/asciidoc
+// asciidoc user guide: http://www.methods.co.nz/asciidoc/userguide.html
+
