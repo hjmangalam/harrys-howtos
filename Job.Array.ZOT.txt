@@ -1,0 +1,156 @@
+// Job Array ZOT              
+// --------------------------------------------------------------------
+// Created this doc for our galaxy setup here at UCI / OIT for the RCS 
+// group.
+// 
+// Command:
+
+// for hjm's copies
+// TARGET=hjm@moo:~/public_html ; \
+// FILEROOT=/home/hjm/nacs/Job.Array.ZOT ; \
+
+// TARGET=/data/hpc/www/guides ; \
+// FILEROOT=/data/users/aebrenne/www-files/Job.Array.ZOT ; \
+
+// asciidoc -b html5 -a icons -a toc2 -a numbered ${FILEROOT}.txt; scp ${FILEROOT}.txt ${FILEROOT}.html  ${TARGET}
+//
+// asciidoc cheatsheet: http://powerman.name/doc/asciidoc
+// asciidoc user guide: http://www.methods.co.nz/asciidoc/userguide.html
+
+// Following line executed from hpc-s will test it.
+// cf --tar=c3up '/data/hpc/bin/flocktest.sh | /data/hpc/bin/flockwrite.pl /bio/hmangala/testfile'
+
+// @author	Adam Brenner <aebrenne@uci.edu>
+// @url		http://www.ics.uci.edu/~aebrenne/ 
+// @version	1.0
+
+Avoiding the Zillions of Tiny (ZOT) Files Problem
+=================================================
+Adam Brenner <aebrenne@uci.edu>, http://www.ics.uci.edu/~aebrenne/ 
+v1.1, 2013-09-10
+
+It's common in cluster enviroments like http://hpc.oit.uci.edu/[HPC], for processes to produce 'Zillions of Tiny (ZOT) files', often when running http://wiki.gridengine.info/wiki/index.php/Simple-Job-Array-Howto[Job Arrays] via the scheduler. Users often use the filename as crude checkpointing or workflow control.  Often these files are only a few bytes long, leading to tens of thousands of such files being created during a run.  The problem is the overhead to perform disk operations on these files -- read, write, directory listing, transfering directories, becomes overwhelming to the system leading to rare cases when the OS or applications will time out waiting for these file ops to complete. This document will address the issue of ZOT files as well as provide solutions that use 'file locking' to allow many jobs to write to the same file without loss of data.
+
+:numbered:
+ZOT Files and Job Arrays
+------------------------
+
+In a cluster analysis, it's not uncommon for users to produce multiple directories of 20,000+ files where each file is only a few bytes. When performing disk operations on these directories (reads, writes, listing, copies, & moves), the overhead is extremely costly when multiplied by all files contained in it. In extreme cases, the file system may run out of spare http://en.wikipedia.org/wiki/Inode[inodes] despite the disk not being full. 
+
+It's common with clusters that use distributed file systems like HPC's http://www.gluster.org[GlusterFS] for  multiple compute nodes to read from and write to a single directory or even to a single file simultaneously. When the file system receives tens of thousands of requests from multiple nodes, delays eventually propagate during the synchronization and may cause some jobs to fail to read and write correctly due to to default timeout periods.  These are quite rare, but we see these kinds of failures frequently due to the large number of jobs being run.
+
+We strongly suggest that instead of using ZOT files as a synchronization or logging technique, that you write your jobs to use a single file as output and control the access to it with  http://en.wikipedia.org/wiki/File_locking[file locking]. 
+
+:numbered:
+File Locking with Multiple Processes Writing to a Single File
+-------------------------------------------------------------
+
+File locking is a file system level flag that allows only allows a single process to read or write at one time. For example, you can set this flag so a process cannot write to a file that is already being written to; you can assure that one process has finished writing before another starts. By using file locking, we can  guarantee http://en.wikipedia.org/wiki/Mutual_exclusion[mutual write exclusion] or 'mutex' so that no two processes are writing to the same file at the same time. In the case where multiple processes on the same (or even different) node(s) try to write to a file that is locked, all processes will wait their turn to write to the file until the access flag is unlocked by the process that locked it.
+
+File locking will guarantee that when running large number of array jobs, each write will be completed and  no simultaneous contention will occur during the process.
+
+:numbered:
+File Locking in Perl
+~~~~~~~~~~~~~~~~~~~~
+
+In http://www.perl.org[Perl] the file locking ability exists in the +flock+ library. By using the +flock+ library, we are able to set the file attributes for the file system, eliminating the ZOT problem and guarantee that only one process can write to a file. The available +flock+ parameters are listed below.
+
+.Flock Paramenters
+[width="100%",options="header"]
+|==============================
+| Code  | Meaning
+| 1     | Shared Lock
+| 2     | Exclusive Lock
+| 4     | Non-blocking
+| 8     | Unlock
+|==============================
+
+Below is a sample Perl script that can write data to a single file from all our array jobs.  The important part is the use of the +flock+ function +flock(DATA, 2)+ and the +close DATA;+ function once the data has been written. This code snippet attempts to write to a file but if the file is already locked, it will wait untill it's available. After it acquires the lock, it will write the data to the file and once done, close the file, and finally surrender the lock to the next process.
+
+.Skeleton flock Script - skel-flockwrite.pl
+[source,perl]
+-------------------------------------------
+#!/usr/bin/env perl
+
+if(($#ARGV + 1) == 2) {
+    $sharedFile = $ARGV[0];
+    $data       = $ARGV[1];
+} else {
+    print "$0 requires two paramenters, filename and data.\n";
+    exit 1;
+}
+
+writeToFile();
+
+sub writeToFile {
+    
+    open(DATA, ">>", "$sharedFile") or die("Could not open $sharedFile");
+    flock(DATA, 2)                  or die("Could not lock file");
+                                    # Pb(1) lock the file, I am writing
+    print DATA "$data\n"            or die("Could not write to memory");
+    close DATA;                     # Vb(1) unlock the file and release.
+}
+
+exit 0;
+--------------
+
+The above script takes 2 arguments
+
+- the common output filename 
+- the data to be written to the file
+
+and then keeps trying to write to the file until it's successful.  Another example that may work better is shown below.
+
+
+A use case for this kind of script would be to redirect all necessary output from your workflow to the above program and pass it as a string to the second argument. The first argument would be the path/name of the file to write to.  So rather than writing 1000 files with 'names' that indicate parameters (all too common) such as '1_var1_var2_var3_var4.data' which contains only a few hundred bytes of actual data, you could compose an output string like this:
+
+--------------------------------------------------------
+date:time:var1:var2:var3:var4:data1:data2:data3:etc
+--------------------------------------------------------
+
+and then have all 5000 of your array jobs write to *ONE* file like this:
+
+--------------------------------------------------------
+/path/to/your/app | skel-flockwrite.pl /path/to/output/file/name
+--------------------------------------------------------
+When you write your qsub scripts, all jobs would use the 'same' output file, taking turns to 
+
+- open the file
+- lock it against write access by others
+- write their data
+- and then close/unlock the file so that the next process can use it.  
+
+While this sounds slightly insane - a traffic jam on steroids - it works surprisingly well with the locks rarely even being causing refusals.  
+
+
+zotkill.pl, a microsleeping, file-locking utility 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Here is the http://moo.nac.uci.edu/~hjm/zotkill.pl[complete source for zotkill.pl], a script that is a bit more sophisticated than the skeleton above.  You pipe your data to it, giving it the name of your output file, and it will coordinate with the other processes trying to write to it so that all of them get to write.  It's been tested with 9 processes on different nodes all writing 1000 data packets to the same file and it seems to work.
+
+You use it like this in your qsub script:
+
+--------------------------------------------------------
+INFILE=/path/to/your/input/file
+module load booboo # if you needed to load booboo
+/path/to/your/app --opt1  --opt2 < $INFILE | zotkill.pl /path/to/shared/filename
+-------------------------------------------------------- 
+
+You would be only be responsible for having your app write the data in a parsable format - one which you can extract the useful data via field-separation tokens; alternatively, if you are the author of the app, it could use the same technique internally to handle the filenaming and output formatting.  You might want to write the ProcessID or SGE job number to be able to sort the output data (there would be no guarantee that PID 192992 would write immediately after 192991 (and in fact it would be unlikely), but post-processing, it would be easy to discriminate between jobs using this technique. 
+
+
+
+:numbered:
+File Locking in other Languages
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+File locking for other languages to exist. For example, in Python you would use http://docs.python.org/2/library/fcntl.html#fcntl.lockf[fcntl.lockf]. 
+In Java you would use the class http://docs.oracle.com/javase/6/docs/api/java/nio/channels/FileLock.html[FileLock]. 
+
+In C and C++, it's more complicated due to the variety of functions & implentations available and conditions addressed. http://stackoverflow.com/questions/575328/fcntl-lockf-which-is-better-to-use-for-file-locking[Here is a decent (if incomplete) discussion] of the problem and some suggestions.
+One suggestion that seems to be fairly well supported is the use of http://man7.org/linux/man-pages/man3/flockfile.3.html[flockfile() or ftrylockfile()].  The former is an unconditional lock, the latter a non-blocking lock.  http://stackoverflow.com/questions/8717490/is-a-sync-flush-needed-before-writes-to-a-locked-file-from-multiple-threads-proc?rq=1[Here is a discussion of this case]. 
+
+
+
+Help with ZOT or File Locking
+-----------------------------
+If you need help understanding ZOT files or using file locking, please contact Harry Mangalam <harry.mangalam@uci.edu> or Adam Brenner <aebrenne@uci.edu>. If you need the ability to also read back data as part of your work flow, contact Harry and Adam for a more in-depth solution.

@@ -1,19 +1,25 @@
 How to transfer large amounts of data via network.
 ==================================================
 by Harry Mangalam <harry.mangalam@uci.edu>
-v1.25 Aug 17, 2015
-
+v1.35 May 7 2017
+:icons:
 // last linkchecked  May 16th, 2013
 
 // Harry Mangalam mailto:harry.mangalam@uci.edu[harry.mangalam@uci.edu]
 // Convert this file to HTML & move to it's final dest with the command:
-// export fileroot="/home/hjm/nacs/HOWTO_move_data"; asciidoc -a icons -a toc2 -b html5 -a numbered ${fileroot}.txt; scp ${fileroot}.[ht]* moo.nac.uci.edu:~/public_html
+// export fileroot="/home/hjm/nacs/HOWTO_move_data"; asciidoc -a icons -a toc2 -a toclevels=3 -b html5 -a numbered ${fileroot}.txt; scp ${fileroot}.[ht]* moo.nac.uci.edu:~/public_html
 
 // and push it to Wordpress:
 // blogpost.py  update  -c HowTos ${fileroot}.txt
-:icons:
+
+// git status  # check the status with github
+// git add [files to include in the update]
+// git commit -a # commits the changes and adds the comments for the push
+// git push # to push changes back to github
 
 // TODOs:
+// btsync
+// 
 // - mbuffer (netcat work-alike:
 //   <http://www.maier-komor.de/mbuffer.html> & pigz
 // - bit about fpart & kdirstat for segmenting file trees
@@ -23,6 +29,7 @@ v1.25 Aug 17, 2015
 //   - how to use find to identify old files, large files,
 //   - point to Robinhood web site
 //  http://www.atomrain.com/it/it/open-source-udt-tsunami-uftp-gridftp-paid-data-transfer-protocols
+//  https://www.bizety.com/2016/02/03/open-source-udp-file-transfer-tool-comparison/
 
 Executive Summary
 -----------------
@@ -32,10 +39,11 @@ institution set up a link:#gridftp[GridFTP] node.
 
 // or use [Globus Connect MultiUser] (GCM).
 
-If link:#gridftp[GridFTP] is not available, a very easy user-side transfer approach
-is using a 
-link:#globusonline[Globus Online] endpoint.  However, this now seems to require data providers
-to license the technology.  Depending on cost relative to Globus, link:#aspera[Aspera] may be
+If link:#gridftp[GridFTP] is not available, a very easy user-side transfer 
+approach is using a link:#gcm[Globus Online] endpoint.  While the 
+Globus technology is free, subscription support provides more functionality, 
+but also the possibility of service interruption.
+Depending on cost relative to Globus, link:#aspera[Aspera] may be
 very effective as well, providing extremely fast data transfer, albeit requiring a licensed
 server.  The fastest, easiest, user-mode, node-to-node method (that remains free) 
 to move data for Linux and MacOSX is with link:#bbcp[bbcp].  Note that it is quite sensitive
@@ -63,25 +71,133 @@ the link change info.)
 
 And everyone should know how to use link:#rsync[rsync], which is available on
 most *nix sytems and should be the default fallback for most data transfers. 
-A perl wrapper for it, http://moo.nac.uci.edu/~hjm/parsync/[parsync] 
-will load-balance and fork multiple instances of it to increase bandwidth utilization.
-
-(A next-gen version previously released as 'parsyncfp' has some as-yet 
-unresolved bugs and should not be used).
+Parallel wrappers for rsync exist which can speed up large transfers, especially over WANs.
+link:#rsync[Read more about this below.]
 
 
-== Big Bytes across the network
+== What Data Where
+[[qdirstat]]
+=== qdirstat
+
+The elegant, Qt-only, open source https://github.com/shundhammer/qdirstat[qdirstat] 
+(latest iteration of the original, beautiful, but dependency-ridden http://kdirstat.sourceforge.net/[kdirstat]) and its
+ports to MacOSX http://www.derlien.com/[Disk Inventory X] and Windows
+http://windirstat.info/[Windirstat]) are quick ways to visualize what's taking
+up space on your disk so you can either exclude the unwanted data that needs to
+be copied or delete it to make more space.  All of these are fully native GUI
+applications that show disk space utilization by file type and directory
+structure.
+image:qdirstat-main.png[qdirstat screenshot]
+// image:kdirstat-main.png[kdirstat screenshot]
+
+=== gt5
+Unlike 'qdirstat' above which requires graphics mode, http://gt5.sourceforge.net/[gt5] 
+(Linux only, altho Win10 now 
+supports Ubuntu Linux utils) is a very slick, simple, fast 'terminal' app which allows 
+you to recursively identify large dirs and cursor your way thru them.
+
+
+== Problems with moving data across WANs
+
+This may not be the information you're looking for, but it helps to form the mental 
+picture of what's happening to your data as it flies across the wires.  If you already 
+know the diffs between TCP and UDP and how and why ping times are important, please 
+feel free to skip down to the more immediately useful bits.
 
 We all need to transfer data, and the amount of that data is increasing as the 
-world gets more digital.  If it's not climate model data from the IPCC, it's 
-high energy particle physics data from the LHC, or audio & video streams from a 
-performance recording.
+world gets more digital. 
 
 The usual methods of transferring data (http://en.wikipedia.org/wiki/Secure_copy[scp], 
 http://en.wikipedia.org/wiki/Http[http] and http://en.wikipedia.org/wiki/Ftp[ftp] 
-utilities (such as http://curl.haxx.se/[curl] or http://en.wikipedia.org/wiki/Wget[wget]) 
-work fine when your data is in the MB range, but when you have very large collections 
-of data there are some tricks that are worth mentioning.
+utilities such as http://curl.haxx.se/[curl] or http://en.wikipedia.org/wiki/Wget[wget]) 
+work fine when your data is in the MB or even GB range, but when you have very large collections 
+of data there are some tricks that are worth mentioning, especially if you are transferring them 
+across https://en.wikipedia.org/wiki/Wide_area_network[Wide Area Networks] (WANs)
+
+[[packetlatency]]
+=== Packet latency
+https://en.wikipedia.org/wiki/Ping_(networking_utility)[ping] times are a measure of the roundtrip time https://en.wikipedia.org/wiki/Round-trip_delay_time[RTT] it takes for a packet to reach a destination and have 
+an acknowledgement return.
+For example, I'm writing this on a laptop in Irvine CA.  
+The ping time to my home wireless router is about 1ms.  Because my ISP is Cox, a ping 
+to a computer down the hill at UCI (moo) is more than 10x that at about 15ms, since according
+to traceroute, that ping has to travel thru 15 devices to LA and back.
+
+And a ping across the country to Nova Scotia (7200 roundtrip miles by road) takes more 
+than 100x as long, about 108ms, across at least 20 devices. Since that time would allow 
+an unimpeded photon to travel about 16,000 miles, the rest of the delay is due to cable 
+and device delays, which effectively slow the communications to about 40% of the speed 
+of light.
+
+=== TCP
+The RTT above is important because the https://en.wikipedia.org/wiki/Transmission_Control_Protocol[TCP
+protocol] works by verifying the arrival of each packet, which requires a network round trip for each packet sent. 
+When the ping times increase, obviously the number of packets that can be verified per time period decreases so 
+TCP works slower over greater distances.  This is bad. Not to belabor the point, but if you send
+a serial stream of TCP packets (FTP, rsync or almost any of the protocols mentioned 
+in this doc), the rate at which you can send them, receive verification, and send 
+another decreases as the ping time increases.  This constraint is known as the 
+https://en.wikipedia.org/wiki/Bandwidth-delay_product[Bandwidth-delay product] and is a major component of
+why that shiny new 100Gb network switch yields such lousy performance over long distances.
+
+There are a few ways to bypass or improve on this problem. You can compress 
+your data before sending it, in effect sending more data in the same packet.  
+You can try to increasing the packet size known as the 
+(the https://en.wikipedia.org/wiki/Maximum_transmission_unit[Maximum Transmission Unit] 
+(MTU)).  The problem with the latter is that many commodity Internets set MTUs fairly 
+low (1500 bytes), altho high speed devices or academic networks often allow the 
+use of https://en.wikipedia.org/wiki/Jumbo_frame[jumbo frames] which are MTUs 
+with a payload of up to 9000 bytes. LAN MTUs can be as high as 64KB, allowing 
+much more efficient transfer.
+
+
+=== UDP
+You can also skip the TCP protocol entirely and use the
+https://en.wikipedia.org/wiki/User_Datagram_Protocol[UDP protocol].  This is a 
+much less reliable mechanism for data transmission since it does not verify 
+packet delivery or order.  However, the underlying hardware for modern networks 
+have gotten so reliable that UDP is again gaining use by wrapping a unreliable 
+protocol with sideband TCP integrity checking so that very large (64K and larger) 
+packets can be sent very quickly.  
+GridFTP and its Globus variants Connect/MultiConnect , Aspera, Signiant, RBUDP, 
+Tsunami, and other data transfer mechanisms use (or can use) this approach.  
+However none of those are very easy to set up and use on an 'ad hoc' basis 
+(and Aspera & Signiant are not free).  
+As a side note, Google has released its QUIC (Quick UDP Internet Connections) code https://github.com/conght/quic[for testing here], altho it currently seems alpha stage.
+
+// https://www.bizety.com/2016/02/03/open-source-udp-file-transfer-tool-comparison/
+
+
+=== Parallel TCP
+The last way of addressing the inherent limitation of long distance data transfer 
+is to send *multiple streams* of TCP packets simultaneously. This parallel transfer of 
+data is increasingly being used by a variety of applications or wrappers of 
+existing applications.  Google's 
+https://cloud.google.com/storage/docs/composite-objects#_Uploads[parallel 
+composite transfer using gsutil], the much easier http://www.rclone.org[rclone] 
+(see also http://moo.nac.uci.edu/~hjm/HOWTO-rclone-to-Gdrive.html[Using rclone to push data to your Google Drive]).
+
+NB: 'gsutil' and 'rclone' operate only with relatively blobby 'object filesystems' on both ends; 
+the 'rsync' family works with 'POSIX' filesystems and can thus do real syncing operations. 
+https://goo.gl/oOgpfW[Here’s a more extensive description of the differences.]
+
+https://www.slac.stanford.edu/~abh/bbcp/[bbcp], and 
+http://moo.nac.uci.edu/~hjm/parsync/[parsync], https://github.com/hjmangalam/parsyncfp[parsyncfp], 
+and http://manpages.ubuntu.com/manpages/xenial/man1/fpsync.1.html[fpsync] 
+(part of the https://github.com/martymac/fpart[fpart] pkg) all use this mechanism.  
+The best one depends on your network, your endpoints, and what control you have 
+over those endpoints.  'rclone' was designed to transfer data to the Amazon, 
+Google, and other clouds and supports many of those authentication protocols; 
+'parsync', 'parsyncfp', and 'fpsync' are essentially  data-balancing parallel https://rsync.samba.org/[rsyncs], 
+which assume a shell account on both ends of the network and the ability to 
+https://goo.gl/ghCazV[set up ssh keys], and 'bbcp' can adjust number of TCP streams and packet 
+window sizes to increase bandwidth considerably.
+
+Note that both 'rclone' and 'gsutil' (and its parent toolkit 
+http://aws.amazon.com/sdk-for-python/[boto]) 
+can handle cloud authentication protocols, whereas both rsync/parsync and bbcp 
+use ssh to authenticate connections. Also, 'bbcp' does not compress or 
+encrypt its data stream(s) unless requested via flag or pipe to an external program.
 
 
 [[zotfile]]
@@ -90,7 +206,9 @@ of data there are some tricks that are worth mentioning.
 =======================================================
 Altho much 'big data' is showing up in very large files (10s or 1000s of GB each),
 there is a lot of traffic in small files, often generated by naive users who are
-creating many (10s of millions) such files in a single analytical run.
+creating many (100K to 1,000K) such files in a single analytical run.
+(https://github.com/trinityrnaseq/trinityrnaseq/wiki[Trinity], 
+I'm looking at you.)
 
 It's worth a few words about the size and number of files.  A file on a disk is
 characterized not only by its contents but by the file descriptor itself.  Each
@@ -98,7 +216,7 @@ file requires the lookup and examination of an inode structure to find out where
 the disk blocks of that file are kept.  Obviously if you have 1GB of data in 1
 file, it will be accessible much more quickly than if you have to look up 1
 million files of 1000 bytes each.  This has implications when you're
-transferring data on an active system.  You want to transfer the maximum data
+transferring data on an active system.  You usually want to transfer the maximum data
 with the minimum overhead, so if your files are large, it will transfer more
 rapidly.  Here's an example.
 
@@ -111,19 +229,32 @@ accentuated as the number of files increases and the network hop-count
 increases.
 
 The more data you can pack into fewer files, the faster your transfer will be.
-Obviously if it's a few files over a private, fast attached filesystem, it won't
-be significant, but when you're moving ZOT files over a Wide Area Network or
+Obviously if it's a few files over a private, fast, direct-attached filesystem, it won't
+be significant, but when you're moving ZOTfiles over a Wide Area Network or
 even across networked filesystems, it can make a huge difference.
 
 =======================================================
 
 
+
 [[comp_encrypt]]
 Compression & Encryption
 ------------------------
-Whether to compress and/or encrypt your data in transit depends on the cost of doing so.  For a modern desktop or laptop computer, the CPU(s) are usually not doing much of anything so the cost incurred in doing the compression/encryption is generally not even noticed. However on an otherwise loaded machine, it can be significant, so it depends on what has to be done at the same time.  Compression can reduce the amount of data that needs to be transmitted considerably if the data is of a type that is compressible (text, XML, uncompressed images and music), however progressively such data is already compressed on the disk (in the form of jpeg or mp3 compression), and compressing already compressed data yields little improvement.  Some compression utilities try to detect already-compressed data and skip it, so there's often no penalty in requesting compression, but some utilities (like the popular Linux archiving tar) will not detect it correctly and waste lots of time trying.
+Whether to compress and/or encrypt your data in transit depends on the cost of doing so.  
+For a modern desktop or laptop computer, the CPU(s) are usually not doing much of 
+anything so the cost incurred in doing the compression/encryption is generally not 
+even noticed. However on an otherwise loaded machine, it can be significant, so it 
+depends on what has to be done at the same time.  Compression can reduce the amount 
+of data that needs to be transmitted considerably if the data is of a type that is 
+compressible (text, XML, uncompressed images and music), however progressively such 
+data is already compressed on the disk (in the form of jpeg or mp3 compression), 
+and compressing already compressed data yields little improvement.  Some compression 
+utilities try to detect already-compressed data and skip it, so there's often no 
+penalty in requesting compression, but some utilities (like the popular Linux 
+archiving tar) will not detect it correctly and waste lots of time trying.
 
-As an extreme example, here's the timing of making a tar archive of a large directory that consists of mostly already compressed data, using compression or not.
+As an extreme example, here's the timing of making a tar archive of a large directory 
+that consists of mostly already compressed data, using compression or not.
 
 *Using* compression:
 -------------------------------------------------------------------
@@ -155,11 +286,11 @@ It took more than 74 minutes (about 58%) longer using compression which gained u
 [NOTE]
 ===========================================================================
 
-There are now parallel compression/decompresion routines that will, for large files, help substantially, by using all the available CPU cores to do the compression.
+There are now parallel compression/decompression routines that will, for large files, help substantially, by using all the available CPU cores to do the compression.
 
 From the same author as 'gzip' comes http://zlib.net/pigz/[pigz/unpigz]
 (probably already in your repository) that is a near-drop-in replacement for
-gzip/gunzip.  Similarly there is a http://compression.ca/pbzip2/[parallel bzip2
+gzip/gunzip.  There is a also http://compression.ca/pbzip2/[parallel bzip2
 engine called pbzip2] that is a near-drop-in replacement for 'bzip2'.  For very
 large jobs there is also an http://compression.ca/mpibzip2/[MPI-capable bzip2
 utility].  The 'pigz' compression accelerates on a per-file basis, so
@@ -169,34 +300,20 @@ files thru 'pigz', you'll get close-to-perfect scaling.
 ===========================================================================
 
 Similarly, there is a computational cost to encrypting and decrypting a text,
-but less so than with compression.  'scp' uses 'ssh' to do the underlying
+but less so than with compression.  'scp' and 'sftp' use 'ssh' to do the underlying
 encryption and it does a very good job, but like the other single-TCP-stream
 utilities like 'curl' and 'wget', it will only be able to push so much thru a
 connection.
 
 [[avoiding]]
-Avoiding data transfer
-----------------------
+== Avoiding data transfer
+
 The most efficient way to transfer data is not to transfer it at all.  There are a number of utilities that can be used to assist in NOT transferring data.  Some of them are listed below.
 
-[[kdirstat]]
-kdirstat
-~~~~~~~~
-The elegant, open source http://kdirstat.sourceforge.net/[kdirstat] (and it's
-ports to MacOSX http://www.derlien.com/[Disk Inventory X] and Windows
-http://windirstat.info/[Windirstat]) are quick ways to visualize what's taking
-up space on your disk so you can either exclude the unwanted data that needs to
-be copied or delete it to make more space.  All of these are fully native GUI
-applications that show disk space utilization by file type and directory
-structure.
-
-image:kdirstat-main.png[kdirstat screenshot]
-
-
 [[rsync]]
-rsync
-~~~~~
-http://samba.anu.edu.au/rsync[rsync], from the fertile mind of Andrew (http://www.samba.org/samba/[samba]) Tridgell, is an application that will synchronize 2 directory trees, transferring only blocks which are different.
+== rsync
+
+http://samba.anu.edu.au/rsync[rsync], from the fertile mind of Andrew (http://www.samba.org/samba/[samba]) Tridgell, is an application that will synchronize 2 directory trees, transferring only blocks which are different. 'rsync' deserves its own section - it's one of the most elegant utilities you'll find in computer science.
 
 The open source rsync is included by default with almost all Linux and MacOSX distributions. Versions of rsync exist for Windows as well, via http://www.cygwin.com[Cygwin],  http://www.aboutmyip.com/AboutMyXApp/DeltaCopy.jsp[DeltaCopy], and others.
 
@@ -278,7 +395,20 @@ total size is 13614982  speedup is 20.79
 
 There are many utilities based on rsync that are used to synchronize data on 2 sides of a connection by only transmitting the differences. The backup utility http://backuppc.sf.net[BackupPC] is one.
 
-http://moo.nac.uci.edu/~hjm/parsync/parsyncfp[parsyncfp] can increase the speed of transfer by load-balancing and parallelizing the transfer.  Especially if there is an imbalance in the disk speed or network, you can use parsync to optimize the transfer, while still limiting the system load on the transmitting host and network.
+=== Parallel rsyncs
+
+There are a number of wrappers for rsync whic hcan trmendously increase the speed at which large, deep directory trees are  transferred, especilly over WANs.  I'll describe them separately below.
+
+==== parsync
+http://moo.nac.uci.edu/~hjm/parsync/[parsync] can often increase the speed of a transfer by parallelizing the transfer.  Especially if you are running into the LongFat Network problems (long RTTs, suboptimal TCP windows), using parsync can ameliorate some of the inefficiency.  As well, if there is an imbalance in the disk speed or network, you can use parsync to optimize the transfer, while still limiting the system load on the transmitting host and network (it will suspend rsync processes if the load goes too high).  'parsync' can cache the results of a previous attempt so that successive parsyncs can re-read the cache rather than do a new recursive descent. 'parsync' was written for Linux and has been ported to work on Macs as well (thanks to Phil Reese <preese@stanford.edu>).
+
+==== parsyncfp
+https://github.com/hjmangalam/parsyncfp[parsyncfp] uses 
+Ganael LaPlanche's https://github.com/martymac/fpart[fpart utility]
+(see immediately below) to chunk files together so that transfers can start immediately without waiting for complete recursive descent of the directory tree. On multi-TB dirs, this cataloging can take hours and even days.  It is otherwise similar to it's parent 'parsync', but hasn't been completely ported to the Mac.
+
+==== fpsync
+Part of the 'fpart' utility mentioned above and below, it's a shell script that's similar to 'parsyncfp', but less complicated.  It leverages Ganael's elegant fpart utility to enormously speed up the transfers of large dir trees. It's also included as part of the https://github.com/martymac/fpart[fpart utility].  fpart and fpsync run on Linux and BSD-based systems, including the Mac.
 
 [[filepart]]
 [NOTE]
@@ -290,19 +420,22 @@ For this kind of load-balancing, 2 utilities should be noted:
 file info and divides them into N 'chunkfiles', based on a number of criteria.
 The author of fpart Ganael LAPLANCHE mailto:ganael.laplanche@martymac.org[Ganael LaPlanche]
 has written a very good article:
-http://connect.ed-diamond.com/GNU-Linux-Magazine/GLMF-164/Parallelisez-vos-transferts-de-fichiers[PARALLÉLISEZ FILE TRANSFERS] describing many of the problems (and some good solutions) about large-scale data transfer.
+http://connect.ed-diamond.com/GNU-Linux-Magazine/GLMF-164/Parallelisez-vos-transferts-de-fichiers[PARALLÉLISEZ FILE TRANSFERS] 
+describing many of the problems (and some good solutions) about large-scale data transfer.
 This article is in French, but Google does a decent job in translating.
 * https://github.com/thomas-joiner/k4dirstat/blob/master/kdirstat/kdirstat-cache-writer[kdirstat-cache-writer],
 included with and used by the fabulous http://kdirstat.sourceforge.net/[kdirstat],
 which is a directory recursion tool that gathers size info about all the files in a tree.
-This was used in the first version of the above-mentioned 'parsync' to balance the transfer load, until I switched to
-the fpart partitioner, above.
+This was used in the first version of the above-mentioned 'parsync' to balance the 
+transfer load, until I switched to the fpart partitioner, above.  
+The new, pure-Qt version of 'kdirstat', called https://github.com/shundhammer/qdirstat[qdirstat], 
+uses a near-identical utility called 'qdirstat-cache-writer', included in the above 'qdirstat' source tree.
+
 ============================================================================
 
 
 [[morersyncexamples]]
-More rsync examples
-^^^^^^^^^^^^^^^^^^^
+=== More rsync examples
 
 *Command to rsync data from UCI's HPC cluster to a remote backup server.*
 
@@ -313,9 +446,6 @@ Where we will transfer the dir 'tacg-4.6.0-src' to user 'happy's' account on the
 
 $ rsync -av tacg-4.6.0-src happy@circus.tent.uci.edu:~/HPC-backups
 happy@circus.tent.uci.edu's password: [xxxxxxxxxx]
-X11 connection rejected because of wrong authentication.
-Warning: untrusted X11 forwarding setup failed: xauth key data not generated
-Warning: No xauth data; using fake authentication data for X11 forwarding.
 sending incremental file list
 tacg-4.6.0-src/
 tacg-4.6.0-src/AUTHORS
@@ -328,8 +458,6 @@ sent 2668172 bytes  received 1613 bytes  410736.15 bytes/sec
 total size is 2662985  speedup is 1.00
 
 # note the speedup = 1
-
-# NB: the X11 warnings are just that - warnings that can be ignored
 -------------------------------------------------------------------
 
 -------------------------------------------------------------------
@@ -337,9 +465,6 @@ total size is 2662985  speedup is 1.00
 
 $ rsync -av tacg-4.6.0-src happy@circus.tent.nac.uci.edu:~/HPC-backups
 happy@circus.tent.nac.uci.edu's password: [xxxxxxxxxx]
-X11 connection rejected because of wrong authentication.
-Warning: untrusted X11 forwarding setup failed: xauth key data not generated
-Warning: No xauth data; using fake authentication data for X11 forwarding.
 sending incremental file list
 
 sent 1376 bytes  received 18 bytes  398.29 bytes/sec
@@ -349,9 +474,9 @@ total size is 2662985  speedup is 1910.32
 -------------------------------------------------------------------
 
 [[secondrsyncexample]]
-As above but also to:
-^^^^^^^^^^^^^^^^^^^^
-Command to:
+and also ...
+^^^^^^^^^^^^
+Here I modify the command to:
 
 - compress files in transit ('-z' but see the link:#comp_encrypt[note above about compression])
 - delete the local files when transferred ('--remove-source-files')
@@ -372,14 +497,12 @@ $ DD=`date +"%T_%F" | sed 's/:/./g'`
 $ rsync -avz --remove-source-files tacg-4.6.0-src  happy@circus.tent.uci.edu:~/HPC-backups \
 2> backup_logs/rsync_${DD}.log &
 
-X11 connection rejected because of wrong authentication.
-Warning: untrusted X11 forwarding setup failed: xauth key data not generated
-Warning: No xauth data; using fake authentication data for X11 forwarding.
 -------------------------------------------------------------------
 
-In the above example, there was no output to the screen except the X11 errors (STDERR).  All the STDOUT was captured by the bash redirection command:
+In the above example, there was no output to the screen.  All the STDOUT was captured 
+by the bash redirection command:
 -------------------------------------------------------------------
- 2> backup_logs/rsync_${DD}.log
+ ... 2> backup_logs/rsync_${DD}.log
 -------------------------------------------------------------------
 so it now resides in the backup-logs file.
 
@@ -401,15 +524,22 @@ total size is 2662985  speedup is 218.31
 [NOTE]
 .MacOSX
 ============================================================================
-rsync is included with MacOSX as well but because of the Mac's twisted history of using the using the  http://en.wikipedia.org/wiki/AppleSingle[AppleSingle/AppleDouble] file format (remember those http://en.wikipedia.org/wiki/Resource_fork[Resource fork] problems?), the version of rsync (2.6.9) shipped with OSX versions up to 'Leopard' will not handle older Mac-native files correctly. However, rsync version 3.x 'will' apparently do the conversions correctly.
+rsync is included with MacOSX as well but because of the Mac's twisted history of 
+using the using the  http://en.wikipedia.org/wiki/AppleSingle[AppleSingle/AppleDouble] 
+file format (remember those http://en.wikipedia.org/wiki/Resource_fork[Resource fork] 
+problems?), the version of rsync (2.6.9) shipped with OSX versions up to 'Leopard' 
+will not handle older Mac-native files correctly. However, rsync version 3.x 'will' 
+apparently do the conversions correctly.
 ============================================================================
 
 
+== BitTorrent Sync
+(placeholder/reminder)
 
 
 [[unison]]
-Unison
-~~~~~~
+== Unison
+
 http://www.cis.upenn.edu/~bcpierce/unison/[Unison] is a slightly different take on transmitting only changes.  It uses a bi-directional sync algorithm to 'unify' filesystems across a network.  Native versions exist for Windows as well as Linux/Unix and it is usually available from the standard Linux repositories.
 
 From a Ubuntu or Debian machine, to install it would require:
@@ -420,13 +550,18 @@ $ sudo apt-get install unison
 
 
 [[streaming]]
-Streaming Data Transfer
------------------------
+== Fast Data Transfer Utilities
+
 
 [[bbcp]]
 bbcp
 ~~~~
-http://www.slac.stanford.edu/~abh/bbcp/[bbcp] seems to be a very similar utility to link:#bbftp[bbftp below], with the exception that it does not require a remote server running. In this behavior, it's much more like 'scp' in that data transfer requires only user-executable copies (preferably the same version) on both sides of the connection.  Short of access to a GridFTP site, 'bbcp' appears to be the fastest, most convenient single-node method for transferring data.
+http://www.slac.stanford.edu/~abh/bbcp/[bbcp] seems to be a very similar utility 
+to link:#bbftp[bbftp below], with the exception that it does not require a remote server running. 
+In this behavior, it's much more like 'scp' in that data transfer requires only 
+user-executable copies (preferably the same version) on both sides of the connection.  
+Short of access to a GridFTP site, 'bbcp' appears to be the fastest, most convenient 
+single-node method for transferring data.
 
 .bbcp does not encrypt the data stream
 [NOTE]
@@ -438,8 +573,10 @@ to encrypt/decrypt the network stream. Thanks to Dennis Yang for pointing this o
 ========================================================================
 
 The author, mailto:abh@stanford.edu[Andrew Hanushevsky] has made a number of
-http://www.slac.stanford.edu/%7eabh/bbcp/bin/[precompiled  binaries available] as well as access to the 'bbcp git tree': *git clone http://www.slac.stanford.edu/~abh/bbcp/bbcp.git*
-Somebody at Caltech has written up http://pcbunn.cithep.caltech.edu/bbcp/using_bbcp.htm[a very nice bbcp HOWTO].
+http://www.slac.stanford.edu/%7eabh/bbcp/bin/[precompiled  binaries available] as 
+well as access to the 'bbcp git tree': *git clone http://www.slac.stanford.edu/~abh/bbcp/bbcp.git*
+Somebody at Caltech has written up 
+http://pcbunn.cithep.caltech.edu/bbcp/using_bbcp.htm[a very nice bbcp HOWTO].
 
 The code compiled & installed easily with one manual intervention
 -------------------------------------------------------------------------------
@@ -500,7 +637,14 @@ real    0m26.965s
 -------------------------------------------------------------------------------
 or almost 30MB/s.
 
-When making the above test, I noticed the disks to and from which the data was being written can have a large effect on the transfer rate.  If the data is not (or cannot be) cached in RAM, the transfer will eventually require the data to be read from or written to the disk.  Depending on the storage system, this may slow the eventual transfer if the disk I/O cannot keep up with the the network.  On the systems that I used in the example above, I saw this effect when I transferred the data to the /home partition (on a slow IDE disk - see below) rather than the higher performance RAID system that I used above.
+When making the above test, I noticed the disks to and from which the data was being 
+written can have a large effect on the transfer rate.  If the data is not (or cannot be) 
+cached in RAM, the transfer will eventually require the data to be read from or written 
+to the disk.  Depending on the storage system, this may slow the eventual transfer if 
+the disk I/O cannot keep up with the the network.  On the systems that I used in the 
+example above, I saw this effect when I transferred the data to the /home partition 
+(on a slow IDE disk - see below) rather than the higher performance RAID system that 
+I used above.
 
 -------------------------------------------------------------------------------
 $ time bbcp -P 2  file.633M  user@remotehost.subnet.uci.edu:/home/user/nother.big.file
@@ -532,24 +676,34 @@ real    0m46.103s
 -------------------------------------------------------------------------------
 You can see how the transfer rate decays as it approaches the write capacity of the '/home' disk.
 
-'bbcp' can recursively copy directories with the '-r' flag.  Like 'rsync', it first has to build a file list to send to the receiver, but unlike rsync, it doesn't tell you that it's doing that, so unless you use the '-D' (debug) flag, it looks like it has just hung.  The time required to build the file list is of course proportional to the complexity of the recursive directory scan.  It can also do incremental copies like 'rsync' with the '-a -k' flags, which also allow it to recover from failed transfers.
+'bbcp' can recursively copy directories with the '-r' flag.  Like 'rsync', it first has 
+to build a file list to send to the receiver, but unlike rsync, it doesn't tell you 
+that it's doing that, so unless you use the '-D' (debug) flag, it looks like it has 
+just hung.  The time required to build the file list is of course proportional to the 
+complexity of the recursive directory scan.  It can also do incremental copies like 
+'rsync' with the '-a -k' flags, which also allow it to recover from failed transfers.
 
-Note that bbcp is 'very slow' at copying deep directory trees of small files.  If you need to copy such trees, you should first tar up the trees and use bbcp to copy the tarball.  Such an approach will increase the transfer speed enormously.
+Note that bbcp is 'very slow' at copying deep directory trees of small files.  
+If you need to copy such trees, you should first tar up the trees and use bbcp 
+to copy the tarball.  Such an approach will increase the transfer speed enormously.
 
 [[namedpipes]]
-The most recent version of bbcp can use the '-N' http://www.slac.stanford.edu/~abh/bbcp/bbcp.htm#_Toc305612710[named pipes option] to use external programs or pipes to feed the network stream. This allows you to specify an external program such as 'tar' to provide the data stream for bbcp.  Like this:
-
+The most recent version of bbcp can use the '-N'
+http://www.slac.stanford.edu/~abh/bbcp/bbcp.htm#_Toc305612710[named pipes option] 
+to use external programs or pipes to feed the network stream. This allows you to 
+specify an external program such as 'tar' to provide the data stream for bbcp.  
+Like this:
 
 -------------------------------------------------------------------------------
 bbcp -P 2 -w 2M -s 10  -N io 'tar -cv -O /w2 ' remotehost:'tar -C /nffs/w2 -xf - '
 -------------------------------------------------------------------------------
 
-The above command uses bbcp's named pipe option for both input and output (-N io) to take tar's output from STDOUT (tar's '-O' option), and using the abve-described options to stream the tar's output to bbcp to the remotehost where tar is invoked to decompose the bytestream and write it to the new location (-C /nffs/w2)
+The above command uses bbcp's named pipe option for both input and output (-N io) to take tar's output from STDOUT (tar's '-O' option), and using the above-described options to stream the tar's output to bbcp to the remotehost where tar is invoked to decompose the bytestream and write it to the new location (-C /nffs/w2)
 
 NB: the http://www.slac.stanford.edu/~abh/bbcp/#_Toc332986074[original bbcp help page] on this option has (as of May09,2013) a typo or 2.  The above example is correct and works.
 
 
-NB: I have ocassionally seen this error when using bbcp:
+NB: I have occasionally seen this error when using bbcp:
 
 -------------------------------------------------------------------------------
 time bbcp -P 10 -w 2M -s 8 root@bduc-login.nacs.uci.edu:/home/testing.tar.gz .
@@ -571,11 +725,17 @@ time bbcp -z -P 10 -w 2M -s 8 root@bduc-login.nacs.uci.edu:/home/testing.tar.gz 
 [[bbftp]]
 bbftp
 ~~~~~
-http://doc.in2p3.fr/bbftp/[bbftp] is a modification of the FTP protocol that enables you to open multiple simultaneous TCP streams to transfer data.  It therefore allows you to sometimes bypass per-TCP restrictions that result from badly configured intervening machines.
+http://doc.in2p3.fr/bbftp/[bbftp] is a modification of the FTP protocol that enables you 
+to open multiple simultaneous TCP streams to transfer data.  It therefore allows you 
+to sometimes bypass per-TCP restrictions that result from badly configured intervening 
+machines.
 
-In order to use it, you 'll need a bbftp client and server.  Most places that recieve large amounts of data (SDSC, NCAR, other supercomputer centers, teragrid nodes) will already have a bbftp server running, but you can also compile and run the server yourself.
+In order to use it, you 'll need a bbftp client and server.  Most places that receive 
+large amounts of data (SDSC, NCAR, other supercomputer centers, Teragrid nodes) will 
+already have a bbftp server running, but you can also compile and run the server yourself.
 
-The more usual case is to run only the client.  It builds very easily on Linux with just the typical 'curl/untar, cd, ./configure, make, make install' dance:
+The more usual case is to run only the client.  It builds very easily on Linux with just 
+the typical 'curl/untar, cd, ./configure, make, make install' dance:
 
 -------------------------------------------------------------------------------
 $ curl http://doc.in2p3.fr/bbftp/dist/bbftp-client-3.2.0.tar.gz |tar -xzvf -
@@ -605,7 +765,8 @@ the arguments mean:
 -V  be verbose
 -------------------------------------------------------------------------------
 
-The data was 'sent' at 21MB/s to SDSC thru 10 parallel TCP streams (but well below the peak bandwidth of about 90MB/s on a Gb network)
+The data was 'sent' at 21MB/s to SDSC thru 10 parallel TCP streams (but well 
+below the peak bandwidth of about 120MB/s on a Gb network)
 
 To get data from a server:
 -------------------------------------------------------------------------------
@@ -643,8 +804,9 @@ file tree, it can do that, much like the 'wget -m -p <website_head>'.
 
 In my testing over a 1Gb connection, 'lftp' was about 5%-10% slower than 'bbcp' on getting
 data (same number of streams with cache cleared each time) and noticeably slower on sending data.
-Both 'bbcp' and 'lftp' appear to be transferring to local cache and on transferring files smaller than the free RAM,
-will spend several seconds after the transfer is supposedly complete in syncing the data to disk.
+Both 'bbcp' and 'lftp' appear to be transferring to local cache and on transferring 
+files smaller than the free RAM, will spend several seconds after the transfer is 
+supposedly complete in syncing the data to disk.
 --------------------------------------------------------------------------------
 #Getting a file over 4 streams
 lftp -e 'pget -n 4 sftp://someone@host:/path/to/file'
@@ -697,7 +859,7 @@ $ java -jar fdt.jar -P 10 -bs 1M -c remotehost.domain.uci.edu ../file.4.2G -d /u
 (transferred in 68s for *66MB/s* with 10 streams)
 -------------------------------------------------------------------------------
 
-But fdt is slower than bbcp.  The following test was done at about the same time between the same hosts:
+But 'fdt' is slower than 'bbcp'.  The following test was done at about the same time between the same hosts:
 
 -------------------------------------------------------------------------------
 bbcp -P 10 -w 2M -s 10 file.4.2G hjm@remotehost.domain.uci.edu:/userdata/hjm/
@@ -710,39 +872,32 @@ bbcp: At 081210 12:48:58 copy 96% complete; 84571.9 KB/s
 -------------------------------------------------------------------------------
 
 [[gcm]]
-Globus Connect & Globus Connect MultiUser
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-This is a fairly new (mid-2011) approach that claims to provide easy access to GridFTP-like speeds, reliable transfers, and 'No IT required'.  (At this point sysadmins will break into muffled snorts, the same response as 'seamless' provokes when applied to any computer-related activity.)  https://www.globusonline.org/globus_connect/[Globus Connect] and it's more ambitious https://www.globusonline.org/gcmu/[Globus Connect MultiUser] sibling is an attempt to make using the Globus mechanicals less horrific for users.  In this it largely succeeds from the users' POV - those who are already part of a Globus/Grid node and who have specific requirements to transfer TBs of data on a 'regular basis' and who have the endpoints set up for them.  Otherwise it's somewhat clunky since you have to explicitly set up endpoints beforehand and too complicated to set up unless you're Linux-enhanced (ie. you do ssh public key exchange, and globus MyProxy configs in your sleep, ).
+Globus Online, Gobus Connect & Globus Connect MultiUser
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-That said, the process to install the software to your add yourself to the system is fairly straightforward. https://www.globusonline.org/globus_connect/[Just follow the instructions for the different platforms.]
+These are fairly new (mid-2011) approaches that claim to provide easy access to 
+GridFTP-like speeds, reliable transfers, and 'No IT required', using the https://en.wikipedia.org/wiki/Globus_Toolkit[Globus Tookit] infrastructure, which is an 
+enormous and enormously complex set of APIs for authenticating users and distributing data aorund the world.  https://www.globusonline.org/globus_connect/[Globus Connect] and its more 
+ambitious https://www.globusonline.org/gcmu/[Globus Connect MultiUser] sibling 
+are attempts to make using the Globus mechanicals less horrific for users.  
+In this it largely succeeds from the users' POV - those who are already part 
+of a Globus/Grid node and who have specific requirements to transfer TBs of data 
+on a 'regular basis' and who have the endpoints set up for them.  Otherwise it's 
+somewhat clunky since you have to explicitly set up endpoints beforehand and too 
+complicated to set up unless you're Linux-enhanced (ie. you do ssh public key 
+exchange, and globus MyProxy configs in your sleep).
+
+The latest iteration of this technology is a web interface that once set up allows you to initiate and monitor large data transfers between defined endpoints fairly easily.  The process to install the software to your own system and add yourself to the system 
+is fairly straightforward. https://www.globusonline.org/globus_connect/[Just follow 
+the instructions for the different platforms.]
 
 The problem with this approach is that it's a large amount of work for a small amount of advantage relative to link:#bbcp[bbcp].  However, the 'Multiuser' version allows all the users of a server or cluster to take advantage of this protocol with no additional effort, a better tradeoff between effort expended and advantages conferred.
 
 The instructions for installing the 'Multiuser' version are a little more elaborate.  Herewith, their own https://www.globusonline.org/gcmu/[devilish details for a sysadmin setting up the 'Globus Connect MultiUser'] (Linux-only so far).
 
+The process for setting it up on your endpoint is described on the site, but it may be worthwhile describing the general overview which can be confusing. UCLA's IDRE also has a http://hpc.ucla.edu/hoffman2/file-transfer/gol.php[setup description] (Thanks, Prakashan.)
 
-
-[[gridftp]]
-GridFTP
-~~~~~~~
-If you and your colleagues have to transfer data in the range of multiple GBs and you have to do it regularly, it's probably worth setting up a http://en.wikipedia.org/wiki/GridFTP[GridFTP] site.  Because it allows multipoint, multi-stream TCP connections, it can transfer data at multiple GB/s.  However, it's beyond the scope of this simple doc to describe its setup and use, so if this sounds useful, bother your local network guru/sysadmin.
-
-
-[[globusonline]]
-Globus Online
-~~~~~~~~~~~~~
-https://www.globusonline.org/[Globus Online] is grid technology that has been wrapped in a web interface to enable mere humans to use the capabilities of the GRIDFTP system to transfer very large amounts of data very quickly between nodes that are part of this system.  The tagline is 'Move files fast No IT required'. The advantages are that when it's set up, it works very well.  The disadvantages are that the 'No IT required' part is at this point, fairly optimistic and that it will only work between registered sites (which you can add with the https://www.globusonline.org/globus_connect/[Globus Connect process], so it's not very useful for ad hoc file transfers.
-
-
-However, if you have a set of endpoints that frequently need to transfer large amounts of data, this approach would be very useful. Especially if you run a cluster or other multi-user system, there is an associated utility called https://www.globusonline.org/gcmu[Globus Connect Multi-User] which will allow all users of registered endpoint to use the Globus transfer capabilities.
-
-While it is out of beta as of this writing (June 10th, 2014), the setup is quite complex, oddly documented (lots of it, information-sparse) and lacking simple examples so enabling it may take some additional emails and even phone calls.  An example is that the documentation never defines authentication mechanisms and confuses 'domains' and 'hostnames', the distinction between which you would think an org like globus would be clear.  Possibly some of this confusion is sown by the use of globus terminology, which is subtly different than that used by sysadmins (me).
-
-I presume it will be getting progressively easier to use as time passes.
-
-The process for setting it up on your endpooint is described on the site, but it may be worthwhile describing the general overview which can be confusing. UCLA's IDRE also has a http://hpc.ucla.edu/hoffman2/file-transfer/gol.php[setup description] (Thanks, Prakashan.)
-
-*Snarky Point of Contention:* The documentation overuses the word 'seamlessly' which all computer users realizes is a contraction for 'seamlessly if nothing goes wrong and your setup is exactly like mine and monkeys fly out my butt'. YMMV.
+*Snarky Point of Contention:* The documentation overuses the word 'seamlessly' which all computer users realize is a contraction for 'seamlessly if nothing goes wrong and your setup is exactly like mine and monkeys fly out my butt'. YMMV.
 
 *Using the Globus Connect system requires you to:*
 
@@ -759,14 +914,20 @@ The process for setting it up on your endpooint is described on the site, but it
 I've gotten 40-50MB/s between UCI and the Broad Institute depending on time of day, system load, and phase of moon.
 
 
+[[gridftp]]
+GridFTP
+~~~~~~~
+If you and your colleagues have to transfer data in the range of multiple GBs and you have to do it regularly, it's probably worth setting up a http://en.wikipedia.org/wiki/GridFTP[GridFTP] site. GridFTP is also based on the Globus toolkit and as such shares many of its advantages and frustrations.  However, most of the frustrations are on the admin side, so once it's set up, it becomes fairly easy for users.  Because it allows multipoint, multi-stream TCP connections, it can transfer data at multiple GB/s.  However, it's beyond the scope of this simple doc to describe its setup and use, so if this sounds useful, bother your local network guru/sysadmin.
+
+
 [[netcat]]
-netcat
-~~~~~~
+=== netcat
+
 http://netcat.sourceforge.net/[netcat] (aka 'nc') is installed by default on most Linux 
 and MacOSX systems.  It provides a way of opening TCP or UDP network connections between 
 nodes, acting as an open pipe thru which you can send any data as fast as the connection 
 will allow, imposing no additional protocol load on the transfer. Because of its 
-widespread availability and it's speed, it can be used to transmit data between 2 
+widespread availability and its speed, it can be used to transmit data between 2 
 points relatively quickly, especially if the data doesn't need to be encrypted or 
 compressed (or if it already is).
 
@@ -794,7 +955,7 @@ On the receiving end, you connect to the nc listener
 (note: no '-p' to indicate port on the receiving side).  The '-b' option to 'pv' 
 shows only bytes received.
 
-Once the receive_host command is inititated, the transfer starts, as can be seen 
+Once the receive_host command is initiated, the transfer starts, as can be seen 
 by the pv output on the sending side and the bytecount on the receiving side.  
 When it finishes, both sides terminate the connection 1s after getting the EOF.
 
@@ -805,15 +966,15 @@ slightly to do recursive transfers, using tar, shown here recursively copying th
 local 'sge' directory to the remote host.
 
 [[tarnetcat]]
-tar and netcat
-^^^^^^^^^^^^^^
+==== tar and netcat
+
 The combination of these 2 crusty relics from the stone age of Unix are remarkably 
 effective for moving data if you don't need encryption.  Since they impose very 
 little protocol overhead to the data, the transfer can run at close to wire speed 
-for large files.  Compression can be added with the 'tar' options of '-z (gzip) 
-or '-j (bzip2)'.
+for large files.  Compression can be added with the 'tar' options of '-z' (gzip) 
+or '-j' (bzip2).
 
-The setup is not as trivial as 'rsync, scp, or bbcp', since it requires commands 
+The setup is not as trivial as with 'rsync, scp, or bbcp', since it requires commands 
 to be issued at both ends of the connection, but for large transfers, the speed 
 payoff is non-trivial.  For example, using a single rsync on a 10Gb private 
 connection, we were getting only about 30MB/s, mostly because of many tiny files.  
@@ -851,11 +1012,17 @@ and the CPUs of the hosts, this may actually 'slow' transmission. As noted above
 it's most effective on bandwidth-limited channels.
 
 You could also bundle the 2 together in a script, using ssh to execute the remote 
-command. And now, I have..
+command. 
+
+*Oh look! , I have.. *
 
 [[tnc]]
-tnc
-~~~
+==== tnc
+
+From the contraction of 'tar n netcat'.  This is not a novel idea (see 
+http://varunbpatil.github.io/2013/08/05/ncp/#.VlSmyBSrQWM[Varun Patil's 
+script], but this wrapping tries to be more flexible and comprehensive than most 
+other implementations.  Let me know how to make it better.
 
 'tnc' is a useful tool to move a lot of data over a network if:
 
@@ -863,90 +1030,95 @@ tnc
 - you have ssh & shell access on both sides of the connection
 - you set up http://goo.gl/zpfrvu[passwordless shared ssh keys] (it will try to set them up if you don't have them)
 - you have a lot of files and or deep dir trees that need to be moved.
-- the data is not partially on the other side of the connection. ie first time
-data movement. If so, see link:#rsync[rsync]
+- the data is not partially on the other side of the connection. ie this is a first time
+data movement. (If the data just needs to be updated, see link:#rsync[rsync]).
 - you are moving data for backup (tnc will tar and transfer data (optionally compressing it)
-in one operation, leaving it as such on the other end.
--
+in one operation, leaving it as such on the other end, unless you request 
+unpacking.
 
 If your use case meets these criteria, it works quite well on most distributions of Linux
 although there are some versions of some utilities that will cause hiccups. In particular,
 it will work about 2-10x as fast as scp, depending on network bandwidth, # of files, etc.
 
-
-
-
-that needs to be moved from one host to another if the 
 The following is the '--help' output from tnc, until I write up something better.
 http://moo.nac.uci.edu/~hjm/tnc[Get tnc here], 'chmod +x' it and off you go.
 *Note the warnings.*
 
 ------------------------------------------------------------------------------
+
+
 tnc is a small Perl utility to simplify the use of netcat to transfer
-files  between hosts.  It automates a number of the setup commands that
-make this very efficient protocol so awful to set up.  The commandline
-is meant to ape 'scp', but it can be  much faster than scp, depending on
-the connection and types of files.  Typically it's 2x - 6x faster. 
+files  between hosts.  It automates a number of the setup commands
+that make this very efficient protocol so awful to set up.  The
+commandline is meant to ape 'scp', but it can be  much faster than
+scp, depending on the connection and types of files.  Typically it's
+2x - 6x faster. 
 
 tnc WILL attempt to set up 2048bit RSA ssh keys for you if they don't
-exist on the  the local host which will require entering the remote login
-password 2x to set up  the keys.  If you want to avoid this, use the 
-'--askpass' option, which will not set up ssh-keys, but WILL use established 
-ssh keys if they already exist. tnc does not work reliably without shared ssh 
-keys.
+exist on the  the local host which will require entering the remote 
+login password 2x to set up  the keys.  If you want to avoid this,
+use the  '--askpass' option, which will not set up ssh-keys, but WILL
+use established  ssh keys if they already exist. tnc does not work
+reliably without shared ssh  keys.
 
-Unless you use the '--unpack' option, files to be transferred (even 1) are
-concatenated to a tar file which is sent and then left as a tar file on
-the other end of  the connection.  ie the endpoint for both push and pull
-data transfers will  be *tar files* (compressed with 'xz' if you use the
-'--compress' option.)
+Unless you use the '--unpack' option, files to be transferred (even
+1) are concatenated to a tar file which is sent and then left as a
+tar file on the other end of  the connection.  ie the endpoint for
+both push and pull data transfers will  be *tar files* (compressed
+with 'xz' if you use the '--compress' option.)
 
-It can be used to both push and pull data from a remote connection, using
-only the  static IP end. 
+It can be used to both push and pull data from a remote connection,
+using only the  static IP end. 
 
 WARNINGS:
-- tnc DOES NOT ENCRYPT, nor does it compress data without being asked, 
-so it's only meant for NON-SENSITIVE data that can be sent in the clear. 
-Remote  connections are initiated via ssh, so the actual connection setup
-is encrypted. Because it uses netcat's open ports it also performs SHA 
-checksums on the data exchanged to make sure that the data stream has not 
-been poisoned or corrupted.
+- tnc DOES NOT ENCRYPT, nor does it compress data without being
+asked,  so it's only meant for NON-SENSITIVE data that can be sent in
+the clear.  Remote  connections are initiated via ssh, so the actual
+connection setup is encrypted. Because it uses netcat's open ports it
+also performs SHA  checksums on the data exchanged to make sure that
+the data stream has not  been poisoned or corrupted.
 
 - There are at least 3 versions of netcat in use: nc6, nc.openbsd,
-and nc.traditional.  tnc uses the OpenBSD version, the default on recent 
-versions of Ubuntu, CentOS, MacOSX and others, but not on Debian.  On Debian, 
-you'll have to install it explicitly and symlink it to '/etc/alternatives/nc'.
+and nc.traditional.  tnc uses the OpenBSD version, the default on
+recent  versions of Ubuntu, CentOS, MacOSX and others, but not on
+Debian.  On Debian,  you'll have to install it explicitly and symlink
+it to '/etc/alternatives/nc'.
 
-- tnc uses the piped subprocess function of bash (tee >(shasum)) to do 
-inline SHA hash checking, so if your system lacks a recent bash, it may fail.
-Note that identical SHA hashes only verify that the same bytes exist on both
-ends.  Premature failure can truncate data, so the SUMMARY now includes the 
-# of bytes that were sent over the network as well.
+- tnc uses the piped subprocess function of bash (tee >(shasum)) to
+do  inline SHA hash checking, so if your system lacks a recent bash,
+it may fail. Note that identical SHA hashes only verify that the same
+bytes exist on both ends.  Premature failure can truncate data, so
+the SUMMARY now includes the  # of bytes that were sent over the
+network as well.
 
 It supports the following options
---askpass(off) .. use passwords, not ssh keys; don't try to set up ssh keys. 
-                  If functional ssh keys DO exist, they will be used.
---compress(off) . invokes the '-J' option to tar which uses the 'xz' compressor.
-                  Helps significantly on low bandwidth connections (wifi), but 
-                  generally doesn't help on GbE networks.  Depends on the 
-                  compressibility of the data on 100Mb connections, but generally 
-                  not. Endpoint names will be suffixed with '.xz' if this option 
-                  is used, so don't pre-suffix the name. If you do, 'name.xz' 
-                  will be changed to 'name.xz.xz'
+--askpass(off) .. use passwords, not ssh keys; don't try to set up
+                   ssh keys. If functional ssh keys DO exist, they
+                   will be used.
+--compress(off) . invokes the '-J' option to tar which uses the 'xz'
+                   compressor.
+                  Helps significantly on low bandwidth connections
+                   (wifi), but generally doesn't help on GbE
+                   networks.  Depends on the compressibility of the
+                   data on 100Mb connections, but generally not.
+                   Endpoint names will be suffixed with '.xz' if this
+                   option is used, so don't pre-suffix the name. If
+                   you do, 'name.xz' will be changed to 'name.xz.xz'
 --port(12345) ... sets the local and remote PORTs to this #.
 --help .......... emits this text
---unpack(off) ... unpacks the transferred files at their endpoint. You specify 
-                  the dir under which it's supposed to be unpacked as the 
-                  remote target. If there is a writable dir of that name, 
-                  the stream will be NOT be unpacked into it unless the 
-                  '--unpack' option is used.
+--unpack(off) ... unpacks the transferred files at their endpoint.
+                   You specify the dir under which it's supposed to
+                   be unpacked as the remote target. If there is a
+                   writable dir of that name, the stream will be NOT
+                   be unpacked into it unless the '--unpack' option
+                   is used.
 --quiet(off) .... tries to be very silent
 --debug(off) .... very verbose about what's going on.
 
 Simple usage:
 
 Pushing data TO a remote server:
---------------------------------
+ --------------------------------
 (sources can be a mixture of files and dirs)
 tnc dir1  file1  dir2 file2   user@remotehost:/path/to/remote.tar
  or
@@ -956,24 +1128,27 @@ tnc --compress geo*.dat  user@remotehost:/path/to/remote.tar
 (which will leave the remote archive as '/path/to/remote.tar.xz')
 
 Pulling data FROM a remote server:
-----------------------------------
-tnc  user@remotehost:'~/dir1/  /path/to/file*  ~/dir2/'  /local/path/to/tarball
-                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Note the single quotes surrounding the remote file spec.  You can use this to 
-specify discontiguous files and dirs to pull (and you must use single quotes to 
-specify the data to pull).
+ ----------------------------------
+                     vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
+tnc  user@remotehost:'~/dir1/  /path/to/file*  ~/dir2/' \
+ /local/path/to/tarball
+
+Note the single quotes surrounding the remote file spec.  You can 
+use this to specify discontinuous files and dirs to pull (and you 
+must use single quotes to specify the data to pull).
 
 The dynamic display during a transfer is from 'pv' and shows:
 
  MB    time     instant
 sent   elapsed  bandwidth
-------------------------------
+ ------------------------------
  116MB 0:00:10 [11.3MB/s]
 
-NB: tnc requires a static (or at least identifiable) IP on only one end of the 
-connection.  If you are at home, connecting thru a wireless router, and obtaining 
-your IP address dynamically, tnc should work as well, since the work is initiated 
-from the remote (static) IP #.
+NB: tnc requires a static (or at least identifiable) IP on only 
+one end of the connection.  If you are at home, connecting thru 
+a wireless router, and obtaining your IP address dynamically, 
+tnc should work as well, since the work is initiated from the 
+(static) IP #.
 
 ------------------------------------------------------------------------------
 
@@ -983,10 +1158,28 @@ from the remote (static) IP #.
 Aspera ascp
 ~~~~~~~~~~~
 *Updated Jan 06, 2015*
-After a licensing problem with the existing Broad Globus system stopped us 
+After a licensing problem with the existing Broad Institute Globus system stopped us 
 from using the https://www.globus.org/[browser-based Globus system] to finish the 
-transfer, we still 
-had to transfer about 30TB of data from the Broad Inst to UCI.  We tried using the
+transfer, we still had to transfer about 30TB of data from the Broad Inst to 
+UCI.  
+
+// .Globus does not need a license
+// [NOTE]
+// ================================================================
+// Ian Foster contacted me about the above line, indicating that Globus does 
+// not need to be licensed.  He said:
+// ------------------------------------------------------------
+// We do have a subscription model that provides institutions with access to 
+// extra features. This is part of our goal of supporting Globus as a 
+// non-profit, sustainable service for the research community. But this is not 
+// needed for transfers..
+// ------------------------------------------------------------
+// That may be true, but for an institution that provides its clients with 
+// download ability, the expiration of the 'subscription' effectively 
+// interrupts that service (or at least it did for me). 
+// ================================================================
+
+We tried using the
 link:#bbcp[above mentioned 'bbcp'] from there to here, but since I controlled only one side of 
 the connection, I couldn't tune the transfer to provide more than about 1-3MB/s.
 The Broad people mentioned that the data was available via 
@@ -996,13 +1189,16 @@ trying previously.
 
 This time, tho (I had full docs for the client and some experience) it started up 
 and immediately provided a consistent 30-40MB/s over the same network path that 
-I was using with 'bbcp'.  A tremendous, *startling* improvement over the default 'bbcp' parameters, 
-especially since it 'was' the *same network path* over which 'bbcp' was providing about 1/10th the
+I was using with 'bbcp'.  A tremendous, *startling* improvement over the default 
+'bbcp' parameters, 
+especially since it 'was' the *same network path* over which 'bbcp' was providing 
+about 1/10th the
 bandwidth.  Whether it's due to autotuning of window size and streams, or some other 
 internal magic, I can't say.  And I also can't say whether (with control of both 
-endpoints) I could have coerced 'bbcp' to attain a similar bandwidth since I have seen bbcp
-do longhaul bandwidths of this magnitude.  But seeing 'ascp' immediately provide this magnitude of
-bandwidth, with no user-side tuning is very impressive indeed.
+endpoints) I could have coerced 'bbcp' to attain a similar bandwidth since I have 
+seen bbcp
+do longhaul bandwidths of this magnitude.  But seeing 'ascp' immediately provide 
+this magnitude of bandwidth, with no user-side tuning is very impressive indeed.
 
 I'll leave the previous notation in place to show how much ascp has improved.
 

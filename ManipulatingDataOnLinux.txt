@@ -833,7 +833,7 @@ However, there are a number of other OSS packages that can help you with manipul
 Octave
 ~~~~~~
 http://www.gnu.org/software/octave/[Octave] is a
-http://www.gnu.org/software/octave/FAQ.html#MATLAB-compatibility[near-clone] of MATLAB in terms of
+http://wiki.octave.org/FAQ#How_is_Octave_different_from_Matlab.3F[near-clone] of MATLAB in terms of
 functionality and is widely used and well-supported.  It does not have a native GUI, altho there are
 externally developed GUI's that provide some functionality to get you started.  While it is largely
 compatible with MATLAB code, it is also considerably slower than MATLAB, especially for iterative

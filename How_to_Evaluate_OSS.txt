@@ -1,0 +1,255 @@
+How to Evaluate Open Source Software
+====================================
+by Harry Mangalam <harry.mangalam@uci.edu>
+v1.05, May 23, 2010
+:icons:
+
+
+//Harry Mangalam mailto:harry.mangalam@uci.edu[harry.mangalam@uci.edu]
+// this file is converted to the HTML with the command:
+// export fileroot="/home/hjm/nacs/How_to_Evaluate_OSS"; asciidoc -a toc -a numbered -a toclevels=2 ${fileroot}.txt; scp ${fileroot}.[ht]*   moo:~/public_html;  
+
+// # add it to the svn
+// ssh hmangala@bduc-login "cd ~/bduc/trunk/sge; svn update; svn add How_to_Evaluate_OSS.txt"
+
+// update svn from BDUC
+// scp ${fileroot}.txt  hmangala@claw1:~/bduc/trunk/sge; ssh hmangala@bduc-login 'cd ~/bduc/trunk/sge; svn update; svn commit -m "new mods to How_to_Evaluate_OSS"'
+
+// and push it to Wordpress:
+// blogpost.py  update  -c HowTos ${fileroot}.txt
+
+// don't forget that the HTML equiv of '~' = '%7e'
+// asciidoc cheatsheet: http://powerman.name/doc/asciidoc
+// asciidoc user guide: http://www.methods.co.nz/asciidoc/userguide.html
+
+Acknowledgements
+----------------
+This piece was materially improved by suggestions from Bill Broadley and
+Scott Beardsley (both of UC Davis).
+
+Introduction
+------------
+
+Even if UC was not trying to save $ frantically, the evaluation of Open Source Software (OSS) should be a basic tool in your approach to providing reliable, efficient IT.
+
+Why Evaluate OSS?
+~~~~~~~~~~~~~~~~~
+
+Not only because it's Free (as in no cost).  Not only because you get the Source code (and therefore get to modify it).  Not only because it frees you from a variety of http://en.wikipedia.org/wiki/Vendor_lock-in[Vendor Lock-in] propositions.  But because a growing number of OSS projects are 'as good as or better than' many Closed Source Software (CSS).  Further, even if it turns out that the Open Source equivalent is inferior or insufficient for your needs, knowing that it exists and what it provides 'for free' strengthens your bargaining position when it comes purchase a proprietary product.
+
+
+Should you evaluate OSS differently than CSS?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Well, yes.  Why?  Because you can.  The evaluation processes described below take advantage of the comparatively more open development and support approaches of larger OSS projects.  CSS products have a variety of reasons to keep their development process hidden and they usually do.
+
+Ideally, the comparison criteria shouldn't be different.  However, because OSS projects typically don't have paid salesmen to convince that their product is better than others, you have to do the extra work to figure out whether the OSS project will do what you want.  Of course, you should be doing this evaluation with the CSS as well, but in most cases, you can't do it nearly as well, nor as fast for reasons that will become clear.
+
+One large advantage that comes with OSS is that you can download and evaluate the entire package without engaging in time-consuming trial-period negotiations, Non-Disclosure Agreements, Request for Quotes, and other requirements that often accompany exchanges of money.  Indeed, this should be done with all the OSS packages that are identified by the process below.  Should none of the OSS packages provide what you need, then at least you have an initial idea of what the CSS package needs to provide to best the OSS, how those features should interact, and a much stronger bargaining position when the time comes to negotiate a price.
+
+However, just as OSS 'allows' more in-depth examination of the software, it also 'demands' different effort than evaluating CSS.  Vendors trying to sell you a product have salespeople, glossy brochures, pre-packaged (and always glowing) reviews, and well-honed arguments that their software cannot be beaten at the price.  OSS packages rarely have such infrastructure, so it is self-defeating to expect the same level of gloss from a OSS package.  Typically, all the developer effort goes into the software and support - documentation, forums, IRC channels, etc.  Expecting an OSS project to compete for mindshare in Trade Rags, advertisements, and paper informational packets, and/or assign personnel to answer questions or prepare responses for Requests for Proposals is simply a non-starter.  It just doesn't work that way.  OSS can offer exceptional value, but you have to evaluate it in a slightly different manner than you might evaluate CSS.  On the other hand, it is often revealing to evaluate CSS products using the evaluation criteria I describe below.
+
+I've written http://moo.nac.uci.edu/~hjm/OSS_NACS_News.html[more alone these lines] previously.
+
+
+
+Identify, Review, Compare, Analyze
+----------------------------------
+
+http://www.dwheeler.com[David Wheeler has written extensively] on Open Source Software and his http://www.dwheeler.com/oss_fs_eval.html[Identify Review Compare Analyze] (aka 'IRCA') approach to evaluating it is the basis for my approach as well.  Since Wheeler has done an excellent job in presenting this, I won't repeat it and will only add my observations and recommendations.
+
+In addition, any such analysis will be made much better if multiple people can contribute to it in a systematic way and converse along the way.  Document the process!  'If it isn't documented, it didn't happen.'  
+
+Identify
+~~~~~~~~
+*WikiPedia:* Wheeler's article ignores WikiPedia, which provides definitions http://en.wikipedia.org/wiki/Shopping_cart_software[(Example)] and comparison tables http://en.wikipedia.org/wiki/Comparison_of_shopping_cart_software[(Example)] of popular types of software, and further links for additional information.  
+
+
+*Google:* Wheeler's page was written largely pre-Google and so ignores many Google-based tools (described below). The easiest scan for a particular software package is to enter the generic name in a Google Search. http://lmgtfy.com/?q=open+source+content+management+system[For example..] and then read a few of the top-ranked hits to get an idea of where else to look.  
+
+*Community:* The 'wisdom of crowds' is sometimes useful.  Querying your local peer group can be very useful. Reviewing support forums for some of the top-ranked products is also a good way to find out about their competitors.
+
+
+Often, once such software is identified, it can be installed on a Linux system (with all its dependencies) with a single command:
+
+-----------------------------------------------------------
+$ apt-cache search drupal
+drivel - Blogging client for the GNOME desktop
+kblogger-kde4 - a simple blogging application for KDE 4
+khmerconverter - converts between legacy Khmer encodings and Unicode
+drupal5 - a fully-featured content management framework    <--- Aha!
+
+$ sudo apt-get install drupal5
+[sudo] password for hjm:
+Reading package lists... Done
+Building dependency tree
+Reading state information... Done
+The following extra packages will be installed:
+  php5
+The following NEW packages will be installed:
+  drupal5 php5
+0 upgraded, 2 newly installed, 0 to remove and 6 not upgraded.
+Need to get 775kB/776kB of archives.
+After this operation, 3478kB of additional disk space will be used.
+Do you want to continue [Y/n]?  Y
+
+<and away we go..>
+-----------------------------------------------------------
+
+
+Review
+~~~~~~
+Unfortunately, for most software packages, there are few good technical reviews and 'recent' reviews are 'extremely' rare.  Sometimes the best that can be done is to review the comments of the reviews that exist for glimpses of technical knowledge and good points (Unfortunately, too many of these comments are of the type "X sucks; Y rocks").  As you go thru this process, keep a log of the URL of all reviews and copy the comments if they appear to be relevant. A summary of these comments in the aggregate can be useful if not definitive.
+If you're doing such a review, consider posting the results in just about any form to a blog so that others can take advantage of your work.
+
+Compare
+~~~~~~~
+How do you compare the different software packages?  One of the 'least' informative approaches is to compare 'Feature Lists'.  Try to decide on what 'you' need and downplay the rest.  Do you want a wiki with your Desktop support ticketing system?  An integrated Calendar?  A Mail client?  A Project Management system?  You probably just want a Trouble Ticketing system.  Why pay for the development of features and bugs you don't want?
+
+I have seen many software evaluations and decisions apparantly made on the basis of a 'Features Table' provided by the Vendor.  Not to put too fine a point on it, but this is like believing in the Tooth Fairy or (only a little less fantastical) stated EPA mileage figures.  Often, many of these features are poorly implemented, unnecessary, and/or don't integrate well with an existing work-flow.  These kind of encyclopedic feature tables are largely for the benighted managers who choose products based on the length of .. Feature Lists.
+
+Note the direction in successful interface design: Apple's iConic minimalist designs are met with near-universal approval, Google's home page and Chrome browser pack a lot into a seemingly primitive interface and now Firefox is aping Chrome's simplicity.  Doing a few things well is often better than doing many things poorly.
+
+Decide for yourself what's important and what's not.  Obviously, the effort put into providing a long feature list will impact the effort that goes into making fewer features that work better.  Remember the Unix way - small tools that do a few things well and work well together.  Obviously using 'sed', 'grep' and 'sort' in the context of a Content Management System (CMS) doesn't make sense, but if the CMS allows choosing among competing modules provided by a variety of producers, that's an advantage.
+
+Version numbers are not reliable either when trying to evaluate the maturity of a project.  The Linux kernel will probably be on version 2 until it gets ported to Quantum processors.  Some projects increment the major version number every month.  Use the  metrics mentioned below for determining a projects maturity.
+
+Analyze
+~~~~~~~
+
+*Size Matters.* Depending on the kind of software and the scale of its intended deployment, it will be worth more or less time to evaluate.  With OSS packages, if you can afford the time, you should ideally install, configure, and use a number of them to see what each provides and how.  For something like a one-off utility, this is not worthwhile, but for something that has organization-wide implications, such as a CMS or File Server technology, it certainly should be tested in depth.  
+
+*Configuration Blues.* While 'installing' these systems on Linux is typically very easy, the 'configuration' can be difficult, but that configuration process can be quite revealing as to what kinds of things need to be configured.  Worst case, it sets a baseline that the CSS package has to exceed to otherwise overcome.  However, configuration is but one aspect of using such a system and typically, you'll install once and use for a long time.  And what may seem needlessly primitive may yield advantages down the road.  Unixy text-based configuration files may be more difficult to set up (see the http://wiki.squid-cache.org/ConfigExamples[~4000 line SQUID web proxy config file], for example (but also note that it's extremely well documented)), but this allows the file to search with 'grep' to find configuration errors more easily than clicking thru the twisty, dark passages of a GUI manager that stores its configuration in a binary blob.  (http://en.wikipedia.org/wiki/Windows_Registry[Windows Registry], anyone?)
+
+*Pre-installed content* For almost any software product this analysis would be applied to, providing some content so you can experiment with it immediately is extremely useful.  Creating content without examples can be quite time-consuming.  In some OSS products this is a separate package, sometimes labeled 'root_name-data'.
+
+
+Qualitative Metrics
+-------------------  
+
+Learning Curve & Look and feel
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+These criterium are somewhat counter-intuitive - they will have the 'greatest' impact where people use it the 'least'.  If it will be used by many people who will not use it enough to learn it deeply, try to review it with the point of view of the main users.  A steep learning curve for an excellent program that will not be used much should discount it as a tool for the general population. ( http://www.gnuplot.info[gnuplot] is such a program - fantastically powerful plotting program - scriptable, embeddable, can do ajust about everything but juggle cows, but it has a ferociously difficult learning curve.)
+If it's a server tool which will either be used by one person intensely or the UI will be used once at startup and then rarely afterwards, it makes much less of an impact.
+
+Ease of use
+~~~~~~~~~~~
+While this might seem to fall into the 'Look and Feel' above, it can be different.  If the application will have to traverse low-bandwidth channels, a simple commandline interface may be much easier to use than an elaborate GUI which takes more bandwidth. There are a number of products which provide both interfaces, typically a Web interface and a commandline. Similarly, a UI which allows keystrokes to set options (thus allowing it to be scripted), may be more useful than one that doesn't.  If the application requires lots of data to be loaded, the ability to do it in bulk via flat file or database read can speed up deployment by many-fold.
+
+Program flow and Logic
+~~~~~~~~~~~~~~~~~~~~~~
+Especially for an application that is used often, this criterium may be vital.  If it doesn't allow you to set up a default configuration, or pass it parameters by file, this will be a quick road to hell.
+
+Documentation & Help
+~~~~~~~~~~~~~~~~~~~~
+Regardless of who uses it and how much, a program that has compiled-in help at some level is easier to use than one that doesn't.  If it doesn't have built-in help, it should have a decent manual or web site.
+
+
+Web2/Javascript vs Web1/HTML
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+If the package is a web application does it have (or do you need) a Web2/Javascript controls?  These can make the interface many times faster and simultaneously decrease server load at the price of making the code more complex.
+
+
+Quantitative Metrics
+--------------------
+
+While they are also not definitive in and of themselves, Google Links, Linktos and Trends can provide a useful metric of the number of Web references to the products being considered.
+I've used a number of such metrics in the example http://moo.nac.uci.edu/~hjm/shopcart/OSS_Shop_Cart_for_SW_Dist_Eval.html#quantmetrics[Review of Shopping cart Software].
+
+Raw Google Links
+~~~~~~~~~~~~~~~~
+'Raw Google Links' are the number of links that a unambiguous name search returns.  'Prestashop' is unambiguously the name of a particular shopping cart package. 'Presta' is not.
+
+'Link Tos' or 'BackLinks' are the number of sites that link to the home site of the package under investigation.  The Google search bar format for this kind of query is 'link:http://www.site.com'. 
+
+http://trends.google.com[Google Trends] is a very good way to determine whether the product is increasing or decreasing in popularity.  Again, this should not be the only or even most important criterium, but should be considered in conjuction with the others.  
+
+Below is an example comparing some different Shopping cart applications.
+
+.Example of OSCommerce vs magento vs PrestaShop
+image:shopcart/osc_magenta_presta_trends.png[Google Trends: Shopping Cart trends]
+
+http://www.google.com/trends?q=oscommerce,magento,prestashop[Regenerate image with current data.]
+
+
+Forum traffic
+~~~~~~~~~~~~~
+A popular and responsive Support Forum is an extremely positive indicator, especially for OSS products where you may be responsible for your own support.    This is where problems about the software are discussed and hopefully answered by both the authors of the software and other users.  Obviously a larger population makes it more likely that someone has already noticed and solved your particular problem.
+
+One thing that I've noticed is that a fair number of PS vendors do not allow their knowledgebases or forums to be indexed by Google or even directly searchable by non-customers or even customers.  The http://forums.netreo.net/[Netreo/OmniCenter Forms] are an example of this.  This reduces the ability of users to fix their problems themselves and keeps a much tighter lid on how to fix bugs in their software themselves which may tend to keep those customers paying for higher support.  There seems to be a move towards opening these sources of information, but you should check the PS vendors support site before choosing.  While rare, there are some CSS vendors who require Non-Disclosure Agreements for the use of their products.  This should be a deal killer.  This is quite common for http://goo.gl/LYaX[vendors of Electronic Medical Records (EMR) products].
+
+The following data points are indicative of the popularity of a package:
+
+* Total Forum Traffic
+* Recent Traffic
+* Registered Users
+* Number of Active Foreign Language Forums.
+* Current users at various times
+
+
+Maturity
+~~~~~~~~
+While Google Trends can help to identify the lifetime of a project and whether it is gaining or losing traction, especially relative to other competitors, there are other crtiteria for evaluating maturity.  There is a term http://www.dwheeler.com/gram.html[Generally Regarded As Mature] (GRAM) that describes some of the best-known and supported OSS projects, such as the Linux Operating System, the Apache Web Server, the OpenOffice suite, the Mailman listserver, and the Perl, Python, and Java languages. For the areas that these cover, inclusion on such lists is effectively a no-brainer unless there is something that explicitly or logically excludes them.
+
+While a long lifetime generally argues for a product, sometimes the length of the lifetime and a tortured, spaghetti codebase can start to drive users away.  This is where Google Trends can be helpful.  It can help to show the relative lifetime of a product and whether references to it are increasing or decreasing.  An example of a long lifetime that seems to be trending down is the OSCommerce shopping cart app relative to some newcomers:
+
+.Example of OSCommerce vs magento vs PrestaShop
+image:shopcart/osc_magenta_presta_trends.png[Google Trends: Shopping Cart trends]
+
+An additional indication of a product's maturity is whether 'books' have been written about the product.  Nagios is a popular system management software suite and http://www.nagios.org/about/propaganda/books[several books in multiple languages] have been written about it.
+
+Scalability
+~~~~~~~~~~~
+If the package needs to be scalable, how do you determine beforehand how scalable it is? For one thing, it depends on your definition of scalability - if you define scalable as having little extra cost for additional installations, almost all OSS packages are pretty scalable.  If you want the package to support high scalability from one installation, that's a different thing. Is it explicitly designed to scale out?  Are there examples of highly scaled installations?  Anything with 'server' in its description should probably be considered with scalability in mind (database server, file server, compute server, web server, etc).
+
+
+Database Complexity
+~~~~~~~~~~~~~~~~~~~
+If the package under consideration requires a database (DB), it may be useful to evaluate the complexity of the underlying DB to see what the Foreign Key (FK) relationships are and how many singlet tables there are (tables without an FK relationship).  This information can be useful as an indicator of how difficult it may be if you have to modify the DB yourself for some reason, and if so, which existing tables might be good candidates for "subverting" if you don't want to change the schema.
+
+If the database provided is MySQL (often the case for OSS projects), there is a free analytical tool called http://mkweb.bcgsc.ca/schemaball/[Schemaball] which can visualize the number of tables and the FK relationships.  Below is an example of a MySQL database for a Shopping cart application:
+
+.OpenCart Schema Complexity as a Schemaball
+image:shopcart/opencart_s.gif[link="shopcart/opencart.png",align="left"] 
+(click thumbnail for larger image)
+
+Platform Support
+~~~~~~~~~~~~~~~~
+If this is a consideration, it will cut down the number of packages you'll have to review considerably, but note that many web applications are written portably so that as long as the supporting platform will run, the application layer will run as well.  Among the best known of these approaches is the generic http://en.wikipedia.org/wiki/LAMP_(software_bundle)[LAMP platform] (Linux, Apache, MySQL (or PostGreSQL), PHP (expanded to include Perl, Python, Ruby, Java)). 
+ 
+  
+Development & Source Code
+-------------------------
+This is where Open Source is supposed to shine and in most cases it does.  Most popular OSS packages are hosted with community development in mind, but some are less open than others (or less organized).  Some questions that 'should be' easy to answer are:
+
+* Is there a dedicated site for development?
+* How big is the Codebase?  Small is easier to understand; but large 'implies' completeness.  If 2 projects have similar functionality, a smaller codebase tends to be easier to understand.
+* Is the code in a language that your organization can support?
+* Is the source code commented well and intelligently?
+* Is there a http://www.stack.nl/~dimitri/doxygen/[Doxygen] configuration or tree that is easy to use?
+* How many contributing developers are there?  A single developer doesn't bode well for reliably continued development.
+* Is there an active and helpful IRC channel for support?
+* Who owns the code copyright and what kind of license covers the project? Does the license match with your plans for the project?  Some OSS licenses are more Open than others.
+* Is there a https://issues.apache.org/jira/browse/OFBIZ[public bugtracker] with a list of bugs fixed/outstanding?
+* Is it easy to add to or understand the 'Feature Wishlist'?
+
+* Does the package use other software (openid, ldap, clustering, grid technologies) to fulfill requirements or do they write everything themselves?  Using other software is an indication of how much the authors are aware of other projects and don't waste time re-inventing wheels.  
+* Is the project extendable with published APIs and/or examples of how to extend it with modules or plug-ins?  Do the plug-ins and modules works as described?  (http://www.jedit.org[Jedit] and http://www.eclipse.org[Eclipse] are 2 examples that have so many plug-ins that most of the code base may actually be in the plug-ins)
+* If applicable, does the project use industry standards more or less than a competitor?
+* Is it possible to figure out the number of downloads or users of a particular version?
+* Can you pull the current source code from a public Source Code repository?
+* Is there commercial consulting, training, or consulting available for the project? From multiple sources?
+* Is there a roadmap for future plans and is there evidence that the roadmap has been followed in the past?
+* What is the number & frequency of releases?
+
+
+Example Evaluation
+------------------
+
+Here is an example of such an OSS evaluation that I am doing for http://moo.nac.uci.edu/~hjm/shopcart/OSS_Shop_Cart_for_SW_Dist_Eval.html[OSS Shopping Cart Applications].  It's incomplete and ongoing, but you can see some of the approaches I suggest above.
+  
+
+Current version
+---------------
+
+The current version of this document should be http://moo.nac.uci.edu/~hjm/How_to_Evaluate_OSS.html[available here].
