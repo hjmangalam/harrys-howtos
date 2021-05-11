@@ -1,0 +1,1885 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta name="generator" content="AsciiDoc 8.6.9">
+<title>How to transfer large amounts of data via network.</title>
+<style type="text/css">
+/* Shared CSS for AsciiDoc xhtml11 and html5 backends */
+
+/* Default font. */
+body {
+  font-family: Georgia,serif;
+}
+
+/* Title font. */
+h1, h2, h3, h4, h5, h6,
+div.title, caption.title,
+thead, p.table.header,
+#toctitle,
+#author, #revnumber, #revdate, #revremark,
+#footer {
+  font-family: Arial,Helvetica,sans-serif;
+}
+
+body {
+  margin: 1em 5% 1em 5%;
+}
+
+a {
+  color: blue;
+  text-decoration: underline;
+}
+a:visited {
+  color: fuchsia;
+}
+
+em {
+  font-style: italic;
+  color: navy;
+}
+
+strong {
+  font-weight: bold;
+  color: #083194;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  color: #527bbd;
+  margin-top: 1.2em;
+  margin-bottom: 0.5em;
+  line-height: 1.3;
+}
+
+h1, h2, h3 {
+  border-bottom: 2px solid silver;
+}
+h2 {
+  padding-top: 0.5em;
+}
+h3 {
+  float: left;
+}
+h3 + * {
+  clear: left;
+}
+h5 {
+  font-size: 1.0em;
+}
+
+div.sectionbody {
+  margin-left: 0;
+}
+
+hr {
+  border: 1px solid silver;
+}
+
+p {
+  margin-top: 0.5em;
+  margin-bottom: 0.5em;
+}
+
+ul, ol, li > p {
+  margin-top: 0;
+}
+ul > li     { color: #aaa; }
+ul > li > * { color: black; }
+
+.monospaced, code, pre {
+  font-family: "Courier New", Courier, monospace;
+  font-size: inherit;
+  color: navy;
+  padding: 0;
+  margin: 0;
+}
+pre {
+  white-space: pre-wrap;
+}
+
+#author {
+  color: #527bbd;
+  font-weight: bold;
+  font-size: 1.1em;
+}
+#email {
+}
+#revnumber, #revdate, #revremark {
+}
+
+#footer {
+  font-size: small;
+  border-top: 2px solid silver;
+  padding-top: 0.5em;
+  margin-top: 4.0em;
+}
+#footer-text {
+  float: left;
+  padding-bottom: 0.5em;
+}
+#footer-badges {
+  float: right;
+  padding-bottom: 0.5em;
+}
+
+#preamble {
+  margin-top: 1.5em;
+  margin-bottom: 1.5em;
+}
+div.imageblock, div.exampleblock, div.verseblock,
+div.quoteblock, div.literalblock, div.listingblock, div.sidebarblock,
+div.admonitionblock {
+  margin-top: 1.0em;
+  margin-bottom: 1.5em;
+}
+div.admonitionblock {
+  margin-top: 2.0em;
+  margin-bottom: 2.0em;
+  margin-right: 10%;
+  color: #606060;
+}
+
+div.content { /* Block element content. */
+  padding: 0;
+}
+
+/* Block element titles. */
+div.title, caption.title {
+  color: #527bbd;
+  font-weight: bold;
+  text-align: left;
+  margin-top: 1.0em;
+  margin-bottom: 0.5em;
+}
+div.title + * {
+  margin-top: 0;
+}
+
+td div.title:first-child {
+  margin-top: 0.0em;
+}
+div.content div.title:first-child {
+  margin-top: 0.0em;
+}
+div.content + div.title {
+  margin-top: 0.0em;
+}
+
+div.sidebarblock > div.content {
+  background: #ffffee;
+  border: 1px solid #dddddd;
+  border-left: 4px solid #f0f0f0;
+  padding: 0.5em;
+}
+
+div.listingblock > div.content {
+  border: 1px solid #dddddd;
+  border-left: 5px solid #f0f0f0;
+  background: #f8f8f8;
+  padding: 0.5em;
+}
+
+div.quoteblock, div.verseblock {
+  padding-left: 1.0em;
+  margin-left: 1.0em;
+  margin-right: 10%;
+  border-left: 5px solid #f0f0f0;
+  color: #888;
+}
+
+div.quoteblock > div.attribution {
+  padding-top: 0.5em;
+  text-align: right;
+}
+
+div.verseblock > pre.content {
+  font-family: inherit;
+  font-size: inherit;
+}
+div.verseblock > div.attribution {
+  padding-top: 0.75em;
+  text-align: left;
+}
+/* DEPRECATED: Pre version 8.2.7 verse style literal block. */
+div.verseblock + div.attribution {
+  text-align: left;
+}
+
+div.admonitionblock .icon {
+  vertical-align: top;
+  font-size: 1.1em;
+  font-weight: bold;
+  text-decoration: underline;
+  color: #527bbd;
+  padding-right: 0.5em;
+}
+div.admonitionblock td.content {
+  padding-left: 0.5em;
+  border-left: 3px solid #dddddd;
+}
+
+div.exampleblock > div.content {
+  border-left: 3px solid #dddddd;
+  padding-left: 0.5em;
+}
+
+div.imageblock div.content { padding-left: 0; }
+span.image img { border-style: none; vertical-align: text-bottom; }
+a.image:visited { color: white; }
+
+dl {
+  margin-top: 0.8em;
+  margin-bottom: 0.8em;
+}
+dt {
+  margin-top: 0.5em;
+  margin-bottom: 0;
+  font-style: normal;
+  color: navy;
+}
+dd > *:first-child {
+  margin-top: 0.1em;
+}
+
+ul, ol {
+    list-style-position: outside;
+}
+ol.arabic {
+  list-style-type: decimal;
+}
+ol.loweralpha {
+  list-style-type: lower-alpha;
+}
+ol.upperalpha {
+  list-style-type: upper-alpha;
+}
+ol.lowerroman {
+  list-style-type: lower-roman;
+}
+ol.upperroman {
+  list-style-type: upper-roman;
+}
+
+div.compact ul, div.compact ol,
+div.compact p, div.compact p,
+div.compact div, div.compact div {
+  margin-top: 0.1em;
+  margin-bottom: 0.1em;
+}
+
+tfoot {
+  font-weight: bold;
+}
+td > div.verse {
+  white-space: pre;
+}
+
+div.hdlist {
+  margin-top: 0.8em;
+  margin-bottom: 0.8em;
+}
+div.hdlist tr {
+  padding-bottom: 15px;
+}
+dt.hdlist1.strong, td.hdlist1.strong {
+  font-weight: bold;
+}
+td.hdlist1 {
+  vertical-align: top;
+  font-style: normal;
+  padding-right: 0.8em;
+  color: navy;
+}
+td.hdlist2 {
+  vertical-align: top;
+}
+div.hdlist.compact tr {
+  margin: 0;
+  padding-bottom: 0;
+}
+
+.comment {
+  background: yellow;
+}
+
+.footnote, .footnoteref {
+  font-size: 0.8em;
+}
+
+span.footnote, span.footnoteref {
+  vertical-align: super;
+}
+
+#footnotes {
+  margin: 20px 0 20px 0;
+  padding: 7px 0 0 0;
+}
+
+#footnotes div.footnote {
+  margin: 0 0 5px 0;
+}
+
+#footnotes hr {
+  border: none;
+  border-top: 1px solid silver;
+  height: 1px;
+  text-align: left;
+  margin-left: 0;
+  width: 20%;
+  min-width: 100px;
+}
+
+div.colist td {
+  padding-right: 0.5em;
+  padding-bottom: 0.3em;
+  vertical-align: top;
+}
+div.colist td img {
+  margin-top: 0.3em;
+}
+
+@media print {
+  #footer-badges { display: none; }
+}
+
+#toc {
+  margin-bottom: 2.5em;
+}
+
+#toctitle {
+  color: #527bbd;
+  font-size: 1.1em;
+  font-weight: bold;
+  margin-top: 1.0em;
+  margin-bottom: 0.1em;
+}
+
+div.toclevel0, div.toclevel1, div.toclevel2, div.toclevel3, div.toclevel4 {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+div.toclevel2 {
+  margin-left: 2em;
+  font-size: 0.9em;
+}
+div.toclevel3 {
+  margin-left: 4em;
+  font-size: 0.9em;
+}
+div.toclevel4 {
+  margin-left: 6em;
+  font-size: 0.9em;
+}
+
+span.aqua { color: aqua; }
+span.black { color: black; }
+span.blue { color: blue; }
+span.fuchsia { color: fuchsia; }
+span.gray { color: gray; }
+span.green { color: green; }
+span.lime { color: lime; }
+span.maroon { color: maroon; }
+span.navy { color: navy; }
+span.olive { color: olive; }
+span.purple { color: purple; }
+span.red { color: red; }
+span.silver { color: silver; }
+span.teal { color: teal; }
+span.white { color: white; }
+span.yellow { color: yellow; }
+
+span.aqua-background { background: aqua; }
+span.black-background { background: black; }
+span.blue-background { background: blue; }
+span.fuchsia-background { background: fuchsia; }
+span.gray-background { background: gray; }
+span.green-background { background: green; }
+span.lime-background { background: lime; }
+span.maroon-background { background: maroon; }
+span.navy-background { background: navy; }
+span.olive-background { background: olive; }
+span.purple-background { background: purple; }
+span.red-background { background: red; }
+span.silver-background { background: silver; }
+span.teal-background { background: teal; }
+span.white-background { background: white; }
+span.yellow-background { background: yellow; }
+
+span.big { font-size: 2em; }
+span.small { font-size: 0.6em; }
+
+span.underline { text-decoration: underline; }
+span.overline { text-decoration: overline; }
+span.line-through { text-decoration: line-through; }
+
+div.unbreakable { page-break-inside: avoid; }
+
+
+/*
+ * xhtml11 specific
+ *
+ * */
+
+div.tableblock {
+  margin-top: 1.0em;
+  margin-bottom: 1.5em;
+}
+div.tableblock > table {
+  border: 3px solid #527bbd;
+}
+thead, p.table.header {
+  font-weight: bold;
+  color: #527bbd;
+}
+p.table {
+  margin-top: 0;
+}
+/* Because the table frame attribute is overriden by CSS in most browsers. */
+div.tableblock > table[frame="void"] {
+  border-style: none;
+}
+div.tableblock > table[frame="hsides"] {
+  border-left-style: none;
+  border-right-style: none;
+}
+div.tableblock > table[frame="vsides"] {
+  border-top-style: none;
+  border-bottom-style: none;
+}
+
+
+/*
+ * html5 specific
+ *
+ * */
+
+table.tableblock {
+  margin-top: 1.0em;
+  margin-bottom: 1.5em;
+}
+thead, p.tableblock.header {
+  font-weight: bold;
+  color: #527bbd;
+}
+p.tableblock {
+  margin-top: 0;
+}
+table.tableblock {
+  border-width: 3px;
+  border-spacing: 0px;
+  border-style: solid;
+  border-color: #527bbd;
+  border-collapse: collapse;
+}
+th.tableblock, td.tableblock {
+  border-width: 1px;
+  padding: 4px;
+  border-style: solid;
+  border-color: #527bbd;
+}
+
+table.tableblock.frame-topbot {
+  border-left-style: hidden;
+  border-right-style: hidden;
+}
+table.tableblock.frame-sides {
+  border-top-style: hidden;
+  border-bottom-style: hidden;
+}
+table.tableblock.frame-none {
+  border-style: hidden;
+}
+
+th.tableblock.halign-left, td.tableblock.halign-left {
+  text-align: left;
+}
+th.tableblock.halign-center, td.tableblock.halign-center {
+  text-align: center;
+}
+th.tableblock.halign-right, td.tableblock.halign-right {
+  text-align: right;
+}
+
+th.tableblock.valign-top, td.tableblock.valign-top {
+  vertical-align: top;
+}
+th.tableblock.valign-middle, td.tableblock.valign-middle {
+  vertical-align: middle;
+}
+th.tableblock.valign-bottom, td.tableblock.valign-bottom {
+  vertical-align: bottom;
+}
+
+
+/*
+ * manpage specific
+ *
+ * */
+
+body.manpage h1 {
+  padding-top: 0.5em;
+  padding-bottom: 0.5em;
+  border-top: 2px solid silver;
+  border-bottom: 2px solid silver;
+}
+body.manpage h2 {
+  border-style: none;
+}
+body.manpage div.sectionbody {
+  margin-left: 3em;
+}
+
+@media print {
+  body.manpage div#toc { display: none; }
+}
+
+
+@media screen {
+  body {
+    max-width: 50em; /* approximately 80 characters wide */
+    margin-left: 16em;
+  }
+
+  #toc {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 13em;
+    padding: 0.5em;
+    padding-bottom: 1.5em;
+    margin: 0;
+    overflow: auto;
+    border-right: 3px solid #f8f8f8;
+    background-color: white;
+  }
+
+  #toc .toclevel1 {
+    margin-top: 0.5em;
+  }
+
+  #toc .toclevel2 {
+    margin-top: 0.25em;
+    display: list-item;
+    color: #aaaaaa;
+  }
+
+  #toctitle {
+    margin-top: 0.5em;
+  }
+}
+</style>
+<script type="text/javascript">
+/*<![CDATA[*/
+var asciidoc = {  // Namespace.
+
+/////////////////////////////////////////////////////////////////////
+// Table Of Contents generator
+/////////////////////////////////////////////////////////////////////
+
+/* Author: Mihai Bazon, September 2002
+ * http://students.infoiasi.ro/~mishoo
+ *
+ * Table Of Content generator
+ * Version: 0.4
+ *
+ * Feel free to use this script under the terms of the GNU General Public
+ * License, as long as you do not remove or alter this notice.
+ */
+
+ /* modified by Troy D. Hanson, September 2006. License: GPL */
+ /* modified by Stuart Rackham, 2006, 2009. License: GPL */
+
+// toclevels = 1..4.
+toc: function (toclevels) {
+
+  function getText(el) {
+    var text = "";
+    for (var i = el.firstChild; i != null; i = i.nextSibling) {
+      if (i.nodeType == 3 /* Node.TEXT_NODE */) // IE doesn't speak constants.
+        text += i.data;
+      else if (i.firstChild != null)
+        text += getText(i);
+    }
+    return text;
+  }
+
+  function TocEntry(el, text, toclevel) {
+    this.element = el;
+    this.text = text;
+    this.toclevel = toclevel;
+  }
+
+  function tocEntries(el, toclevels) {
+    var result = new Array;
+    var re = new RegExp('[hH]([1-'+(toclevels+1)+'])');
+    // Function that scans the DOM tree for header elements (the DOM2
+    // nodeIterator API would be a better technique but not supported by all
+    // browsers).
+    var iterate = function (el) {
+      for (var i = el.firstChild; i != null; i = i.nextSibling) {
+        if (i.nodeType == 1 /* Node.ELEMENT_NODE */) {
+          var mo = re.exec(i.tagName);
+          if (mo && (i.getAttribute("class") || i.getAttribute("className")) != "float") {
+            result[result.length] = new TocEntry(i, getText(i), mo[1]-1);
+          }
+          iterate(i);
+        }
+      }
+    }
+    iterate(el);
+    return result;
+  }
+
+  var toc = document.getElementById("toc");
+  if (!toc) {
+    return;
+  }
+
+  // Delete existing TOC entries in case we're reloading the TOC.
+  var tocEntriesToRemove = [];
+  var i;
+  for (i = 0; i < toc.childNodes.length; i++) {
+    var entry = toc.childNodes[i];
+    if (entry.nodeName.toLowerCase() == 'div'
+     && entry.getAttribute("class")
+     && entry.getAttribute("class").match(/^toclevel/))
+      tocEntriesToRemove.push(entry);
+  }
+  for (i = 0; i < tocEntriesToRemove.length; i++) {
+    toc.removeChild(tocEntriesToRemove[i]);
+  }
+
+  // Rebuild TOC entries.
+  var entries = tocEntries(document.getElementById("content"), toclevels);
+  for (var i = 0; i < entries.length; ++i) {
+    var entry = entries[i];
+    if (entry.element.id == "")
+      entry.element.id = "_toc_" + i;
+    var a = document.createElement("a");
+    a.href = "#" + entry.element.id;
+    a.appendChild(document.createTextNode(entry.text));
+    var div = document.createElement("div");
+    div.appendChild(a);
+    div.className = "toclevel" + entry.toclevel;
+    toc.appendChild(div);
+  }
+  if (entries.length == 0)
+    toc.parentNode.removeChild(toc);
+},
+
+
+/////////////////////////////////////////////////////////////////////
+// Footnotes generator
+/////////////////////////////////////////////////////////////////////
+
+/* Based on footnote generation code from:
+ * http://www.brandspankingnew.net/archive/2005/07/format_footnote.html
+ */
+
+footnotes: function () {
+  // Delete existing footnote entries in case we're reloading the footnodes.
+  var i;
+  var noteholder = document.getElementById("footnotes");
+  if (!noteholder) {
+    return;
+  }
+  var entriesToRemove = [];
+  for (i = 0; i < noteholder.childNodes.length; i++) {
+    var entry = noteholder.childNodes[i];
+    if (entry.nodeName.toLowerCase() == 'div' && entry.getAttribute("class") == "footnote")
+      entriesToRemove.push(entry);
+  }
+  for (i = 0; i < entriesToRemove.length; i++) {
+    noteholder.removeChild(entriesToRemove[i]);
+  }
+
+  // Rebuild footnote entries.
+  var cont = document.getElementById("content");
+  var spans = cont.getElementsByTagName("span");
+  var refs = {};
+  var n = 0;
+  for (i=0; i<spans.length; i++) {
+    if (spans[i].className == "footnote") {
+      n++;
+      var note = spans[i].getAttribute("data-note");
+      if (!note) {
+        // Use [\s\S] in place of . so multi-line matches work.
+        // Because JavaScript has no s (dotall) regex flag.
+        note = spans[i].innerHTML.match(/\s*\[([\s\S]*)]\s*/)[1];
+        spans[i].innerHTML =
+          "[<a id='_footnoteref_" + n + "' href='#_footnote_" + n +
+          "' title='View footnote' class='footnote'>" + n + "</a>]";
+        spans[i].setAttribute("data-note", note);
+      }
+      noteholder.innerHTML +=
+        "<div class='footnote' id='_footnote_" + n + "'>" +
+        "<a href='#_footnoteref_" + n + "' title='Return to text'>" +
+        n + "</a>. " + note + "</div>";
+      var id =spans[i].getAttribute("id");
+      if (id != null) refs["#"+id] = n;
+    }
+  }
+  if (n == 0)
+    noteholder.parentNode.removeChild(noteholder);
+  else {
+    // Process footnoterefs.
+    for (i=0; i<spans.length; i++) {
+      if (spans[i].className == "footnoteref") {
+        var href = spans[i].getElementsByTagName("a")[0].getAttribute("href");
+        href = href.match(/#.*/)[0];  // Because IE return full URL.
+        n = refs[href];
+        spans[i].innerHTML =
+          "[<a href='#_footnote_" + n +
+          "' title='View footnote' class='footnote'>" + n + "</a>]";
+      }
+    }
+  }
+},
+
+install: function(toclevels) {
+  var timerId;
+
+  function reinstall() {
+    asciidoc.footnotes();
+    if (toclevels) {
+      asciidoc.toc(toclevels);
+    }
+  }
+
+  function reinstallAndRemoveTimer() {
+    clearInterval(timerId);
+    reinstall();
+  }
+
+  timerId = setInterval(reinstall, 500);
+  if (document.addEventListener)
+    document.addEventListener("DOMContentLoaded", reinstallAndRemoveTimer, false);
+  else
+    window.onload = reinstallAndRemoveTimer;
+}
+
+}
+asciidoc.install(2);
+/*]]>*/
+</script>
+</head>
+<body class="article">
+<div id="header">
+<h1>How to transfer large amounts of data via network.</h1>
+<span id="author">by Harry Mangalam</span><br>
+<span id="email" class="monospaced">&lt;<a href="mailto:harry.mangalam@uci.edu">harry.mangalam@uci.edu</a>&gt;</span><br>
+<span id="revnumber">version 1.26 Nov 11,</span>
+<span id="revdate">2015</span>
+<div id="toc">
+  <div id="toctitle">Table of Contents</div>
+  <noscript><p><b>JavaScript must be enabled in your browser to display the table of contents.</b></p></noscript>
+</div>
+</div>
+<div id="content">
+<div class="sect1">
+<h2 id="_executive_summary">1. Executive Summary</h2>
+<div class="sectionbody">
+<div class="paragraph"><p>If you have to transfer data, transfer only <a href="#rsync">that which is necessary</a>.
+If you unavoidably have TBs to transfer regularly, consider having your
+institution set up a <a href="#gridftp">GridFTP</a> node.</p></div>
+<div class="paragraph"><p>If <a href="#gridftp">GridFTP</a> is not available, a very easy user-side transfer approach
+is using a
+<a href="#globusonline">Globus Online</a> endpoint.  However, this now seems to require data providers
+to license the technology.  Depending on cost relative to Globus, <a href="#aspera">Aspera</a> may be
+very effective as well, providing extremely fast data transfer, albeit requiring a licensed
+server.  The fastest, easiest, user-mode, node-to-node method (that remains free)
+to move data for Linux and MacOSX is with <a href="#bbcp">bbcp</a>.  Note that it is quite sensitive
+to tuning which may limit its ease for naive users.
+An exception is for extremely large directory trees for which <em>bbcp</em> is inefficient due to
+time required for building the directory tree.  In that case, <em>rsync</em> may be an easier
+choice, although <em>bbcp</em> offers a named-pipe option which can use an external app to
+do the recursive operation. <a href="#">lftp</a> is slower than <em>bbcp</em> but has a number of interface niceties that recommend it, and is more widely available from repo&#8217;s than bbcp.</p></div>
+<div class="paragraph"><p>For first-time transfers of multi-GB directory trees containing 10,000s of files,
+the use of <a href="#tarnetcat"><em>tar</em> &amp; netcat</a> seems to be the fastest way to move the data.
+<a href="http://moo.nac.uci.edu/~hjm/tnc">tnc</a> is a Perl wrapper (<a href="#tnc">see below</a>)that
+helps in this regard.</p></div>
+<div class="paragraph"><p>If you use Windows, <a href="#fdt">fdt</a> is Java-based and will run there as well.</p></div>
+<div class="paragraph"><p>Note that bbcp and the similar <a href="#bbftp">bbftp</a> can require considerable tuning
+to extract maximum bandwidth.
+If these applications do not work at expected rates, ESNet&#8217;s
+<a href="http://fasterdata.es.net/assets/fasterdata/JT-201010.pdf">Guide to Bulk Data
+Transfer over a WAN</a> is an
+excellent summary of the deeper network issues. (Thanks to <em>Rob Wells</em> for
+the link change info.)</p></div>
+<div class="paragraph"><p>And everyone should know how to use <a href="#rsync">rsync</a>, which is available on
+most *nix sytems and should be the default fallback for most data transfers.
+A perl wrapper for it, <a href="http://moo.nac.uci.edu/~hjm/parsync/">parsync</a>
+will load-balance and fork multiple instances of it to increase bandwidth utilization.</p></div>
+<div class="paragraph"><p>(A next-gen version previously released as <em>parsyncfp</em> has some as-yet
+unresolved bugs and should not be used).</p></div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_big_bytes_across_the_network">2. Big Bytes across the network</h2>
+<div class="sectionbody">
+<div class="paragraph"><p>We all need to transfer data, and the amount of that data is increasing as the
+world gets more digital.  If it&#8217;s not climate model data from the IPCC, it&#8217;s
+high energy particle physics data from the LHC, or audio &amp; video streams from a
+performance recording.</p></div>
+<div class="paragraph"><p>The usual methods of transferring data (<a href="http://en.wikipedia.org/wiki/Secure_copy">scp</a>,
+<a href="http://en.wikipedia.org/wiki/Http">http</a> and <a href="http://en.wikipedia.org/wiki/Ftp">ftp</a>
+utilities (such as <a href="http://curl.haxx.se/">curl</a> or <a href="http://en.wikipedia.org/wiki/Wget">wget</a>)
+work fine when your data is in the MB range, but when you have very large collections
+of data there are some tricks that are worth mentioning.</p></div>
+<div class="admonitionblock" id="zotfile">
+<table><tr>
+<td class="icon">
+<img src="./images/icons/note.png" alt="Note">
+</td>
+<td class="content">
+<div class="title">A note about transferring Zillions Of Tiny (ZOT) files</div>
+<div class="paragraph"><p>Altho much <em>big data</em> is showing up in very large files (10s or 1000s of GB each),
+there is a lot of traffic in small files, often generated by naive users who are
+creating many (10s of millions) such files in a single analytical run.</p></div>
+<div class="paragraph"><p>It&#8217;s worth a few words about the size and number of files.  A file on a disk is
+characterized not only by its contents but by the file descriptor itself.  Each
+file requires the lookup and examination of an inode structure to find out where
+the disk blocks of that file are kept.  Obviously if you have 1GB of data in 1
+file, it will be accessible much more quickly than if you have to look up 1
+million files of 1000 bytes each.  This has implications when you&#8217;re
+transferring data on an active system.  You want to transfer the maximum data
+with the minimum overhead, so if your files are large, it will transfer more
+rapidly.  Here&#8217;s an example.</p></div>
+<div class="paragraph"><p>A Mail dir on my laptop contains 95MB of information in 32,304 files and dirs.
+It takes 12s to move to a remote server over 1GbE when being copied file by
+file.  It takes about 3s to store all the files and dirs in an uncompressed tar
+file but then takes only 5s for the single file that contains all that data to
+transfer to the same server over the same connection. This difference is
+accentuated as the number of files increases and the network hop-count
+increases.</p></div>
+<div class="paragraph"><p>The more data you can pack into fewer files, the faster your transfer will be.
+Obviously if it&#8217;s a few files over a private, fast attached filesystem, it won&#8217;t
+be significant, but when you&#8217;re moving ZOT files over a Wide Area Network or
+even across networked filesystems, it can make a huge difference.</p></div>
+</td>
+</tr></table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="comp_encrypt">3. Compression &amp; Encryption</h2>
+<div class="sectionbody">
+<div class="paragraph"><p>Whether to compress and/or encrypt your data in transit depends on the cost of doing so.  For a modern desktop or laptop computer, the CPU(s) are usually not doing much of anything so the cost incurred in doing the compression/encryption is generally not even noticed. However on an otherwise loaded machine, it can be significant, so it depends on what has to be done at the same time.  Compression can reduce the amount of data that needs to be transmitted considerably if the data is of a type that is compressible (text, XML, uncompressed images and music), however progressively such data is already compressed on the disk (in the form of jpeg or mp3 compression), and compressing already compressed data yields little improvement.  Some compression utilities try to detect already-compressed data and skip it, so there&#8217;s often no penalty in requesting compression, but some utilities (like the popular Linux archiving tar) will not detect it correctly and waste lots of time trying.</p></div>
+<div class="paragraph"><p>As an extreme example, here&#8217;s the timing of making a tar archive of a large directory that consists of mostly already compressed data, using compression or not.</p></div>
+<div class="paragraph"><p><strong>Using</strong> compression:</p></div>
+<div class="listingblock">
+<div class="content monospaced">
+<pre>$ time tar -czpf /bduc/data.tar.gz /data
+tar: Removing leading `/' from member names
+
+real    201m38.540s
+user    95m32.114s
+sys     7m13.807s
+
+tar file = 84,284,016,900 bytes</pre>
+</div></div>
+<div class="paragraph"><p><strong>NOT using</strong> compression:</p></div>
+<div class="listingblock">
+<div class="content monospaced">
+<pre>$ time tar -cpf /bduc/data.tar /data
+tar: Removing leading `/' from member names
+
+real    127m13.404s
+user    0m43.579s
+sys     5m35.437s
+
+tar file = 86,237,952,000</pre>
+</div></div>
+<div class="paragraph"><p>It took more than 74 minutes (about 58%) longer using compression which gained us about 2GB less storage (2.3% decrease in size.) YMMV.</p></div>
+<div class="admonitionblock">
+<table><tr>
+<td class="icon">
+<img src="./images/icons/note.png" alt="Note">
+</td>
+<td class="content">
+<div class="title">Parallel compression/decompression</div>
+<div class="paragraph"><p>There are now parallel compression/decompresion routines that will, for large files, help substantially, by using all the available CPU cores to do the compression.</p></div>
+<div class="paragraph"><p>From the same author as <em>gzip</em> comes <a href="http://zlib.net/pigz/">pigz/unpigz</a>
+(probably already in your repository) that is a near-drop-in replacement for
+gzip/gunzip.  Similarly there is a <a href="http://compression.ca/pbzip2/">parallel bzip2
+engine called pbzip2</a> that is a near-drop-in replacement for <em>bzip2</em>.  For very
+large jobs there is also an <a href="http://compression.ca/mpibzip2/">MPI-capable bzip2
+utility</a>.  The <em>pigz</em> compression accelerates on a per-file basis, so
+compressing ZOT files will not give you much of a speedup, but if you pass large
+files thru <em>pigz</em>, you&#8217;ll get close-to-perfect scaling.</p></div>
+</td>
+</tr></table>
+</div>
+<div class="paragraph"><p>Similarly, there is a computational cost to encrypting and decrypting a text,
+but less so than with compression.  <em>scp</em> uses <em>ssh</em> to do the underlying
+encryption and it does a very good job, but like the other single-TCP-stream
+utilities like <em>curl</em> and <em>wget</em>, it will only be able to push so much thru a
+connection.</p></div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="avoiding">4. Avoiding data transfer</h2>
+<div class="sectionbody">
+<div class="paragraph"><p>The most efficient way to transfer data is not to transfer it at all.  There are a number of utilities that can be used to assist in NOT transferring data.  Some of them are listed below.</p></div>
+<div class="sect2">
+<h3 id="kdirstat">4.1. kdirstat</h3>
+<div class="paragraph"><p>The elegant, open source <a href="http://kdirstat.sourceforge.net/">kdirstat</a> (and it&#8217;s
+ports to MacOSX <a href="http://www.derlien.com/">Disk Inventory X</a> and Windows
+<a href="http://windirstat.info/">Windirstat</a>) are quick ways to visualize what&#8217;s taking
+up space on your disk so you can either exclude the unwanted data that needs to
+be copied or delete it to make more space.  All of these are fully native GUI
+applications that show disk space utilization by file type and directory
+structure.</p></div>
+<div class="paragraph"><p><span class="image">
+<img src="kdirstat-main.png" alt="kdirstat screenshot">
+</span></p></div>
+</div>
+<div class="sect2">
+<h3 id="rsync">4.2. rsync</h3>
+<div class="paragraph"><p><a href="http://samba.anu.edu.au/rsync">rsync</a>, from the fertile mind of Andrew (<a href="http://www.samba.org/samba/">samba</a>) Tridgell, is an application that will synchronize 2 directory trees, transferring only blocks which are different.</p></div>
+<div class="paragraph"><p>The open source rsync is included by default with almost all Linux and MacOSX distributions. Versions of rsync exist for Windows as well, via <a href="http://www.cygwin.com">Cygwin</a>,  <a href="http://www.aboutmyip.com/AboutMyXApp/DeltaCopy.jsp">DeltaCopy</a>, and others.</p></div>
+<div class="admonitionblock">
+<table><tr>
+<td class="icon">
+<img src="./images/icons/note.png" alt="Note">
+</td>
+<td class="content">
+<div class="title">rsync vs bbcp</div>
+<div class="paragraph"><p><a href="#bbcp">bbcp</a> can act similarly to <em>rsync</em> but will only checksum entire files,
+not blocks, so for sub-GB transfers, <em>rsync</em> is probably a better choice in general.
+For very large files or directory trees, <em>bbcp</em> may be a better choice due to its
+multi-stream protocol and therefore better bandwidth utilization.</p></div>
+<div class="paragraph"><p>Note also that <em>rsync</em> is often used with <em>ssh</em> as the remote shell protocol. If
+this is the case and you&#8217;re using it to transfer large amounts of data, note
+that there is an old known <em>ssh</em> bug with the static flow control buffers that
+cripples it for large data transfers.  There is a well-maintained patch for
+<em>ssh</em> that addresses this at the
+<a href="http://www.psc.edu/networking/projects/hpn-ssh/">High Performance SSH/SCP</a> page.
+This is well worth checking if you use <em>rsync</em> or <em>scp</em> for large transfers.</p></div>
+</td>
+</tr></table>
+</div>
+<div class="paragraph"><p>For example, if you had recently added some songs to your 120 GB MP3 collection and you wanted to refresh the collection to your backup machine, instead of sending the entire collection over the network, rsync would detect and send only the new songs.</p></div>
+<div class="paragraph"><p>For example, the first time rsync is used to transfer a directory tree, there will be no speedup.</p></div>
+<div class="listingblock">
+<div class="content monospaced">
+<pre>$ rsync -av ~/FF moo:~
+building file list ... done
+FF/
+FF/6vxd7_10_2.pdf
+FF/Advanced_Networking_SDSC_Feb_1_minutes_HJM_fw.doc
+FF/Amazon Logitech $30 MIR MX Revolution mouse.pdf
+FF/Atbatt.com_receipt.gif
+FF/BAG_bicycle_advisory_group.letter.doc
+FF/BAG_bicycle_advisory_group.letter.odt
+ ...
+
+sent 355001628 bytes  received 10070 bytes  11270212.63 bytes/sec
+total size is 354923169  speedup is 1.00</pre>
+</div></div>
+<div class="paragraph"><p>but a few minutes later after adding <em>danish_wind_industry.html</em> to the <em>FF</em> directory</p></div>
+<div class="listingblock">
+<div class="content monospaced">
+<pre>$ rsync -av ~/FF moo:~
+building file list ... done
+FF/
+FF/danish_wind_industry.html
+
+sent 63294 bytes  received 48 bytes  126684.00 bytes/sec
+total size is 354971578  speedup is 5604.05</pre>
+</div></div>
+<div class="paragraph"><p>So the synchronization has a speedup of 5600-fold relative to the initial transfer.</p></div>
+<div class="paragraph"><p>Even more efficiently, if you had a huge database to back up and you had recently modified it so that most of the bits were identical, rsync would send only the blocks that contained the differences.</p></div>
+<div class="paragraph"><p>Here&#8217;s a modest example using a small binary database file:</p></div>
+<div class="listingblock">
+<div class="content monospaced">
+<pre>$ rsync -av mlocate.db moo:~
+building file list ... done
+mlocate.db
+
+sent 13580195 bytes  received 42 bytes  9053491.33 bytes/sec
+total size is 13578416  speedup is 1.00</pre>
+</div></div>
+<div class="paragraph"><p>After the transfer, I update the database and rsync it again:</p></div>
+<div class="listingblock">
+<div class="content monospaced">
+<pre>$ rsync -av mlocate.db moo:~
+building file list ... done
+mlocate.db
+
+sent 632641 bytes  received 22182 bytes  1309646.00 bytes/sec
+total size is 13614982  speedup is 20.79</pre>
+</div></div>
+<div class="paragraph"><p>There are many utilities based on rsync that are used to synchronize data on 2 sides of a connection by only transmitting the differences. The backup utility <a href="http://backuppc.sf.net">BackupPC</a> is one.</p></div>
+<div class="paragraph"><p><a href="http://moo.nac.uci.edu/~hjm/parsync/parsyncfp">parsyncfp</a> can increase the speed of transfer by load-balancing and parallelizing the transfer.  Especially if there is an imbalance in the disk speed or network, you can use parsync to optimize the transfer, while still limiting the system load on the transmitting host and network.</p></div>
+<div class="admonitionblock" id="filepart">
+<table><tr>
+<td class="icon">
+<img src="./images/icons/note.png" alt="Note">
+</td>
+<td class="content">
+<div class="title">File Partitioning Utilities</div>
+<div class="paragraph"><p>For this kind of load-balancing, 2 utilities should be noted:</p></div>
+<div class="ulist"><ul>
+<li>
+<p>
+<a href="http://sourceforge.net/projects/fpart/">fpart</a>, a file partitioning tool collects
+file info and divides them into N <em>chunkfiles</em>, based on a number of criteria.
+The author of fpart Ganael LAPLANCHE <a href="mailto:ganael.laplanche@martymac.org">Ganael LaPlanche</a>
+has written a very good article:
+<a href="http://connect.ed-diamond.com/GNU-Linux-Magazine/GLMF-164/Parallelisez-vos-transferts-de-fichiers">PARALLÉLISEZ FILE TRANSFERS</a> describing many of the problems (and some good solutions) about large-scale data transfer.
+This article is in French, but Google does a decent job in translating.
+</p>
+</li>
+<li>
+<p>
+<a href="https://github.com/thomas-joiner/k4dirstat/blob/master/kdirstat/kdirstat-cache-writer">kdirstat-cache-writer</a>,
+included with and used by the fabulous <a href="http://kdirstat.sourceforge.net/">kdirstat</a>,
+which is a directory recursion tool that gathers size info about all the files in a tree.
+This was used in the first version of the above-mentioned <em>parsync</em> to balance the transfer load, until I switched to
+the fpart partitioner, above.
+</p>
+</li>
+</ul></div>
+</td>
+</tr></table>
+</div>
+<div class="sect3">
+<h4 id="morersyncexamples">4.2.1. More rsync examples</h4>
+<div class="paragraph"><p><strong>Command to rsync data from UCI&#8217;s HPC cluster to a remote backup server.</strong></p></div>
+<div class="paragraph"><p>Where we will transfer the dir <em>tacg-4.6.0-src</em> to user <em>happy&#8217;s</em> account on the server <em>circus.tent.uci.edu</em> in the dir <em>~/HPC-backups</em>.  In the example below, we have to enter a password.  In the <a href="#secondrsyncexample">2nd example</a>, we&#8217;ve set up <a href="http://goo.gl/oJYeXD">passwordless ssh</a>.</p></div>
+<div class="listingblock">
+<div class="content monospaced">
+<pre># first time:
+
+$ rsync -av tacg-4.6.0-src happy@circus.tent.uci.edu:~/HPC-backups
+happy@circus.tent.uci.edu's password: [xxxxxxxxxx]
+X11 connection rejected because of wrong authentication.
+Warning: untrusted X11 forwarding setup failed: xauth key data not generated
+Warning: No xauth data; using fake authentication data for X11 forwarding.
+sending incremental file list
+tacg-4.6.0-src/
+tacg-4.6.0-src/AUTHORS
+tacg-4.6.0-src/COPYING
+ ...
+tacg-4.6.0-src/tacgi4/tacgi4.pl.in
+tacg-4.6.0-src/test/
+tacg-4.6.0-src/test/testtacg.pl
+sent 2668172 bytes  received 1613 bytes  410736.15 bytes/sec
+total size is 2662985  speedup is 1.00
+
+# note the speedup = 1
+
+# NB: the X11 warnings are just that - warnings that can be ignored</pre>
+</div></div>
+<div class="listingblock">
+<div class="content monospaced">
+<pre># second time:
+
+$ rsync -av tacg-4.6.0-src happy@circus.tent.nac.uci.edu:~/HPC-backups
+happy@circus.tent.nac.uci.edu's password: [xxxxxxxxxx]
+X11 connection rejected because of wrong authentication.
+Warning: untrusted X11 forwarding setup failed: xauth key data not generated
+Warning: No xauth data; using fake authentication data for X11 forwarding.
+sending incremental file list
+
+sent 1376 bytes  received 18 bytes  398.29 bytes/sec
+total size is 2662985  speedup is 1910.32
+
+# note the speedup = 1910X 1st one.</pre>
+</div></div>
+</div>
+<div class="sect3">
+<h4 id="secondrsyncexample">4.2.2. As above but also to:</h4>
+<div class="paragraph"><p>Command to:</p></div>
+<div class="ulist"><ul>
+<li>
+<p>
+compress files in transit (<em>-z</em> but see the <a href="#comp_encrypt">note above about compression</a>)
+</p>
+</li>
+<li>
+<p>
+delete the local files when transferred (<em>--remove-source-files</em>)
+</p>
+</li>
+<li>
+<p>
+perform the rsync in the background (&amp;) (<a href="http://goo.gl/oJYeXD">if you have ssh keys set up</a>)
+</p>
+</li>
+<li>
+<p>
+capture the activity in a log file
+</p>
+</li>
+</ul></div>
+<div class="listingblock">
+<div class="content monospaced">
+<pre># the following 'touch' command freshens the date on all C source files in that dir
+$ touch tacg-4.6.0-src/*.c
+
+# generate a datestamp, so a second log doesn't overwrite the previous one
+$ DD=`date +"%T_%F" | sed 's/:/./g'`
+
+# !! VERY IMPORTANT !!  The following command DELETES ALL THE FILES in the local (HPC-side) dir tree
+# (tho it does leave the tree structure behind).  If you don't want to delete the local files,
+# don't include the option '--remove-source-files'
+
+$ rsync -avz --remove-source-files tacg-4.6.0-src  happy@circus.tent.uci.edu:~/HPC-backups \
+2&gt; backup_logs/rsync_${DD}.log &amp;
+
+X11 connection rejected because of wrong authentication.
+Warning: untrusted X11 forwarding setup failed: xauth key data not generated
+Warning: No xauth data; using fake authentication data for X11 forwarding.</pre>
+</div></div>
+<div class="paragraph"><p>In the above example, there was no output to the screen except the X11 errors (STDERR).  All the STDOUT was captured by the bash redirection command:</p></div>
+<div class="listingblock">
+<div class="content monospaced">
+<pre> 2&gt; backup_logs/rsync_${DD}.log</pre>
+</div></div>
+<div class="paragraph"><p>so it now resides in the backup-logs file.</p></div>
+<div class="listingblock">
+<div class="content monospaced">
+<pre>$ cat backup_logs/rsync_12.46.58_2014-04-08.log
+sending incremental file list
+tacg-4.6.0-src/Cutting.c
+tacg-4.6.0-src/GelLadSumFrgSits.c
+...
+tacg-4.6.0-src/seqio.c
+tacg-4.6.0-src/tacg.c
+
+sent 1966 bytes  received 10232 bytes  2710.67 bytes/sec
+total size is 2662985  speedup is 218.31</pre>
+</div></div>
+<div class="admonitionblock">
+<table><tr>
+<td class="icon">
+<img src="./images/icons/note.png" alt="Note">
+</td>
+<td class="content">
+<div class="title">MacOSX</div>
+<div class="paragraph"><p>rsync is included with MacOSX as well but because of the Mac&#8217;s twisted history of using the using the  <a href="http://en.wikipedia.org/wiki/AppleSingle">AppleSingle/AppleDouble</a> file format (remember those <a href="http://en.wikipedia.org/wiki/Resource_fork">Resource fork</a> problems?), the version of rsync (2.6.9) shipped with OSX versions up to <em>Leopard</em> will not handle older Mac-native files correctly. However, rsync version 3.x <em>will</em> apparently do the conversions correctly.</p></div>
+</td>
+</tr></table>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="unison">4.3. Unison</h3>
+<div class="paragraph"><p><a href="http://www.cis.upenn.edu/~bcpierce/unison/">Unison</a> is a slightly different take on transmitting only changes.  It uses a bi-directional sync algorithm to <em>unify</em> filesystems across a network.  Native versions exist for Windows as well as Linux/Unix and it is usually available from the standard Linux repositories.</p></div>
+<div class="paragraph"><p>From a Ubuntu or Debian machine, to install it would require:</p></div>
+<div class="listingblock">
+<div class="content monospaced">
+<pre>$ sudo apt-get install unison</pre>
+</div></div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="streaming">5. Streaming Data Transfer</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="bbcp">5.1. bbcp</h3>
+<div class="paragraph"><p><a href="http://www.slac.stanford.edu/~abh/bbcp/">bbcp</a> seems to be a very similar utility to <a href="#bbftp">bbftp below</a>, with the exception that it does not require a remote server running. In this behavior, it&#8217;s much more like <em>scp</em> in that data transfer requires only user-executable copies (preferably the same version) on both sides of the connection.  Short of access to a GridFTP site, <em>bbcp</em> appears to be the fastest, most convenient single-node method for transferring data.</p></div>
+<div class="admonitionblock">
+<table><tr>
+<td class="icon">
+<img src="./images/icons/note.png" alt="Note">
+</td>
+<td class="content">
+<div class="title">bbcp does not encrypt the data stream</div>
+<div class="paragraph"><p>Unless you use an external encryption utility via bbcp&#8217;s <a href="#namedpipes">named pipes</a> option,
+bbcp does <em>not</em> encrypt the data stream.  It uses ssh to set up the authentication but not
+to encrypt the data stream.  You can use a utility like <a href="http://ccrypt.sourceforge.net/">ccrypt</a>
+to encrypt/decrypt the network stream. Thanks to Dennis Yang for pointing this out.</p></div>
+</td>
+</tr></table>
+</div>
+<div class="paragraph"><p>The author, <a href="mailto:abh@stanford.edu">Andrew Hanushevsky</a> has made a number of
+<a href="http://www.slac.stanford.edu/%7eabh/bbcp/bin/">precompiled  binaries available</a> as well as access to the <em>bbcp git tree</em>: <strong>git clone <a href="http://www.slac.stanford.edu/~abh/bbcp/bbcp.git">http://www.slac.stanford.edu/~abh/bbcp/bbcp.git</a></strong>
+Somebody at Caltech has written up <a href="http://pcbunn.cithep.caltech.edu/bbcp/using_bbcp.htm">a very nice bbcp HOWTO</a>.</p></div>
+<div class="paragraph"><p>The code compiled &amp; installed easily with one manual intervention</p></div>
+<div class="listingblock">
+<div class="content monospaced">
+<pre>curl http://www.slac.stanford.edu/~abh/bbcp/bbcp.tgz |tar -xzf -
+cd bbcp
+make
+
+# edit Makefile to change line 18 to: LIBZ       =  /usr/lib/libz.a
+make
+# there is no *install* stanza in the distributed 'Makefile'
+cp bin/your_arch/bbcp ~/bin   # if that's where you store your personal bins.
+hash -r   # or 'rehash' if using cshrc
+# bbcp now ready to use.</pre>
+</div></div>
+<div class="paragraph"><p><em>bbcp</em> can act very much like <em>scp</em> for simple usage:</p></div>
+<div class="listingblock">
+<div class="content monospaced">
+<pre>$ time bbcp  file.633M   user@remotehost.subnet.uci.edu:/high/perf/raid/file
+real    0m9.023s</pre>
+</div></div>
+<div class="paragraph"><p>The file transferred in under 10s for a 633MB file, giving &gt;63MB/s on a Gb net.  Note that this is over our very fast internal campus backbone. That&#8217;s pretty good, but the transfer rate is sensitive to a number of things and can be tuned considerably.  If you look at <a href="http://www.slac.stanford.edu/~abh/bbcp/">all the bbcp options</a>, it&#8217;s obvious that <em>bbcp</em> was written to handle lots of exceptions.</p></div>
+<div class="paragraph"><p>If you increase the number of streams (-s) from the default 4 (as above), you can squeeze a bit more bandwidth from it as well:</p></div>
+<div class="listingblock">
+<div class="content monospaced">
+<pre>$ bbcp -P 10 -w 2M -s 10 file.4.2G hjm@remotehost.subnet.uci.edu:/userdata/hjm/
+bbcp: Creating /userdata/hjm/file.4.2G
+bbcp: At 081210 12:48:18 copy 20% complete; 89998.2 KB/s
+bbcp: At 081210 12:48:28 copy 41% complete; 89910.4 KB/s
+bbcp: At 081210 12:48:38 copy 61% complete; 89802.5 KB/s
+bbcp: At 081210 12:48:48 copy 80% complete; 88499.3 KB/s
+bbcp: At 081210 12:48:58 copy 96% complete; 84571.9 KB/s</pre>
+</div></div>
+<div class="paragraph"><p>or almost 85MB/s for 4.2GB which is very good sustained transfer.</p></div>
+<div class="paragraph"><p>Even traversing the CENIC net from UCI to SDSC is fairly good:</p></div>
+<div class="listingblock">
+<div class="content monospaced">
+<pre>$ time bbcp -P 2 -w 2M -s 10 file.633M   user@machine.sdsc.edu:~/test.file
+
+bbcp: Source I/O buffers (61440K) &gt; 25% of available free memory (200268K); copy may be slow
+bbcp: Creating ./test.file
+bbcp: At 081205 14:24:28 copy 3% complete; 23009.8 KB/s
+bbcp: At 081205 14:24:30 copy 11% complete; 22767.8 KB/s
+bbcp: At 081205 14:24:32 copy 20% complete; 25707.1 KB/s
+bbcp: At 081205 14:24:34 copy 33% complete; 29374.4 KB/s
+bbcp: At 081205 14:24:36 copy 41% complete; 28721.4 KB/s
+bbcp: At 081205 14:24:38 copy 52% complete; 29320.0 KB/s
+bbcp: At 081205 14:24:40 copy 61% complete; 29318.4 KB/s
+bbcp: At 081205 14:24:42 copy 72% complete; 29824.6 KB/s
+bbcp: At 081205 14:24:44 copy 81% complete; 29467.3 KB/s
+bbcp: At 081205 14:24:46 copy 89% complete; 29225.5 KB/s
+bbcp: At 081205 14:24:48 copy 96% complete; 28454.3 KB/s
+
+real    0m26.965s</pre>
+</div></div>
+<div class="paragraph"><p>or almost 30MB/s.</p></div>
+<div class="paragraph"><p>When making the above test, I noticed the disks to and from which the data was being written can have a large effect on the transfer rate.  If the data is not (or cannot be) cached in RAM, the transfer will eventually require the data to be read from or written to the disk.  Depending on the storage system, this may slow the eventual transfer if the disk I/O cannot keep up with the the network.  On the systems that I used in the example above, I saw this effect when I transferred the data to the /home partition (on a slow IDE disk - see below) rather than the higher performance RAID system that I used above.</p></div>
+<div class="listingblock">
+<div class="content monospaced">
+<pre>$ time bbcp -P 2  file.633M  user@remotehost.subnet.uci.edu:/home/user/nother.big.file
+bbcp: Creating /home/user/nother.big.file
+bbcp: At 081205 13:59:57 copy 19% complete; 76545.0 KB/s
+bbcp: At 081205 13:59:59 copy 43% complete; 75107.7 KB/s
+bbcp: At 081205 14:00:01 copy 58% complete; 64599.1 KB/s
+bbcp: At 081205 14:00:03 copy 59% complete; 48997.5 KB/s
+bbcp: At 081205 14:00:05 copy 61% complete; 39994.1 KB/s
+bbcp: At 081205 14:00:07 copy 64% complete; 34459.0 KB/s
+bbcp: At 081205 14:00:09 copy 66% complete; 30397.3 KB/s
+bbcp: At 081205 14:00:11 copy 69% complete; 27536.1 KB/s
+bbcp: At 081205 14:00:13 copy 71% complete; 25206.3 KB/s
+bbcp: At 081205 14:00:15 copy 72% complete; 23011.2 KB/s
+bbcp: At 081205 14:00:17 copy 74% complete; 21472.9 KB/s
+bbcp: At 081205 14:00:19 copy 77% complete; 20206.7 KB/s
+bbcp: At 081205 14:00:21 copy 79% complete; 19188.7 KB/s
+bbcp: At 081205 14:00:23 copy 81% complete; 18376.6 KB/s
+bbcp: At 081205 14:00:25 copy 83% complete; 17447.1 KB/s
+bbcp: At 081205 14:00:27 copy 84% complete; 16572.5 KB/s
+bbcp: At 081205 14:00:29 copy 86% complete; 15929.9 KB/s
+bbcp: At 081205 14:00:31 copy 88% complete; 15449.6 KB/s
+bbcp: At 081205 14:00:33 copy 91% complete; 15039.3 KB/s
+bbcp: At 081205 14:00:35 copy 93% complete; 14616.6 KB/s
+bbcp: At 081205 14:00:37 copy 95% complete; 14278.2 KB/s
+bbcp: At 081205 14:00:39 copy 98% complete; 13982.9 KB/s
+
+real    0m46.103s</pre>
+</div></div>
+<div class="paragraph"><p>You can see how the transfer rate decays as it approaches the write capacity of the <em>/home</em> disk.</p></div>
+<div class="paragraph"><p><em>bbcp</em> can recursively copy directories with the <em>-r</em> flag.  Like <em>rsync</em>, it first has to build a file list to send to the receiver, but unlike rsync, it doesn&#8217;t tell you that it&#8217;s doing that, so unless you use the <em>-D</em> (debug) flag, it looks like it has just hung.  The time required to build the file list is of course proportional to the complexity of the recursive directory scan.  It can also do incremental copies like <em>rsync</em> with the <em>-a -k</em> flags, which also allow it to recover from failed transfers.</p></div>
+<div class="paragraph"><p>Note that bbcp is <em>very slow</em> at copying deep directory trees of small files.  If you need to copy such trees, you should first tar up the trees and use bbcp to copy the tarball.  Such an approach will increase the transfer speed enormously.</p></div>
+<div class="paragraph" id="namedpipes"><p>The most recent version of bbcp can use the <em>-N</em> <a href="http://www.slac.stanford.edu/~abh/bbcp/bbcp.htm#_Toc305612710">named pipes option</a> to use external programs or pipes to feed the network stream. This allows you to specify an external program such as <em>tar</em> to provide the data stream for bbcp.  Like this:</p></div>
+<div class="listingblock">
+<div class="content monospaced">
+<pre>bbcp -P 2 -w 2M -s 10  -N io 'tar -cv -O /w2 ' remotehost:'tar -C /nffs/w2 -xf - '</pre>
+</div></div>
+<div class="paragraph"><p>The above command uses bbcp&#8217;s named pipe option for both input and output (-N io) to take tar&#8217;s output from STDOUT (tar&#8217;s <em>-O</em> option), and using the abve-described options to stream the tar&#8217;s output to bbcp to the remotehost where tar is invoked to decompose the bytestream and write it to the new location (-C /nffs/w2)</p></div>
+<div class="paragraph"><p>NB: the <a href="http://www.slac.stanford.edu/~abh/bbcp/#_Toc332986074">original bbcp help page</a> on this option has (as of May09,2013) a typo or 2.  The above example is correct and works.</p></div>
+<div class="paragraph"><p>NB: I have ocassionally seen this error when using bbcp:</p></div>
+<div class="listingblock">
+<div class="content monospaced">
+<pre>time bbcp -P 10 -w 2M -s 8 root@bduc-login.nacs.uci.edu:/home/testing.tar.gz .
+bbcp: Accept timed out on port 5031
+bbcp: Unable to allocate more than 0 of 8 data streams.
+Killed by signal 15.</pre>
+</div></div>
+<div class="paragraph"><p>If you get this error, add the "-z" option to your command line (right after bbcp). ie"</p></div>
+<div class="listingblock">
+<div class="content monospaced">
+<pre>time bbcp -z -P 10 -w 2M -s 8 root@bduc-login.nacs.uci.edu:/home/testing.tar.gz .
+#  .......^^</pre>
+</div></div>
+</div>
+<div class="sect2">
+<h3 id="bbftp">5.2. bbftp</h3>
+<div class="paragraph"><p><a href="http://doc.in2p3.fr/bbftp/">bbftp</a> is a modification of the FTP protocol that enables you to open multiple simultaneous TCP streams to transfer data.  It therefore allows you to sometimes bypass per-TCP restrictions that result from badly configured intervening machines.</p></div>
+<div class="paragraph"><p>In order to use it, you 'll need a bbftp client and server.  Most places that recieve large amounts of data (SDSC, NCAR, other supercomputer centers, teragrid nodes) will already have a bbftp server running, but you can also compile and run the server yourself.</p></div>
+<div class="paragraph"><p>The more usual case is to run only the client.  It builds very easily on Linux with just the typical <em>curl/untar, cd, ./configure, make, make install</em> dance:</p></div>
+<div class="listingblock">
+<div class="content monospaced">
+<pre>$ curl http://doc.in2p3.fr/bbftp/dist/bbftp-client-3.2.0.tar.gz |tar -xzvf -
+$ cd bbftp-client-3.2.0/bbftpc/
+$ ./configure --prefix=/usr/local
+$ make -j3
+$ sudo make install</pre>
+</div></div>
+<div class="paragraph"><p>Using bbftp is more complicated than the usual ftp client because it has its own syntax:</p></div>
+<div class="paragraph"><p>To send data to a server:</p></div>
+<div class="listingblock">
+<div class="content monospaced">
+<pre>$ bbftp -s -e 'put file.154M  /gpfs/mangalam/big.file' -u mangalam -p 10 -V tg-login1.sdsc.teragrid.org
+Password:
+&gt;&gt; COMMAND : put file.154M /gpfs/mangalam/big.file
+&lt;&lt; OK
+160923648 bytes send in 7.32 secs (2.15e+04 Kbytes/sec or 168 Mbits/s)
+
+
+the arguments mean:
+-s  use ssh encryption
+-e  'local command'
+-E  'remote command' (not used above, but often used to cd on the remote system)
+-u  'user_login'
+-p  # use # parallel TCP streams
+-V  be verbose</pre>
+</div></div>
+<div class="paragraph"><p>The data was <em>sent</em> at 21MB/s to SDSC thru 10 parallel TCP streams (but well below the peak bandwidth of about 90MB/s on a Gb network)</p></div>
+<div class="paragraph"><p>To get data from a server:</p></div>
+<div class="listingblock">
+<div class="content monospaced">
+<pre>$ bbftp -s -e 'get /gpfs/mangalam/big.file from.sdsc' -u mangalam -p 10 -V tg-login1.sdsc.teragrid.org
+Password:
+&gt;&gt; COMMAND : get /gpfs/mangalam/big.file from.sdsc
+&lt;&lt; OK
+160923648 bytes got in 3.46 secs (4.54e+04 Kbytes/sec or 354 Mbits/s)</pre>
+</div></div>
+<div class="paragraph"><p>I was able to <em>get</em> the data at 45MB/s, about half of the theoretical maximum.</p></div>
+<div class="paragraph"><p>As a comparison, because the remote reciever is running an old (2.4) kernel
+which does not handle dynamic TCP window scaling, scp is only able to manage
+2.2MB/s to this server:</p></div>
+<div class="listingblock">
+<div class="content monospaced">
+<pre>$ scp  file.154M mangalam@tg-login1.sdsc.teragrid.org:/gpfs/mangalam/junk
+Password:
+file.154M                                  100%  153MB   2.2MB/s   01:10</pre>
+</div></div>
+</div>
+<div class="sect2">
+<h3 id="lftp">5.3. lftp</h3>
+<div class="paragraph"><p><a href="http://lftp.yar.ru/">lftp</a> is a simple but capable multi-protocol (FTP, http/s, bittorrent, fish) client that is widely available from repositories.  It has a sophisitcated interface that supports staging, re-transfers, multiple transfers, and other other niceties.</p></div>
+<div class="admonitionblock">
+<table><tr>
+<td class="icon">
+<img src="./images/icons/note.png" alt="Note">
+</td>
+<td class="content">
+<div class="title">Multiple Streams</div>
+<div class="paragraph"><p>A previous version of this document implied that it could perform multiple
+streams in  FTP mode on the same file but that was incorrect.  Since it
+depends on the server,  lftp can support multiple TCP streams but only if the server supports the RESTart command (RFC3659 Section 5.4) to <em>fake</em> the FTP server into transferring the file starting from multiple points.
+(via the <em>pget</em> option - see
+below). It also supports multiple streams over bittorrent, an inherently multi-stream protocol. Thanks to Sebastien Tosi for helping me figure this out.</p></div>
+</td>
+</tr></table>
+</div>
+<div class="paragraph"><p>One restriction is that the multi-stream approach only works in <em>get</em> mode so
+if you&#8217;re trying to upload data (<em>put</em> mode), it works only as well as a
+single stream approach. It will also do mirroring so if you&#8217;re trying to
+mirror an entire website or file tree, it can do that, much like the <em>wget -m
+-p &lt;website_head&gt;</em>.</p></div>
+<div class="paragraph"><p>In my testing over a 1Gb connection, <em>lftp</em> was about 5%-10% slower than
+<em>bbcp</em> on getting data (same number of streams with cache cleared each time)
+and noticeably slower on sending data. Both <em>bbcp</em> and <em>lftp</em> appear to be
+transferring to local cache and on transferring files smaller than the free
+RAM, will spend several seconds after the transfer is supposedly complete in
+syncing the data to disk.</p></div>
+<div class="listingblock">
+<div class="content monospaced">
+<pre>#Getting a file over 4 streams
+lftp -e 'pget -n 4 sftp://someone@host:/path/to/file'</pre>
+</div></div>
+</div>
+<div class="sect2">
+<h3 id="fdt">5.4. Fast Data Transfer (fdt)</h3>
+<div class="paragraph"><p><a href="http://monalisa.cern.ch/FDT">Fast Data Transfer</a> is an application for moving data quickly writ in Java so it can theoretically run on any platform.  The performance results on the web page are very impressive, but in local tests, it was slower than bbcp and the startup time for Java (as well as its failure to work in <em>scp</em> mode (couldn&#8217;t find the <em>fdt.jar</em>, even tho it was in the <strong>CLASSPATH</strong>, required you to explicitly start the receiving FDT server (not hard - see below, but another step)) argue somewhat against it.</p></div>
+<div class="paragraph"><p>Starting the server is easy; it starts by default in server mode:</p></div>
+<div class="listingblock">
+<div class="content monospaced">
+<pre>java -jar ./fdt.jar
+# usual Java verbosity omitted</pre>
+</div></div>
+<div class="paragraph"><p>The client uses the same jarfile but a different syntax:</p></div>
+<div class="listingblock">
+<div class="content monospaced">
+<pre>java -jar ./fdt.jar -ss 1M -P 10 -c remotehost.domain.uci.edu  ~/file.633M  -d /userdata/hjm
+
+# where
+# -ss 1M  ..... sets the TCP SO_SND_BUFFER size to 1 MB
+# -P 10 ....... uses 10 parallel streams (default is 1)
+# -c host ..... defines the remote host
+# -d dir ...... sets the remote dir</pre>
+</div></div>
+<div class="paragraph"><p>The speed is certainly impressive.  Much more than scp:</p></div>
+<div class="listingblock">
+<div class="content monospaced">
+<pre># scp done over the same net, about the same time
+
+$ scp file.4.2G  remotehost.domain.uci.edu:~
+hjm@remotehost's password: ***********
+ file.4.2G                   100% 4271MB  25.3MB/s   02:49
+                                          ^^^^^^^^</pre>
+</div></div>
+<div class="listingblock">
+<div class="content monospaced">
+<pre># using the default 1 stream:
+$ java -jar fdt.jar -c remotehost.domain.uci.edu ../file.4.2G -d /userdata/hjm/
+(transferred in 86s for *53MB/s*)
+
+# with 10 streams and a larger buffer:
+$ java -jar fdt.jar -P 10 -bs 1M -c remotehost.domain.uci.edu ../file.4.2G -d /userdata/hjm/
+(transferred in 68s for *66MB/s* with 10 streams)</pre>
+</div></div>
+<div class="paragraph"><p>But fdt is slower than bbcp.  The following test was done at about the same time between the same hosts:</p></div>
+<div class="listingblock">
+<div class="content monospaced">
+<pre>bbcp -P 10 -w 2M -s 10 file.4.2G hjm@remotehost.domain.uci.edu:/userdata/hjm/
+bbcp: Creating /userdata/hjm/file.4.2G
+bbcp: At 081210 12:48:18 copy 20% complete; 89998.2 KB/s
+bbcp: At 081210 12:48:28 copy 41% complete; 89910.4 KB/s
+bbcp: At 081210 12:48:38 copy 61% complete; 89802.5 KB/s
+bbcp: At 081210 12:48:48 copy 80% complete; 88499.3 KB/s
+bbcp: At 081210 12:48:58 copy 96% complete; 84571.9 KB/s</pre>
+</div></div>
+</div>
+<div class="sect2">
+<h3 id="gcm">5.5. Globus Connect &amp; Globus Connect MultiUser</h3>
+<div class="paragraph"><p>This is a fairly new (mid-2011) approach that claims to provide easy access to GridFTP-like speeds, reliable transfers, and <em>No IT required</em>.  (At this point sysadmins will break into muffled snorts, the same response as <em>seamless</em> provokes when applied to any computer-related activity.)  <a href="https://www.globusonline.org/globus_connect/">Globus Connect</a> and it&#8217;s more ambitious <a href="https://www.globusonline.org/gcmu/">Globus Connect MultiUser</a> sibling is an attempt to make using the Globus mechanicals less horrific for users.  In this it largely succeeds from the users' POV - those who are already part of a Globus/Grid node and who have specific requirements to transfer TBs of data on a <em>regular basis</em> and who have the endpoints set up for them.  Otherwise it&#8217;s somewhat clunky since you have to explicitly set up endpoints beforehand and too complicated to set up unless you&#8217;re Linux-enhanced (ie. you do ssh public key exchange, and globus MyProxy configs in your sleep, ).</p></div>
+<div class="paragraph"><p>That said, the process to install the software to your add yourself to the system is fairly straightforward. <a href="https://www.globusonline.org/globus_connect/">Just follow the instructions for the different platforms.</a></p></div>
+<div class="paragraph"><p>The problem with this approach is that it&#8217;s a large amount of work for a small amount of advantage relative to <a href="#bbcp">bbcp</a>.  However, the <em>Multiuser</em> version allows all the users of a server or cluster to take advantage of this protocol with no additional effort, a better tradeoff between effort expended and advantages conferred.</p></div>
+<div class="paragraph"><p>The instructions for installing the <em>Multiuser</em> version are a little more elaborate.  Herewith, their own <a href="https://www.globusonline.org/gcmu/">devilish details for a sysadmin setting up the <em>Globus Connect MultiUser</em></a> (Linux-only so far).</p></div>
+</div>
+<div class="sect2">
+<h3 id="gridftp">5.6. GridFTP</h3>
+<div class="paragraph"><p>If you and your colleagues have to transfer data in the range of multiple GBs and you have to do it regularly, it&#8217;s probably worth setting up a <a href="http://en.wikipedia.org/wiki/GridFTP">GridFTP</a> site.  Because it allows multipoint, multi-stream TCP connections, it can transfer data at multiple GB/s.  However, it&#8217;s beyond the scope of this simple doc to describe its setup and use, so if this sounds useful, bother your local network guru/sysadmin.</p></div>
+</div>
+<div class="sect2">
+<h3 id="globusonline">5.7. Globus Online</h3>
+<div class="paragraph"><p><a href="https://www.globusonline.org/">Globus Online</a> is grid technology that has been wrapped in a web interface to enable mere humans to use the capabilities of the GRIDFTP system to transfer very large amounts of data very quickly between nodes that are part of this system.  The tagline is <em>Move files fast No IT required</em>. The advantages are that when it&#8217;s set up, it works very well.  The disadvantages are that the <em>No IT required</em> part is at this point, fairly optimistic and that it will only work between registered sites (which you can add with the <a href="https://www.globusonline.org/globus_connect/">Globus Connect process</a>, so it&#8217;s not very useful for ad hoc file transfers.</p></div>
+<div class="paragraph"><p>However, if you have a set of endpoints that frequently need to transfer large amounts of data, this approach would be very useful. Especially if you run a cluster or other multi-user system, there is an associated utility called <a href="https://www.globusonline.org/gcmu">Globus Connect Multi-User</a> which will allow all users of registered endpoint to use the Globus transfer capabilities.</p></div>
+<div class="paragraph"><p>While it is out of beta as of this writing (June 10th, 2014), the setup is quite complex, oddly documented (lots of it, information-sparse) and lacking simple examples so enabling it may take some additional emails and even phone calls.  An example is that the documentation never defines authentication mechanisms and confuses <em>domains</em> and <em>hostnames</em>, the distinction between which you would think an org like globus would be clear.  Possibly some of this confusion is sown by the use of globus terminology, which is subtly different than that used by sysadmins (me).</p></div>
+<div class="paragraph"><p>I presume it will be getting progressively easier to use as time passes.</p></div>
+<div class="paragraph"><p>The process for setting it up on your endpooint is described on the site, but it may be worthwhile describing the general overview which can be confusing. UCLA&#8217;s IDRE also has a <a href="http://hpc.ucla.edu/hoffman2/file-transfer/gol.php">setup description</a> (Thanks, Prakashan.)</p></div>
+<div class="paragraph"><p><strong>Snarky Point of Contention:</strong> The documentation overuses the word <em>seamlessly</em> which all computer users realizes is a contraction for <em>seamlessly if nothing goes wrong and your setup is exactly like mine and monkeys fly out my butt</em>. YMMV.</p></div>
+<div class="paragraph"><p><strong>Using the Globus Connect system requires you to:</strong></p></div>
+<div class="ulist"><ul>
+<li>
+<p>
+<strong><a href="https://www.globusonline.org/SignUp">Register a username with Globus Online</a>.</strong>  This ID will be used to identify you to the Globus system. It is not related to your username on any hosts you may want to use as endpoints.
+</p>
+</li>
+<li>
+<p>
+<strong><a href="https://www.globusonline.org/xfer/ManageEndpoints?globus_connect=true">Register connection endpoints</a></strong> that <em>you</em> will want to send to or receive from.  You must of course have a <strong>user</strong> account on these machines to use them and it helps if you have admin privs on these machines to install the necessary software (see next point).  You will have to name your endpoints a combination of your Globus ID and a machine name.  It doesn&#8217;t have to be the hostname of the client, but that will help to identify it later.  You will also have to generate a machine ID string that looks like <strong>d9g89270-74ab-4382-beb1-d2882628952a</strong>. This ID will have to be used to start the <em>globusconnect</em> process on the client before you can start a transfer.  <a href="https://support.globusonline.org/entries/23881557">See the Linux section (for example) of the main page</a>.
+</p>
+</li>
+<li>
+<p>
+<strong><a href="https://support.globusonline.org/home">Install the necessary software</a></strong> on the endpoint (client) machines.  There are different packages for different clients.  You (or your sysadmin) must install the repository info, and then the software itself. This is semi-automated via platform-specific apps see the <em>Globus Connect Downloads</em> in the link above.  There are 60-plus packages that make up a Globus client; thank god it&#8217;s done automatically.  If you want to do it manually, the <a href="https://support.globusonline.org/entries/24078973">process for doing so is described here</a>, but I&#8217;d recommend trying the automatic installation first.
+</p>
+</li>
+<li>
+<p>
+<strong>Start the Globus Connect process</strong> on the client via the downloaded client software.  On Linux, it is provided in the <a href="http://connect.globusonline.org/linux/stable/globusconnect-latest.tgz">globusconnect-latest.tgz</a>, which unpacks to provide both 32bit and 64bit clients, as well as the top-level bash script <em>globusconnect</em> to start the relevant version.  Running <em>globusconnect-X.x/globusconnect</em> will enable the clients to see each other and now, finally you can&#8230;
+</p>
+</li>
+<li>
+<p>
+<strong><a href="https://www.globusonline.org/xfer/StartTransfer">Start a Data Transfer</a></strong> by opening the previous link and identifying the nodes you want to transfer between.  After that, it&#8217;s as easy as using graphical FTP client.  Populate the panes with the directories you want to transfer and click on the directional arrow to initiate the transfer.
+</p>
+</li>
+</ul></div>
+<div class="paragraph"><p>I&#8217;ve gotten 40-50MB/s between UCI and the Broad Institute depending on time of day, system load, and phase of moon.</p></div>
+</div>
+<div class="sect2">
+<h3 id="netcat">5.8. netcat</h3>
+<div class="paragraph"><p><a href="http://netcat.sourceforge.net/">netcat</a> (aka <em>nc</em>) is installed by default on most Linux
+and MacOSX systems.  It provides a way of opening TCP or UDP network connections between
+nodes, acting as an open pipe thru which you can send any data as fast as the connection
+will allow, imposing no additional protocol load on the transfer. Because of its
+widespread availability and it&#8217;s speed, it can be used to transmit data between 2
+points relatively quickly, especially if the data doesn&#8217;t need to be encrypted or
+compressed (or if it already is).</p></div>
+<div class="paragraph"><p>However, to use netcat, you have to have login privs on both ends of the connection
+and you need to explicitly set up a <em>listener</em> that waits for a connection request
+on a specific port from the receiver.  This is less convenient to do than simply
+initiating an <em>scp</em> or <em>rsync</em> connection from one end, but may be worth the effort
+if the size of the data transfer is very large. To monitor the transfer, you also
+have to use something like <em>pv</em> (pipeviewer); netcat itself is quite laconic.</p></div>
+<div class="paragraph"><p>How it works: On one end (the sending end, in this case), you need to set up a listening port:</p></div>
+<div class="listingblock">
+<div class="content monospaced">
+<pre>[send_host]: $ pv -pet honkin.big.file | nc -q 1 -l 1234 &lt;enter&gt;</pre>
+</div></div>
+<div class="paragraph"><p>This sends the <em>honkin.big.file</em> thru <em>pv -pet</em> which will display  progress, ETA,
+and time taken.  The command will hang, listening (-l) for a connection from the
+other end.  The <em>-q 1</em> option tells the sender to wait 1s after getting the EOF
+and then quit.</p></div>
+<div class="paragraph"><p>On the receiving end, you connect to the nc listener</p></div>
+<div class="listingblock">
+<div class="content monospaced">
+<pre>[receive_host] $ nc sender.net.uci.edu 1234 |pv -b &gt; honkin.big.file &lt;enter&gt;</pre>
+</div></div>
+<div class="paragraph"><p>(note: no <em>-p</em> to indicate port on the receiving side).  The <em>-b</em> option to <em>pv</em>
+shows only bytes received.</p></div>
+<div class="paragraph"><p>Once the receive_host command is inititated, the transfer starts, as can be seen
+by the pv output on the sending side and the bytecount on the receiving side.
+When it finishes, both sides terminate the connection 1s after getting the EOF.</p></div>
+<div class="paragraph"><p>This arrangement is slightly arcane, but supports the unix tools philosophy which
+allows you to chain various small tools together to perform a task.  While the
+above example shows the case for a single large file, it can also be modified only
+slightly to do recursive transfers, using tar, shown here recursively copying the
+local <em>sge</em> directory to the remote host.</p></div>
+<div class="sect3">
+<h4 id="tarnetcat">5.8.1. tar and netcat</h4>
+<div class="paragraph"><p>The combination of these 2 crusty relics from the stone age of Unix are remarkably
+effective for moving data if you don&#8217;t need encryption.  Since they impose very
+little protocol overhead to the data, the transfer can run at close to wire speed
+for large files.  Compression can be added with the <em>tar</em> options of <em>-z (gzip)
+or '-j (bzip2)</em>.</p></div>
+<div class="paragraph"><p>The setup is not as trivial as <em>rsync, scp, or bbcp</em>, since it requires commands
+to be issued at both ends of the connection, but for large transfers, the speed
+payoff is non-trivial.  For example, using a single rsync on a 10Gb private
+connection, we were getting only about 30MB/s, mostly because of many tiny files.
+Using tar/netcat, the average speed went up to about 100MB/s.  And using multiple
+tar/netcat combinations to move specific subdirs, we were able to get an average
+of 500GB/hr, still not great (~14% of theoretical max), but about 5x better than
+rsync alone.</p></div>
+<div class="paragraph"><p>Note that you can set up the <em>listener</em> on either side.  In this example, I&#8217;ve
+set the listener to the receiving side.</p></div>
+<div class="paragraph"><p>In the following example, the receiver is 10.255.78.10; the sender is 10.255.78.2.</p></div>
+<div class="paragraph"><p>First start the listener waiting on port <em>12378</em>, which will accept the byte-stream
+and untar it, decompressing as it comes in.</p></div>
+<div class="listingblock">
+<div class="content monospaced">
+<pre>[receive_host] $ nc -l  -p  port_#  | tar -xzf -
+#eg
+               $ nc -l  -p  12378   | tar -xzf -
+
+# when the command is issued, the prompt hangs, waiting for the sender to start</pre>
+</div></div>
+<div class="paragraph"><p>Then kick off the transfer on the sending side.</p></div>
+<div class="listingblock">
+<div class="content monospaced">
+<pre>[send_host]: $ tar -czvf - dir_target   | nc -s  sender       receiver      port_#
+# eg
+             $ tar -czvf - fmri_classic | nc -s  10.255.78.2  10.255.78.10  12378</pre>
+</div></div>
+<div class="paragraph"><p>In this case, I&#8217;ve added the verbose flag (-v) to the tar command on the sender
+side so using <em>pv</em> is redundant.  It also uses tar&#8217;s built-in compression flag
+(-z) to compress as it transmits.  Depending on the bandwidth available to you
+and the CPUs of the hosts, this may actually <em>slow</em> transmission. As noted above,
+it&#8217;s most effective on bandwidth-limited channels.</p></div>
+<div class="paragraph"><p>You could also bundle the 2 together in a script, using ssh to execute the remote
+command. And now, I have..</p></div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="tnc">5.9. tnc</h3>
+<div class="paragraph"><p><em>tnc</em> is a useful tool to move a lot of data over a network if:</p></div>
+<div class="ulist"><ul>
+<li>
+<p>
+the data does not need to be encrypted.
+</p>
+</li>
+<li>
+<p>
+you have ssh &amp; shell access on both sides of the connection
+</p>
+</li>
+<li>
+<p>
+you set up <a href="http://goo.gl/zpfrvu">passwordless shared ssh keys</a> (it will try to set them up if you don&#8217;t have them)
+</p>
+</li>
+<li>
+<p>
+you have a lot of files and or deep dir trees that need to be moved.
+</p>
+</li>
+<li>
+<p>
+the data is not partially on the other side of the connection. ie first time
+data movement. If so, see <a href="#rsync">rsync</a>
+</p>
+</li>
+<li>
+<p>
+you are moving data for backup (tnc will tar and transfer data (optionally compressing it)
+in one operation, leaving it as such on the other end.
+-
+</p>
+</li>
+</ul></div>
+<div class="paragraph"><p>If your use case meets these criteria, it works quite well on most distributions of Linux
+although there are some versions of some utilities that will cause hiccups. In particular,
+it will work about 2-10x as fast as scp, depending on network bandwidth, # of files, etc.</p></div>
+<div class="paragraph"><p>that needs to be moved from one host to another if the
+The following is the <em>--help</em> output from tnc, until I write up something better.
+<a href="http://moo.nac.uci.edu/~hjm/tnc">Get tnc here</a>, <em>chmod +x</em> it and off you go.
+<strong>Note the warnings.</strong></p></div>
+<div class="listingblock">
+<div class="content monospaced">
+<pre>tnc is a Perl utility to simplify the use of netcat to transfer
+files  between hosts.  It automates a number of the setup commands that
+make this very efficient protocol so awful to set up.  It can be used
+like scp but it is much faster than scp, depending on the connection and
+types of files.  Typically it's 2x - 6x faster. And ~4x faster than rsync
+if being used for the initial transfer.
+
+tnc will attempt to set up 2048bit RSA ssh keys for you if they don't
+exist on the  the local host which will require entering the remote login
+password 2x to set up  the keys.  If you want to avoid this, use the
+'--askpass' option, which will not set up ssh-keys, but WILL use established
+ssh keys if they already exist. tnc does not work reliably without shared ssh
+keys.
+
+Unless you use the '--unpack' option, files to be transferred (even 1) are
+concatenated to a tar file which is sent and then left as a tar file on
+the other end of  the connection.  ie the endpoint for both push and pull
+data transfers will  be *tar files* (appended with the appro suffix if you
+use the '--compress' option).
+
+It can be used to both push and pull data from a remote connection, using
+only the static IP end.
+
+WARNINGS:
+- tnc DOES NOT ENCRYPT, nor does it compress data without being asked,
+so it's only meant for NON-SENSITIVE data that can be sent in the clear.
+Remote  connections are initiated via ssh, so the actual connection setup
+is encrypted. Because it uses netcat's open ports it also performs SHA
+checksums on the data exchanged to make sure that the data stream has not
+been poisoned or corrupted.
+
+- There are at least 3 versions of netcat in use: nc6, nc.openbsd,
+and nc.traditional.  tnc seems to be compatible with both the OpenBSD and GNU
+versions, which are the defaults on most systems.
+
+- tnc does a check of all the apps it needs on the local side and will emit
+a warning if one does not exist.  Once the 1st warning is done, it will not
+check again unless the log file (~/.tnc.test) is removed.
+
+- tnc requires ports to communicate over.  Some distros by default close all
+network ports.  You will have to open some of them for tnc to work - you can
+specify the connection port with '-p #'; other wise it will choose a random port
+in the range of 10000-20000.
+
+- tnc uses the piped subprocess function of bash (tee &gt;(shasum)) to do
+inline SHA hash checking, so if your system lacks a recent bash, it may fail.
+Note that identical SHA hashes only verify that the same bytes exist on both
+ends.  Premature failure can truncate data, so the SUMMARY now includes the
+# of bytes that were sent over the network as well.
+
+It supports the following options
+--askpass(off) .. use passwords, not ssh keys; don't try to set up ssh keys.
+                  If functional ssh keys DO exist, they will be used. This fails
+                  often and tnc really only works well if you have ssh keys set
+                  up, which tnc will offer to do for you.
+--compress(off) . asks for compression to be turned on at the sending side,
+                  using one of gzip || bzip2 || pigz || pbzip2 || xz || lz4
+                  The receiving (decompression) side uses the serial version,
+                  even if the parallel version is used on the sending side.
+                  This invokes the 'z,j, or J' option to tar to use the requested
+                  [de]compressor engine or passes it to the lz4 decompressor.
+                  Helps significantly on low bandwidth connections (wifi), but
+                  generally doesn't help on GbE networks.  Depends on the
+                  compressibility of the data on 100Mb connections, altho the lz4
+                  option is best. Endpoint names will be suffixed with the appro
+                  suffix (.gz, .bzip2, .xz, etc if this option is used, so don't
+                  'pre-suffix' the name.  If you do, 'name.xz' will be changed
+                  to 'name.xz.xz'
+--port(12345) ... sets the local and remote PORTs to this #. If not specified,
+                  tnc will use a random port between 10K and 20K.
+--help .......... emits this text
+--unpack(off) ... unpacks the transferred files at their endpoint. You specify
+                  the dir under which it's supposed to be unpacked as the
+                  remote target. If there is a writable dir of that name,
+                  the stream will be NOT be unpacked into it unless the
+                  '--unpack' option is used.
+-x='regex ' ..... equiv to '--exclude=' below
+--exclude='regex regex regex..'(*) (passthru to tar) excludes files matching the
+                  regexes from being included in the tar. Unlike the tar option,
+                  you can put all the regexes in a space-delimited string.
+--exclude-from="exclude_file" (*) (passthru to tar) read a file of filenames or
+                  regexes to omit in the transfer.
+(*) the files filtered from the '--exclude* options are additive, so if you have
+                  a set of files that you would normally exclude in 'exclude.me'
+                  and you wanted to exclude a few more, you could add them to
+                  the exclude list with --exclude="regex."
+--debug(off) .... very verbose about what's going on.
+
+Simple usage:
+
+Pushing data TO a remote server:
+ ------------------------------
+(sources can be a mixture of files and dirs)
+tnc dir1  file1  dir2 file2   user@remotehost:/path/to/remote.tar
+ or
+tnc --unpack file1 file2 file3  user@remotehost:/path/to/unpack/dir
+ or
+tnc -x='*.gif *.html' --compress=xz geo*.dat  user@remotehost:/path/to/remote.tar
+(which will filter out all gif and html files and leave the remote archive as
+'/path/to/remote.tar.xz'
+
+Pulling data FROM a remote server:
+ --------------------------------
+tnc --exclude-from="exclude.me" user@remotehost:'~/dir1/  /path/to/file* ~/dir2/'
+/local/path/to/tarball
+
+The above line excludes files based on the regexes in the file 'exclude.me' in
+the current dir.  Note the single quotes surrounding the remote file spec.
+You can use this to specify discontiguous files and dirs to pull (and you must
+use single quotes to specify the data to pull).
+
+The dynamic display during a transfer is from 'pv' and shows:
+
+158MB 0:00:07 [ 644kB/s]</pre>
+</div></div>
+<div class="literalblock">
+<div class="content monospaced">
+<pre> MB    time     instant
+sent   elapsed  bandwidth</pre>
+</div></div>
+<div class="paragraph"><p>NB: tnc requires a static (or at least identifiable) IP on only one end of the
+connection.  If you are at home, connecting thru a wireless router, and obtaining
+your IP address dynamically, tnc should work as well, since the work is initiated
+from the remote (static) IP #.</p></div>
+<div class="listingblock">
+<div class="content monospaced">
+<pre>[[aspera]]
+Aspera ascp
+~~~~~~~~~~~
+*Updated Jan 06, 2015*
+After a licensing problem with the existing Broad Globus system stopped us
+from using the https://www.globus.org/[browser-based Globus system] to finish the
+transfer, we still
+had to transfer about 30TB of data from the Broad Inst to UCI.  We tried using the
+link:#bbcp[above mentioned 'bbcp'] from there to here, but since I controlled only one side of
+the connection, I couldn't tune the transfer to provide more than about 1-3MB/s.
+The Broad people mentioned that the data was available via
+http://asperasoft.com/[Aspera], and I grouchily agreed to try it again (see first
+review below) via the Linux commandline client 'ascp' that had proved so
+trying previously.
+
+This time, tho (I had full docs for the client and some experience) it started up
+and immediately provided a consistent 30-40MB/s over the same network path that
+I was using with 'bbcp'.  A tremendous, *startling* improvement over the default 'bbcp' parameters,
+especially since it 'was' the *same network path* over which 'bbcp' was providing about 1/10th the
+bandwidth.  Whether it's due to autotuning of window size and streams, or some other
+internal magic, I can't say.  And I also can't say whether (with control of both
+endpoints) I could have coerced 'bbcp' to attain a similar bandwidth since I have seen bbcp
+do longhaul bandwidths of this magnitude.  But seeing 'ascp' immediately provide this magnitude of
+bandwidth, with no user-side tuning is very impressive indeed.
+
+I'll leave the previous notation in place to show how much ascp has improved.
+
+*first post, 2013*
+Aspera is a commercial company (recently bought by IBM) whose aim is to monetize
+large scale data transfer across networks. I have no experience with their Windows
+and Mac clients which may be very good, but their default Linux client,
+http://betascience.blogspot.com/2010/02/using-aspera-instead-of-ftp-to-download.html[starting
+about 3years ago] is not.  Or to be more specific:  It can work well, but it may
+well require a lot of tweaking and adjustment to work well.  God knows, I had to.
+However, I was 'eventually' able to transfer 15TB across the UC with the Linux
+client, which after the aforementioned tweaking worked ok.
+
+Compared to the above-mentioned link:#bbcp[bbcp], or the consumer-skinned and
+smoothed https://www.globus.org/[Globus Online], the Aspera Linux client
+is still crude, difficult to use, poorly documented, and fails repeatedly.
+I posted some comments to the blog linked above, but here are my suggestions
+about its use when you can't use an alternative approach.
+
+When I say that the Linux client is poorly documented, it doesn't mean that there
+is no documentation.  It means that it is hard to find (no helpful links returned
+by the search service on their support page),
+http://download.asperasoft.com/download/docs/ascp/2.7/html/index.html[the Documentation
+(click ascp Usage)] is no better than most free software, and that the
+http://download.asperasoft.com/download/docs/ascp/2.7/html/index.html[Examples
+(click ascp General Examples)] are fairly sparse.  Additionally, the customer
+support databases are behind an firewall and are therefore beyond the reach of
+google. This is certainly Aspera's right, but it means self-help is essentially impossible.
+
+I will say that opening a support ticket brought rapid (&lt;1 hour from filing the
+ticket to a human response), and knowledgeable assistance. (Thanks, Bill!).
+ascp will fill your syslog with a ton of event logs which, if sent to Aspera,
+will probably allow them to debug the problem.
+
+A non-Aspera employee advised me to use ascp's parallel copy to speed up the
+transfer but that was apparently a mistake since that option (tho it appears to
+work) is usually only useful when the client node is CPU-bound (mine wasn't) and
+neither increases overall copy speeds, nor allows you to restart failed transfers
+(and one of the parallel copies would fail every few minutes, possibly due to
+the timing issue noted below.)
+Since I was not able to get the parallel approach to work reliably for more than
+30 min at a time, the best approach was to start a single serial process with
+the Linux ascp client after carefully reading the above blog post and correcting
+the command as per your needs.
+
+Also, ascp can be very sensitive to timing issues so a modification may have to
+be made to the configuration file:</pre>
+</div></div>
+<div class="paragraph"><p>cat /root/.aspera/connect/etc/aspera.conf     # the corrected version</p></div>
+<div class="paragraph"><p>&lt;?xml version=<em>1.0</em> encoding=<em>UTF-8</em>?&gt;
+&lt;CONF version="2"&gt;
+  &lt;default&gt;
+    &lt;transfer&gt;
+      &lt;protocol_options&gt;
+        &lt;rtt_autocorrect&gt;true&lt;/rtt_autocorrect&gt;
+      &lt;/protocol_options&gt;
+    &lt;/transfer&gt;
+    &lt;file_system&gt;
+      &lt;storage_rc&gt;
+        &lt;adaptive&gt;
+          true
+        &lt;/adaptive&gt;
+      &lt;/storage_rc&gt;
+    &lt;/file_system&gt;
+  &lt;/default&gt;
+&lt;/CONF&gt;</p></div>
+<div class="listingblock">
+<div class="content monospaced">
+<pre>So, once that issue was settled, and I stopped trying to parallel copy, the following
+command worked reliably, maintaining the copy for at least a couple of days until the
+transfer finished.  The transfer was not magically faster than what I would have seen
+via bbcp, and was considerably slower than a GridFTP transfer, but it did work.</pre>
+</div></div>
+<div class="paragraph"><p>/path/to/ascp  -QT -l 500M -k1 <a href="mailto:user@remote.source.org">user@remote.source.org</a>:/remote/path /local/path</p></div>
+<div class="listingblock">
+<div class="content monospaced">
+<pre>where:
+
+* '-QT' 'Q' enables fair transfer policy, 'T' DISables encryption.
+* '-l 500m' sets the target transfer rate at 500Mbits/s.  This depends on what your connection to the Internet allows and especially what other operations are happening with the interface.  ascp seems to be very sensitive to this option and may well crash if it is exceeded.
+* '-k1' enables resuming partially transferred files, where the options are (From docs:)
+  - 0: Always retransfer the entire file.
+  - 1: Check file attributes and resume if the current and original attributes match. (This is probably good enough for most ppl and is MUCH faster than -k2)
+  - 2: Check file attributes and do a sparse file checksum; resume if the current and original attributes/checksums match.
+  - 3: Check file attributes and do a full file checksum; resume if the current and original attributes/checksums match.
+
+Again,  http://download.asperasoft.com/download/docs/ascp/2.7/html/index.html[read the docs carefully] since the error messages are unhelpful.
+
+Latest version of this Document</pre>
+</div></div>
+<div class="paragraph"><p>The latest version of this document should always be <a href="http://moo.nac.uci.edu/~hjm/HOWTO_move_data.html">here</a>.</p></div>
+</div>
+</div>
+</div>
+</div>
+<div id="footnotes"><hr></div>
+<div id="footer">
+<div id="footer-text">
+Version 1.26 Nov 11<br>
+Last updated 2015-11-11 09:43:53 PST
+</div>
+</div>
+</body>
+</html>
